@@ -38,7 +38,7 @@ export function CourseSelector({
               <p className="text-sm text-muted-foreground">
                 {course.description}
               </p>
-              <Button className="mt-2 w-full cursor-pointer">Select</Button>
+              <Button className="mt-2 w-full cursor-pointer">Selecionar</Button>
             </div>
           </CardContent>
         </Card>
