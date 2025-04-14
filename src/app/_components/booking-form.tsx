@@ -29,10 +29,11 @@ export function BookingForm({ onSubmit, onBack }: BookingFormProps) {
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!name.trim()) newErrors.name = "Name is required";
-    if (!email.trim()) newErrors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = "Email is invalid";
-    if (!phone.trim()) newErrors.phone = "Phone number is required";
+    if (!name.trim()) newErrors.name = "O nome é obrigatório";
+    if (!email.trim()) newErrors.email = "O email é obrigatório";
+    else if (!/\S+@\S+\.\S+/.test(email))
+      newErrors.email = "O email está inválido";
+    if (!phone.trim()) newErrors.phone = "O telefone é obrigatório";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -56,16 +57,16 @@ export function BookingForm({ onSubmit, onBack }: BookingFormProps) {
         className="mb-2"
       >
         <ChevronLeft className="mr-2 h-4 w-4" />
-        Back to time slots
+        Voltar aos horários
       </Button>
 
       <div className="space-y-2">
-        <Label htmlFor="name">Full Name</Label>
+        <Label htmlFor="name">Nome completo</Label>
         <Input
           id="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="John Doe"
+          placeholder="Nome"
           className={errors.name ? "border-red-500" : ""}
         />
         {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
@@ -78,14 +79,14 @@ export function BookingForm({ onSubmit, onBack }: BookingFormProps) {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="john@example.com"
+          placeholder="email@example.com"
           className={errors.email ? "border-red-500" : ""}
         />
         {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="phone">Phone Number</Label>
+        <Label htmlFor="phone">Telefone</Label>
         <Input
           id="phone"
           type="tel"
@@ -98,18 +99,18 @@ export function BookingForm({ onSubmit, onBack }: BookingFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="notes">Additional Notes (Optional)</Label>
+        <Label htmlFor="notes">Notas adicional (Opcional)</Label>
         <Textarea
           id="notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Any special requests or information we should know"
+          placeholder="Quaisquer pedidos ou informações especiais que devamos saber"
           rows={3}
         />
       </div>
 
       <Button type="submit" className="w-full">
-        Book Appointment
+        Agendar
       </Button>
     </form>
   );

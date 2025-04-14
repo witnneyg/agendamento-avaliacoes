@@ -45,7 +45,7 @@ export function TimeSlotPicker({
     <div className="space-y-4">
       <Button variant="ghost" size="sm" onClick={onBack} className="mb-2">
         <ChevronLeft className="mr-2 h-4 w-4" />
-        Back to calendar
+        Voltar ao calendário
       </Button>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

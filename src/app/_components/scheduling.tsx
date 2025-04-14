@@ -24,6 +24,21 @@ import { Course, CourseSelector } from "./course-selector";
 import { TimeSlotPicker } from "./time-slot-picker";
 import { BookingForm } from "./booking-form";
 import { BookingConfirmation } from "./booking-confirmation";
+import { DisciplineSelector } from "./discipline-selector";
+
+import { ptBR } from "date-fns/locale";
+
+export interface Discipline {
+  id: string;
+  title: string;
+  description: string;
+}
+
+// interface DisciplineSelectorProps {
+//   disciplines: Discipline[];
+//   onSelectDiscipline: (discipline: Discipline) => void;
+//   onBack: () => void;
+// }
 
 const academicCourses: Course[] = [
   {
@@ -66,7 +81,150 @@ const academicCourses: Course[] = [
   },
 ];
 
-type Step = "course" | "date" | "time" | "details" | "confirmation";
+const disciplinesByDepartment: Record<string, Discipline[]> = {
+  cs: [
+    {
+      id: "ai",
+      title: "Artificial Intelligence",
+      description: "Machine learning, neural networks, and intelligent systems",
+    },
+    {
+      id: "algorithms",
+      title: "Algorithms & Data Structures",
+      description: "Design and analysis of algorithms and data structures",
+    },
+    {
+      id: "software",
+      title: "Software Engineering",
+      description: "Software development methodologies and best practices",
+    },
+    {
+      id: "networks",
+      title: "Computer Networks",
+      description: "Network protocols, architecture, and security",
+    },
+  ],
+  math: [
+    {
+      id: "calculus",
+      title: "Calculus",
+      description: "Differential and integral calculus",
+    },
+    {
+      id: "statistics",
+      title: "Statistics",
+      description: "Statistical methods, probability, and data analysis",
+    },
+    {
+      id: "algebra",
+      title: "Linear Algebra",
+      description: "Vector spaces, matrices, and linear transformations",
+    },
+    {
+      id: "discrete",
+      title: "Discrete Mathematics",
+      description: "Logic, set theory, combinatorics, and graph theory",
+    },
+  ],
+  medicine: [
+    {
+      id: "anatomy",
+      title: "Anatomy",
+      description: "Structure and organization of the human body",
+    },
+    {
+      id: "physiology",
+      title: "Physiology",
+      description: "Functions and mechanisms of the human body",
+    },
+    {
+      id: "pathology",
+      title: "Pathology",
+      description: "Study of diseases and their effects on the body",
+    },
+    {
+      id: "pharmacology",
+      title: "Pharmacology",
+      description: "Study of drugs and their effects on the body",
+    },
+  ],
+  biology: [
+    {
+      id: "genetics",
+      title: "Genetics",
+      description: "Study of genes, heredity, and genetic variation",
+    },
+    {
+      id: "ecology",
+      title: "Ecology",
+      description: "Relationships between organisms and their environment",
+    },
+    {
+      id: "microbiology",
+      title: "Microbiology",
+      description: "Study of microorganisms and their effects",
+    },
+    {
+      id: "biochemistry",
+      title: "Biochemistry",
+      description: "Chemical processes and substances in living organisms",
+    },
+  ],
+  psychology: [
+    {
+      id: "clinical",
+      title: "Clinical Psychology",
+      description: "Assessment and treatment of mental disorders",
+    },
+    {
+      id: "cognitive",
+      title: "Cognitive Psychology",
+      description: "Study of mental processes such as perception and memory",
+    },
+    {
+      id: "developmental",
+      title: "Developmental Psychology",
+      description: "Psychological changes throughout the lifespan",
+    },
+    {
+      id: "social",
+      title: "Social Psychology",
+      description:
+        "How people's thoughts and behaviors are influenced by others",
+    },
+  ],
+  geography: [
+    {
+      id: "physical",
+      title: "Physical Geography",
+      description: "Study of natural features and processes of the Earth",
+    },
+    {
+      id: "human",
+      title: "Human Geography",
+      description:
+        "Study of human activities and their relationship to the environment",
+    },
+    {
+      id: "gis",
+      title: "Geographic Information Systems",
+      description: "Computer systems for capturing and analyzing spatial data",
+    },
+    {
+      id: "environmental",
+      title: "Environmental Geography",
+      description: "Study of human-environment interactions and sustainability",
+    },
+  ],
+};
+
+type Step =
+  | "course"
+  | "discipline"
+  | "date"
+  | "time"
+  | "details"
+  | "confirmation";
 
 type BookingDetails = {
   name: string;
@@ -87,6 +245,19 @@ export function AppointmentScheduler() {
   const [selectedCourse, setSelectedCourse] = useState<Course | undefined>(
     undefined
   );
+  const [selectedDiscipline, setSelectedDiscipline] = useState<
+    Discipline | undefined
+  >(undefined);
+
+  const handleCourseSelect = (course: Course) => {
+    setSelectedCourse(course);
+    setStep("discipline");
+  };
+
+  const handleDisciplineSelect = (discipline: Discipline) => {
+    setSelectedDiscipline(discipline);
+    setStep("date");
+  };
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
@@ -105,14 +276,10 @@ export function AppointmentScheduler() {
     setStep("confirmation");
   };
 
-  const handleCourseSelect = (course: Course) => {
-    setSelectedCourse(course);
-    setStep("date");
-  };
-
   const handleReset = () => {
     setStep("course");
     setSelectedCourse(undefined);
+    setSelectedDiscipline(undefined);
     setSelectedDate(undefined);
     setSelectedTime(undefined);
     setBookingDetails(null);
@@ -122,28 +289,33 @@ export function AppointmentScheduler() {
     <Card className="w-full max-w-3xl">
       <CardHeader>
         <CardTitle>
-          {step === "course" && "Select a Department"}
-          {step === "date" && "Select a Date"}
-          {step === "time" && "Choose a Time"}
-          {step === "details" && "Your Details"}
-          {step === "confirmation" && "Appointment Confirmed"}
+          {step === "course" && "Selecione um curso"}
+          {step === "discipline" && "Selecione uma disciplina"}
+          {step === "date" && "Selecione uma data"}
+          {step === "time" && "Escolha um horário"}
+          {step === "details" && "Seus detalhes"}
+          {step === "confirmation" && "Agendamento confirmado"}
         </CardTitle>
         <CardDescription>
           {step === "course" &&
-            "Choose the academic department you'd like to schedule an appointment with"}
+            "Selecione o curso com o qual deseja agendar uma avaliação"}
+          {step === "discipline" &&
+            selectedCourse &&
+            `Selecione uma disciplina específica em ${selectedCourse.title}`}
           {step === "date" &&
             selectedCourse &&
-            `Selected department: ${selectedCourse.title}`}
+            `Disciplina selecionada: ${selectedCourse.title}`}
           {step === "time" &&
             selectedDate &&
-            `Selected date: ${format(selectedDate, "PPPP")}`}
+            `Data selecionada: ${format(selectedDate, "PPPP", {
+              locale: ptBR,
+            })}`}
           {step === "details" &&
             selectedTime &&
-            `Selected time: ${format(
-              selectedDate!,
-              "PPPP"
-            )} at ${selectedTime}`}
-          {step === "confirmation" && "Your appointment has been scheduled"}
+            `Data selecionada: ${format(selectedDate!, "PPPP", {
+              locale: ptBR,
+            })} a ${selectedTime}`}
+          {step === "confirmation" && "Seu agendamento foi agendado"}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -154,16 +326,24 @@ export function AppointmentScheduler() {
           />
         )}
 
+        {step === "discipline" && selectedCourse && (
+          <DisciplineSelector
+            disciplines={disciplinesByDepartment[selectedCourse.id]}
+            onSelectDiscipline={handleDisciplineSelect}
+            onBack={() => setStep("course")}
+          />
+        )}
+
         {step === "date" && (
           <div className="flex flex-col space-y-4">
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setStep("course")}
+              onClick={() => setStep("discipline")}
               className="self-start mb-2"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to departments
+              Voltar a disciplinas
             </Button>
             <div className="flex justify-center">
               <Calendar
@@ -200,9 +380,11 @@ export function AppointmentScheduler() {
           bookingDetails &&
           selectedDate &&
           selectedTime &&
-          selectedCourse && (
+          selectedCourse &&
+          selectedDiscipline && (
             <BookingConfirmation
               course={selectedCourse}
+              discipline={selectedDiscipline}
               date={selectedDate}
               time={selectedTime}
               details={bookingDetails}
