@@ -22,7 +22,7 @@ import { ptBR } from "date-fns/locale";
 import {
   academicCourses,
   disciplinesBySemesterAndDepartment,
-  semesters,
+  semestersByCourse,
 } from "../mocks";
 import { Semester, SemesterSelector } from "./semester-selector";
 
@@ -155,9 +155,9 @@ export function AppointmentScheduler() {
           />
         )}
 
-        {step === "semester" && (
+        {step === "semester" && selectedCourse && (
           <SemesterSelector
-            semesters={semesters}
+            semesters={semestersByCourse[selectedCourse.id]}
             onSelectSemester={handleSelectSemester}
             onBack={() => setStep("course")}
           />

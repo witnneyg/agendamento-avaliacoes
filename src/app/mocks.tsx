@@ -1,15 +1,16 @@
-import {
-  Calculator,
-  FlaskRoundIcon as Flask,
-  Globe,
-  Microscope,
-  Code,
-  Brain,
-} from "lucide-react";
-
 import { Course } from "./_components/course-selector";
-import { Semester } from "./_components/semester-selector";
 import { Discipline } from "./_components/discipline-selector";
+import { Semester } from "./_components/semester-selector";
+
+import {
+  BookOpen,
+  Calculator,
+  Microscope,
+  Brain,
+  Globe,
+  TestTube,
+  Code,
+} from "lucide-react";
 
 export const academicCourses: Course[] = [
   {
@@ -34,7 +35,7 @@ export const academicCourses: Course[] = [
   {
     id: "biology",
     title: "Biology",
-    icon: <Flask className="h-6 w-6 text-primary" />,
+    icon: <TestTube className="h-6 w-6 text-primary" />,
     description: "Life sciences, ecology, genetics, and molecular biology",
   },
   {
@@ -52,28 +53,344 @@ export const academicCourses: Course[] = [
   },
 ];
 
-export const semesters: Semester[] = [
-  {
-    id: "first",
-    title: "Primeiro período",
-    period: "",
-  },
-  {
-    id: "second",
-    title: "Segundo período",
-    period: "",
-  },
-  {
-    id: "third",
-    title: "Terceiro período",
-    period: "",
-  },
-  {
-    id: "fourth",
-    title: "Quarto período",
-    period: "",
-  },
-];
+export const semestersByCourse: Record<string, Semester[]> = {
+  cs: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Ciência da Computação",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Ciência da Computação",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Ciência da Computação",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Ciência da Computação",
+    },
+    {
+      id: "fifth",
+      title: "5º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Quinto período de Ciência da Computação",
+    },
+    {
+      id: "sixth",
+      title: "6º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Sexto período de Ciência da Computação",
+    },
+    {
+      id: "seventh",
+      title: "7º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Sétimo período de Ciência da Computação",
+    },
+    {
+      id: "eighth",
+      title: "8º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Oitavo período de Ciência da Computação",
+    },
+  ],
+  math: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <Calculator className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Matemática",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <Calculator className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Matemática",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <Calculator className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Matemática",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <Calculator className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Matemática",
+    },
+    {
+      id: "fifth",
+      title: "5º Período",
+      icon: <Calculator className="h-6 w-6 text-primary" />,
+      description: "Quinto período de Matemática",
+    },
+    {
+      id: "sixth",
+      title: "6º Período",
+      icon: <Calculator className="h-6 w-6 text-primary" />,
+      description: "Sexto período de Matemática",
+    },
+    {
+      id: "seventh",
+      title: "7º Período",
+      icon: <Calculator className="h-6 w-6 text-primary" />,
+      description: "Sétimo período de Matemática",
+    },
+    {
+      id: "eighth",
+      title: "8º Período",
+      icon: <Calculator className="h-6 w-6 text-primary" />,
+      description: "Oitavo período de Matemática",
+    },
+  ],
+  medicine: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <Microscope className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Medicina",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <Microscope className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Medicina",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <Microscope className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Medicina",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <Microscope className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Medicina",
+    },
+    {
+      id: "fifth",
+      title: "5º Período",
+      icon: <Microscope className="h-6 w-6 text-primary" />,
+      description: "Quinto período de Medicina",
+    },
+    {
+      id: "sixth",
+      title: "6º Período",
+      icon: <Microscope className="h-6 w-6 text-primary" />,
+      description: "Sexto período de Medicina",
+    },
+    {
+      id: "seventh",
+      title: "7º Período",
+      icon: <Microscope className="h-6 w-6 text-primary" />,
+      description: "Sétimo período de Medicina",
+    },
+    {
+      id: "eighth",
+      title: "8º Período",
+      icon: <Microscope className="h-6 w-6 text-primary" />,
+      description: "Oitavo período de Medicina",
+    },
+    {
+      id: "ninth",
+      title: "9º Período",
+      icon: <Microscope className="h-6 w-6 text-primary" />,
+      description: "Nono período de Medicina",
+    },
+    {
+      id: "tenth",
+      title: "10º Período",
+      icon: <Microscope className="h-6 w-6 text-primary" />,
+      description: "Décimo período de Medicina",
+    },
+    {
+      id: "eleventh",
+      title: "11º Período",
+      icon: <Microscope className="h-6 w-6 text-primary" />,
+      description: "Décimo primeiro período de Medicina",
+    },
+    {
+      id: "twelfth",
+      title: "12º Período",
+      icon: <Microscope className="h-6 w-6 text-primary" />,
+      description: "Décimo segundo período de Medicina",
+    },
+  ],
+  biology: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <TestTube className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Biologia",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <TestTube className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Biologia",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <TestTube className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Biologia",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <TestTube className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Biologia",
+    },
+    {
+      id: "fifth",
+      title: "5º Período",
+      icon: <TestTube className="h-6 w-6 text-primary" />,
+      description: "Quinto período de Biologia",
+    },
+    {
+      id: "sixth",
+      title: "6º Período",
+      icon: <TestTube className="h-6 w-6 text-primary" />,
+      description: "Sexto período de Biologia",
+    },
+    {
+      id: "seventh",
+      title: "7º Período",
+      icon: <TestTube className="h-6 w-6 text-primary" />,
+      description: "Sétimo período de Biologia",
+    },
+    {
+      id: "eighth",
+      title: "8º Período",
+      icon: <TestTube className="h-6 w-6 text-primary" />,
+      description: "Oitavo período de Biologia",
+    },
+  ],
+  psychology: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <Brain className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Psicologia",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <Brain className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Psicologia",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <Brain className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Psicologia",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <Brain className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Psicologia",
+    },
+    {
+      id: "fifth",
+      title: "5º Período",
+      icon: <Brain className="h-6 w-6 text-primary" />,
+      description: "Quinto período de Psicologia",
+    },
+    {
+      id: "sixth",
+      title: "6º Período",
+      icon: <Brain className="h-6 w-6 text-primary" />,
+      description: "Sexto período de Psicologia",
+    },
+    {
+      id: "seventh",
+      title: "7º Período",
+      icon: <Brain className="h-6 w-6 text-primary" />,
+      description: "Sétimo período de Psicologia",
+    },
+    {
+      id: "eighth",
+      title: "8º Período",
+      icon: <Brain className="h-6 w-6 text-primary" />,
+      description: "Oitavo período de Psicologia",
+    },
+    {
+      id: "ninth",
+      title: "9º Período",
+      icon: <Brain className="h-6 w-6 text-primary" />,
+      description: "Nono período de Psicologia",
+    },
+    {
+      id: "tenth",
+      title: "10º Período",
+      icon: <Brain className="h-6 w-6 text-primary" />,
+      description: "Décimo período de Psicologia",
+    },
+  ],
+  geography: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <Globe className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Geografia",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <Globe className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Geografia",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <Globe className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Geografia",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <Globe className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Geografia",
+    },
+    {
+      id: "fifth",
+      title: "5º Período",
+      icon: <Globe className="h-6 w-6 text-primary" />,
+      description: "Quinto período de Geografia",
+    },
+    {
+      id: "sixth",
+      title: "6º Período",
+      icon: <Globe className="h-6 w-6 text-primary" />,
+      description: "Sexto período de Geografia",
+    },
+    {
+      id: "seventh",
+      title: "7º Período",
+      icon: <Globe className="h-6 w-6 text-primary" />,
+      description: "Sétimo período de Geografia",
+    },
+    {
+      id: "eighth",
+      title: "8º Período",
+      icon: <Globe className="h-6 w-6 text-primary" />,
+      description: "Oitavo período de Geografia",
+    },
+  ],
+};
 
 export const disciplinesBySemesterAndDepartment: Record<
   string,

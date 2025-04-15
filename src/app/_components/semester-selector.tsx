@@ -2,12 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, NotebookPen } from "lucide-react";
+import { JSX } from "react";
 
 export interface Semester {
   id: string;
   title: string;
-  period: string;
+  icon: JSX.Element;
+  description: string;
 }
 
 interface SemesterSelectorProps {
@@ -37,9 +39,12 @@ export function SemesterSelector({
           >
             <CardContent className="p-6">
               <div className="flex flex-col space-y-2">
-                <h3 className="font-medium text-lg">{semester.title}</h3>
+                <div className="flex gap-2 items-center">
+                  {semester.icon}
+                  <h3 className="font-medium text-lg">{semester.title}</h3>
+                </div>
                 <p className="text-sm text-muted-foreground">
-                  {semester.period}
+                  {semester.description}
                 </p>
                 <Button className="mt-2 w-full">Selecionar</Button>
               </div>
