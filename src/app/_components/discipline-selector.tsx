@@ -25,7 +25,7 @@ export function DisciplineSelector({
     <div className="space-y-4">
       <Button variant="ghost" size="sm" onClick={onBack} className="mb-2">
         <ChevronLeft className="mr-2 h-4 w-4" />
-        Voltar para cursos
+        Voltar para períodos
       </Button>
 
       <div className="grid gap-4 md:grid-cols-2">
