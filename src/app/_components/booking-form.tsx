@@ -26,9 +26,14 @@ const bookingSchema = z.object({
     .string()
     .email("Email inválido")
     .nonempty("O email deve ser obrigatório")
-    .refine((email) => email.endsWith("@unicerrado.com"), {
-      message: "O email deve ser do domínio @unicerrado.com",
-    }),
+    .refine(
+      (email) =>
+        email.endsWith("@unicerrado.edu.br") ||
+        email.endsWith("@alunos.unicerrado.edu.br"),
+      {
+        message: "O email deve ser do domínio unicerrado",
+      }
+    ),
   phone: z
     .string()
     .min(10, "O telefone deve ter no mínimo 10 dígitos")
