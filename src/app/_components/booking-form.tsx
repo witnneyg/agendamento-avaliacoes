@@ -94,7 +94,7 @@ export function BookingForm({ onSubmit, onBack }: BookingFormProps) {
         <Input
           id="email"
           type="email"
-          placeholder="email@example.com"
+          placeholder="Email@example.com"
           {...register("email")}
           className={errors.email ? "border-red-500" : ""}
         />
@@ -108,7 +108,7 @@ export function BookingForm({ onSubmit, onBack }: BookingFormProps) {
         <Input
           id="phone"
           type="tel"
-          placeholder="(123) 456-7890"
+          placeholder="(99) 9999-9999"
           {...register("phone")}
           className={errors.phone ? "border-red-500" : ""}
         />

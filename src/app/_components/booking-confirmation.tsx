@@ -32,8 +32,6 @@ export function BookingConfirmation({
   discipline,
   onScheduleAnother,
 }: BookingConfirmationProps) {
-  // In a real app, you would save this data to your backend
-
   return (
     <div className="flex flex-col items-center space-y-6 py-4">
       <div className="flex flex-col items-center text-center">

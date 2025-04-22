@@ -143,7 +143,7 @@ export function AppointmentScheduler() {
             selectedTime &&
             `Data selecionada: ${format(selectedDate!, "PPPP", {
               locale: ptBR,
-            })} a ${selectedTime}`}
+            })} a ${selectedTime} horas`}
           {step === "confirmation" && "Seu agendamento foi agendado"}
         </CardDescription>
       </CardHeader>
@@ -189,6 +189,7 @@ export function AppointmentScheduler() {
                   date.getDay() === 0 ||
                   date.getDay() === 6
                 }
+                locale={ptBR}
                 className="rounded-md border"
               />
             </div>

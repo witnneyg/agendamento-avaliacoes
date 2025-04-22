@@ -12,20 +12,20 @@ interface TimeSlotPickerProps {
 const generateTimeSlots = (date: Date) => {
   console.log(date);
   const slots = [
-    "9:00 AM",
-    "9:30 AM",
-    "10:00 AM",
-    "10:30 AM",
-    "11:00 AM",
-    "11:30 AM",
-    "1:00 PM",
-    "1:30 PM",
-    "2:00 PM",
-    "2:30 PM",
-    "3:00 PM",
-    "3:30 PM",
-    "4:00 PM",
-    "4:30 PM",
+    "09:00",
+    "09:30",
+    "10:00",
+    "10:30",
+    "11:00",
+    "11:30",
+    "13:00",
+    "13:30",
+    "14:00",
+    "14:30",
+    "15:00",
+    "15:30",
+    "16:00",
+    "16:30",
   ];
 
   return slots.map((slot) => ({
@@ -62,7 +62,7 @@ export function TimeSlotPicker({
             onClick={() => slot.available && onSelectTime(slot.time)}
           >
             {slot.time}
-            {!slot.available && " (Unavailable)"}
+            {!slot.available && " (Indisponível)"}
           </Button>
         ))}
       </div>
