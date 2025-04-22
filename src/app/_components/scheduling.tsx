@@ -154,7 +154,6 @@ export function AppointmentScheduler() {
             onSelectCourse={handleCourseSelect}
           />
         )}
-
         {step === "semester" && selectedCourse && (
           <SemesterSelector
             semesters={semestersByCourse[selectedCourse.id]}
@@ -162,7 +161,6 @@ export function AppointmentScheduler() {
             onBack={() => setStep("course")}
           />
         )}
-
         {step === "discipline" && selectedCourse && (
           <DisciplineSelector
             disciplines={getAvailableDisciplines()}
@@ -170,7 +168,6 @@ export function AppointmentScheduler() {
             onBack={() => setStep("semester")}
           />
         )}
-
         {step === "date" && (
           <div className="flex flex-col space-y-4">
             <Button
@@ -197,7 +194,6 @@ export function AppointmentScheduler() {
             </div>
           </div>
         )}
-
         {step === "time" && selectedDate && (
           <TimeSlotPicker
             date={selectedDate}
@@ -205,14 +201,12 @@ export function AppointmentScheduler() {
             onBack={() => setStep("date")}
           />
         )}
-
         {step === "details" && selectedDate && selectedTime && (
           <BookingForm
             onSubmit={handleDetailsSubmit}
             onBack={() => setStep("time")}
           />
         )}
-
         {step === "confirmation" &&
           bookingDetails &&
           selectedDate &&

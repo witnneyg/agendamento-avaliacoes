@@ -7,153 +7,121 @@ import {
   Calculator,
   Microscope,
   Brain,
-  Globe,
-  TestTube,
   Code,
+  Briefcase,
+  Leaf,
+  FileText,
+  Gavel,
+  Dumbbell,
+  Syringe,
+  Hammer,
+  Activity,
+  PawPrint,
+  GraduationCap,
+  Smile,
 } from "lucide-react";
 
 export const academicCourses: Course[] = [
   {
-    id: "cs",
-    title: "Computer Science",
+    id: "itManagement",
+    title: "Gestão da Tecnologia da Informação",
     icon: <Code className="h-6 w-6 text-primary" />,
     description:
-      "Programming, algorithms, data structures, and software engineering",
+      "Programação, algoritmos, ciência de dados e inteligência artificial",
   },
   {
     id: "medicine",
-    title: "Medicine",
+    title: "Medicina",
     icon: <Microscope className="h-6 w-6 text-primary" />,
-    description: "Medical sciences, healthcare, and clinical studies",
-  },
-  {
-    id: "math",
-    title: "Mathematics",
-    icon: <Calculator className="h-6 w-6 text-primary" />,
-    description: "Pure and applied mathematics, statistics, and analysis",
-  },
-  {
-    id: "biology",
-    title: "Biology",
-    icon: <TestTube className="h-6 w-6 text-primary" />,
-    description: "Life sciences, ecology, genetics, and molecular biology",
+    description: "Ciências médicas, saúde e estudos clínicos",
   },
   {
     id: "psychology",
-    title: "Psychology",
+    title: "Psicologia",
     icon: <Brain className="h-6 w-6 text-primary" />,
-    description: "Human behavior, cognitive processes, and mental health",
+    description: "Comportamento humano, processos cognitivos e saúde mental",
   },
   {
-    id: "geography",
-    title: "Geography",
-    icon: <Globe className="h-6 w-6 text-primary" />,
+    id: "administration",
+    title: "Administração",
+    icon: <Briefcase className="h-6 w-6 text-primary" />,
+    description: "Gestão empresarial, finanças, marketing e empreendedorismo",
+  },
+  {
+    id: "agronomy",
+    title: "Agronomia",
+    icon: <Leaf className="h-6 w-6 text-primary" />,
     description:
-      "Physical geography, human geography, and environmental studies",
+      "Agricultura, manejo de solo, produção vegetal e sustentabilidade",
+  },
+  {
+    id: "accounting",
+    title: "Ciências Contábeis",
+    icon: <FileText className="h-6 w-6 text-primary" />,
+    description:
+      "Contabilidade, auditoria, controladoria e planejamento financeiro",
+  },
+  {
+    id: "law",
+    title: "Direito",
+    icon: <Gavel className="h-6 w-6 text-primary" />,
+    description:
+      "Leis, justiça, direito civil, penal, trabalhista e constitucional",
+  },
+  {
+    id: "physicalEducation",
+    title: "Educação Física",
+    icon: <Dumbbell className="h-6 w-6 text-primary" />,
+    description: "Atividade física, saúde, esportes e qualidade de vida",
+  },
+  {
+    id: "nursing",
+    title: "Enfermagem",
+    icon: <Syringe className="h-6 w-6 text-primary" />,
+    description: "Cuidado ao paciente, saúde pública e práticas clínicas",
+  },
+  {
+    id: "civilEngineering",
+    title: "Engenharia Civil",
+    icon: <Hammer className="h-6 w-6 text-primary" />,
+    description:
+      "Construção civil, estruturas, geotecnia e planejamento urbano",
+  },
+  {
+    id: "physiotherapy",
+    title: "Fisioterapia",
+    icon: <Activity className="h-6 w-6 text-primary" />,
+    description: "Reabilitação física, terapias manuais e biomecânica",
+  },
+  {
+    id: "literature",
+    title: "Letras",
+    icon: <BookOpen className="h-6 w-6 text-primary" />,
+    description: "Linguística, literatura, tradução e ensino de idiomas",
+  },
+  {
+    id: "veterinary",
+    title: "Medicina Veterinária",
+    icon: <PawPrint className="h-6 w-6 text-primary" />,
+    description:
+      "Saúde animal, clínica veterinária, zootecnia e bem-estar animal",
+  },
+  {
+    id: "dentistry",
+    title: "Odontologia",
+    icon: <Smile className="h-6 w-6 text-primary" />,
+    description: "Saúde bucal, ortodontia, periodontia e odontopediatria",
+  },
+  {
+    id: "pedagogy",
+    title: "Pedagogia",
+    icon: <GraduationCap className="h-6 w-6 text-primary" />,
+    description:
+      "Educação, didática, psicologia da aprendizagem e gestão escolar",
   },
 ];
 
 export const semestersByCourse: Record<string, Semester[]> = {
-  cs: [
-    {
-      id: "first",
-      title: "1º Período",
-      icon: <BookOpen className="h-6 w-6 text-primary" />,
-      description: "Primeiro período de Ciência da Computação",
-    },
-    {
-      id: "second",
-      title: "2º Período",
-      icon: <BookOpen className="h-6 w-6 text-primary" />,
-      description: "Segundo período de Ciência da Computação",
-    },
-    {
-      id: "third",
-      title: "3º Período",
-      icon: <BookOpen className="h-6 w-6 text-primary" />,
-      description: "Terceiro período de Ciência da Computação",
-    },
-    {
-      id: "fourth",
-      title: "4º Período",
-      icon: <BookOpen className="h-6 w-6 text-primary" />,
-      description: "Quarto período de Ciência da Computação",
-    },
-    {
-      id: "fifth",
-      title: "5º Período",
-      icon: <BookOpen className="h-6 w-6 text-primary" />,
-      description: "Quinto período de Ciência da Computação",
-    },
-    {
-      id: "sixth",
-      title: "6º Período",
-      icon: <BookOpen className="h-6 w-6 text-primary" />,
-      description: "Sexto período de Ciência da Computação",
-    },
-    {
-      id: "seventh",
-      title: "7º Período",
-      icon: <BookOpen className="h-6 w-6 text-primary" />,
-      description: "Sétimo período de Ciência da Computação",
-    },
-    {
-      id: "eighth",
-      title: "8º Período",
-      icon: <BookOpen className="h-6 w-6 text-primary" />,
-      description: "Oitavo período de Ciência da Computação",
-    },
-  ],
-  math: [
-    {
-      id: "first",
-      title: "1º Período",
-      icon: <Calculator className="h-6 w-6 text-primary" />,
-      description: "Primeiro período de Matemática",
-    },
-    {
-      id: "second",
-      title: "2º Período",
-      icon: <Calculator className="h-6 w-6 text-primary" />,
-      description: "Segundo período de Matemática",
-    },
-    {
-      id: "third",
-      title: "3º Período",
-      icon: <Calculator className="h-6 w-6 text-primary" />,
-      description: "Terceiro período de Matemática",
-    },
-    {
-      id: "fourth",
-      title: "4º Período",
-      icon: <Calculator className="h-6 w-6 text-primary" />,
-      description: "Quarto período de Matemática",
-    },
-    {
-      id: "fifth",
-      title: "5º Período",
-      icon: <Calculator className="h-6 w-6 text-primary" />,
-      description: "Quinto período de Matemática",
-    },
-    {
-      id: "sixth",
-      title: "6º Período",
-      icon: <Calculator className="h-6 w-6 text-primary" />,
-      description: "Sexto período de Matemática",
-    },
-    {
-      id: "seventh",
-      title: "7º Período",
-      icon: <Calculator className="h-6 w-6 text-primary" />,
-      description: "Sétimo período de Matemática",
-    },
-    {
-      id: "eighth",
-      title: "8º Período",
-      icon: <Calculator className="h-6 w-6 text-primary" />,
-      description: "Oitavo período de Matemática",
-    },
-  ],
   medicine: [
     {
       id: "first",
@@ -228,56 +196,6 @@ export const semestersByCourse: Record<string, Semester[]> = {
       description: "Décimo segundo período de Medicina",
     },
   ],
-  biology: [
-    {
-      id: "first",
-      title: "1º Período",
-      icon: <TestTube className="h-6 w-6 text-primary" />,
-      description: "Primeiro período de Biologia",
-    },
-    {
-      id: "second",
-      title: "2º Período",
-      icon: <TestTube className="h-6 w-6 text-primary" />,
-      description: "Segundo período de Biologia",
-    },
-    {
-      id: "third",
-      title: "3º Período",
-      icon: <TestTube className="h-6 w-6 text-primary" />,
-      description: "Terceiro período de Biologia",
-    },
-    {
-      id: "fourth",
-      title: "4º Período",
-      icon: <TestTube className="h-6 w-6 text-primary" />,
-      description: "Quarto período de Biologia",
-    },
-    {
-      id: "fifth",
-      title: "5º Período",
-      icon: <TestTube className="h-6 w-6 text-primary" />,
-      description: "Quinto período de Biologia",
-    },
-    {
-      id: "sixth",
-      title: "6º Período",
-      icon: <TestTube className="h-6 w-6 text-primary" />,
-      description: "Sexto período de Biologia",
-    },
-    {
-      id: "seventh",
-      title: "7º Período",
-      icon: <TestTube className="h-6 w-6 text-primary" />,
-      description: "Sétimo período de Biologia",
-    },
-    {
-      id: "eighth",
-      title: "8º Período",
-      icon: <TestTube className="h-6 w-6 text-primary" />,
-      description: "Oitavo período de Biologia",
-    },
-  ],
   psychology: [
     {
       id: "first",
@@ -340,54 +258,690 @@ export const semestersByCourse: Record<string, Semester[]> = {
       description: "Décimo período de Psicologia",
     },
   ],
-  geography: [
+  administration: [
     {
       id: "first",
       title: "1º Período",
-      icon: <Globe className="h-6 w-6 text-primary" />,
-      description: "Primeiro período de Geografia",
+      icon: <Briefcase className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Administração",
     },
     {
       id: "second",
       title: "2º Período",
-      icon: <Globe className="h-6 w-6 text-primary" />,
-      description: "Segundo período de Geografia",
+      icon: <Briefcase className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Administração",
     },
     {
       id: "third",
       title: "3º Período",
-      icon: <Globe className="h-6 w-6 text-primary" />,
-      description: "Terceiro período de Geografia",
+      icon: <Briefcase className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Administração",
     },
     {
       id: "fourth",
       title: "4º Período",
-      icon: <Globe className="h-6 w-6 text-primary" />,
-      description: "Quarto período de Geografia",
+      icon: <Briefcase className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Administração",
     },
     {
       id: "fifth",
       title: "5º Período",
-      icon: <Globe className="h-6 w-6 text-primary" />,
-      description: "Quinto período de Geografia",
+      icon: <Briefcase className="h-6 w-6 text-primary" />,
+      description: "Quinto período de Administração",
     },
     {
       id: "sixth",
       title: "6º Período",
-      icon: <Globe className="h-6 w-6 text-primary" />,
-      description: "Sexto período de Geografia",
+      icon: <Briefcase className="h-6 w-6 text-primary" />,
+      description: "Sexto período de Administração",
     },
     {
       id: "seventh",
       title: "7º Período",
-      icon: <Globe className="h-6 w-6 text-primary" />,
-      description: "Sétimo período de Geografia",
+      icon: <Briefcase className="h-6 w-6 text-primary" />,
+      description: "Sétimo período de Administração",
     },
     {
       id: "eighth",
       title: "8º Período",
-      icon: <Globe className="h-6 w-6 text-primary" />,
-      description: "Oitavo período de Geografia",
+      icon: <Briefcase className="h-6 w-6 text-primary" />,
+      description: "Oitavo período de Administração",
+    },
+  ],
+  agronomy: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <Leaf className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Agronomia",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <Leaf className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Agronomia",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <Leaf className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Agronomia",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <Leaf className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Agronomia",
+    },
+    {
+      id: "fifth",
+      title: "5º Período",
+      icon: <Leaf className="h-6 w-6 text-primary" />,
+      description: "Quinto período de Agronomia",
+    },
+    {
+      id: "sixth",
+      title: "6º Período",
+      icon: <Leaf className="h-6 w-6 text-primary" />,
+      description: "Sexto período de Agronomia",
+    },
+    {
+      id: "seventh",
+      title: "7º Período",
+      icon: <Leaf className="h-6 w-6 text-primary" />,
+      description: "Sétimo período de Agronomia",
+    },
+    {
+      id: "eighth",
+      title: "8º Período",
+      icon: <Leaf className="h-6 w-6 text-primary" />,
+      description: "Oitavo período de Agronomia",
+    },
+    {
+      id: "ninth",
+      title: "9º Período",
+      icon: <Leaf className="h-6 w-6 text-primary" />,
+      description: "Nono período de Agronomia",
+    },
+    {
+      id: "tenth",
+      title: "10º Período",
+      icon: <Leaf className="h-6 w-6 text-primary" />,
+      description: "Décimo período de Agronomia",
+    },
+  ],
+  accounting: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <Calculator className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Ciências Contábeis",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <Calculator className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Ciências Contábeis",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <Calculator className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Ciências Contábeis",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <Calculator className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Ciências Contábeis",
+    },
+    {
+      id: "fifth",
+      title: "5º Período",
+      icon: <Calculator className="h-6 w-6 text-primary" />,
+      description: "Quinto período de Ciências Contábeis",
+    },
+    {
+      id: "sixth",
+      title: "6º Período",
+      icon: <Calculator className="h-6 w-6 text-primary" />,
+      description: "Sexto período de Ciências Contábeis",
+    },
+    {
+      id: "seventh",
+      title: "7º Período",
+      icon: <Calculator className="h-6 w-6 text-primary" />,
+      description: "Sétimo período de Ciências Contábeis",
+    },
+    {
+      id: "eighth",
+      title: "8º Período",
+      icon: <Calculator className="h-6 w-6 text-primary" />,
+      description: "Oitavo período de Ciências Contábeis",
+    },
+  ],
+  law: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <Gavel className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Direito",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <Gavel className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Direito",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <Gavel className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Direito",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <Gavel className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Direito",
+    },
+    {
+      id: "fifth",
+      title: "5º Período",
+      icon: <Gavel className="h-6 w-6 text-primary" />,
+      description: "Quinto período de Direito",
+    },
+    {
+      id: "sixth",
+      title: "6º Período",
+      icon: <Gavel className="h-6 w-6 text-primary" />,
+      description: "Sexto período de Direito",
+    },
+    {
+      id: "seventh",
+      title: "7º Período",
+      icon: <Gavel className="h-6 w-6 text-primary" />,
+      description: "Sétimo período de Direito",
+    },
+    {
+      id: "eighth",
+      title: "8º Período",
+      icon: <Gavel className="h-6 w-6 text-primary" />,
+      description: "Oitavo período de Direito",
+    },
+  ],
+  physicalEducation: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <Dumbbell className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Educação Física",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <Dumbbell className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Educação Física",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <Dumbbell className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Educação Física",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <Dumbbell className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Educação Física",
+    },
+    {
+      id: "fifth",
+      title: "5º Período",
+      icon: <Dumbbell className="h-6 w-6 text-primary" />,
+      description: "Quinto período de Educação Física",
+    },
+    {
+      id: "sixth",
+      title: "6º Período",
+      icon: <Dumbbell className="h-6 w-6 text-primary" />,
+      description: "Sexto período de Educação Física",
+    },
+    {
+      id: "seventh",
+      title: "7º Período",
+      icon: <Dumbbell className="h-6 w-6 text-primary" />,
+      description: "Sétimo período de Educação Física",
+    },
+    {
+      id: "eighth",
+      title: "8º Período",
+      icon: <Dumbbell className="h-6 w-6 text-primary" />,
+      description: "Oitavo período de Educação Física",
+    },
+  ],
+  nursing: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <Syringe className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Enfermagem",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <Syringe className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Enfermagem",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <Syringe className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Enfermagem",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <Syringe className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Enfermagem",
+    },
+    {
+      id: "fifth",
+      title: "5º Período",
+      icon: <Syringe className="h-6 w-6 text-primary" />,
+      description: "Quinto período de Enfermagem",
+    },
+    {
+      id: "sixth",
+      title: "6º Período",
+      icon: <Syringe className="h-6 w-6 text-primary" />,
+      description: "Sexto período de Enfermagem",
+    },
+    {
+      id: "seventh",
+      title: "7º Período",
+      icon: <Syringe className="h-6 w-6 text-primary" />,
+      description: "Sétimo período de Enfermagem",
+    },
+    {
+      id: "eighth",
+      title: "8º Período",
+      icon: <Syringe className="h-6 w-6 text-primary" />,
+      description: "Oitavo período de Enfermagem",
+    },
+    {
+      id: "ninth",
+      title: "9º Período",
+      icon: <Syringe className="h-6 w-6 text-primary" />,
+      description: "Nono período de Enfermagem",
+    },
+    {
+      id: "tenth",
+      title: "10º Período",
+      icon: <Syringe className="h-6 w-6 text-primary" />,
+      description: "Décimo período de Enfermagem",
+    },
+  ],
+  civilEngineering: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <Hammer className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Engenharia Civil",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <Hammer className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Engenharia Civil",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <Hammer className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Engenharia Civil",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <Hammer className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Engenharia Civil",
+    },
+    {
+      id: "fifth",
+      title: "5º Período",
+      icon: <Hammer className="h-6 w-6 text-primary" />,
+      description: "Quinto período de Engenharia Civil",
+    },
+    {
+      id: "sixth",
+      title: "6º Período",
+      icon: <Hammer className="h-6 w-6 text-primary" />,
+      description: "Sexto período de Engenharia Civil",
+    },
+    {
+      id: "seventh",
+      title: "7º Período",
+      icon: <Hammer className="h-6 w-6 text-primary" />,
+      description: "Sétimo período de Engenharia Civil",
+    },
+    {
+      id: "eighth",
+      title: "8º Período",
+      icon: <Hammer className="h-6 w-6 text-primary" />,
+      description: "Oitavo período de Engenharia Civil",
+    },
+    {
+      id: "ninth",
+      title: "9º Período",
+      icon: <Hammer className="h-6 w-6 text-primary" />,
+      description: "Nono período de Engenharia Civil",
+    },
+    {
+      id: "tenth",
+      title: "10º Período",
+      icon: <Hammer className="h-6 w-6 text-primary" />,
+      description: "Décimo período de Engenharia Civil",
+    },
+  ],
+  physiotherapy: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <Activity className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Fisioterapia",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <Activity className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Fisioterapia",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <Activity className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Fisioterapia",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <Activity className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Fisioterapia",
+    },
+  ],
+  itManagement: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <Code className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Gestão de TI",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <Code className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Gestão de TI",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <Code className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Gestão de TI",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <Code className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Gestão de TI",
+    },
+  ],
+  literature: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Letras",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Letras",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Letras",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Letras",
+    },
+    {
+      id: "fifth",
+      title: "5º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Quinto período de Letras",
+    },
+    {
+      id: "sixth",
+      title: "6º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Sexto período de Letras",
+    },
+    {
+      id: "seventh",
+      title: "7º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Sétimo período de Letras",
+    },
+    {
+      id: "eighth",
+      title: "8º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Oitavo período de Letras",
+    },
+    {
+      id: "ninth",
+      title: "9º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Nono período de Letras",
+    },
+    {
+      id: "tenth",
+      title: "10º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Décimo período de Letras",
+    },
+    {
+      id: "eleventh",
+      title: "11º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Décimo primeiro período de Letras",
+    },
+    {
+      id: "twelfth",
+      title: "12º Período",
+      icon: <BookOpen className="h-6 w-6 text-primary" />,
+      description: "Décimo segundo período de Letras",
+    },
+  ],
+  veterinary: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <PawPrint className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Medicina Veterinária",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <PawPrint className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Medicina Veterinária",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <PawPrint className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Medicina Veterinária",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <PawPrint className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Medicina Veterinária",
+    },
+    {
+      id: "fifth",
+      title: "5º Período",
+      icon: <PawPrint className="h-6 w-6 text-primary" />,
+      description: "Quinto período de Medicina Veterinária",
+    },
+    {
+      id: "sixth",
+      title: "6º Período",
+      icon: <PawPrint className="h-6 w-6 text-primary" />,
+      description: "Sexto período de Medicina Veterinária",
+    },
+    {
+      id: "seventh",
+      title: "7º Período",
+      icon: <PawPrint className="h-6 w-6 text-primary" />,
+      description: "Sétimo período de Medicina Veterinária",
+    },
+    {
+      id: "eighth",
+      title: "8º Período",
+      icon: <PawPrint className="h-6 w-6 text-primary" />,
+      description: "Oitavo período de Medicina Veterinária",
+    },
+    {
+      id: "ninth",
+      title: "9º Período",
+      icon: <PawPrint className="h-6 w-6 text-primary" />,
+      description: "Nono período de Medicina Veterinária",
+    },
+    {
+      id: "tenth",
+      title: "10º Período",
+      icon: <PawPrint className="h-6 w-6 text-primary" />,
+      description: "Décimo período de Medicina Veterinária",
+    },
+  ],
+  dentistry: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <Smile className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Odontologia",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <Smile className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Odontologia",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <Smile className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Odontologia",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <Smile className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Odontologia",
+    },
+    {
+      id: "fifth",
+      title: "5º Período",
+      icon: <Smile className="h-6 w-6 text-primary" />,
+      description: "Quinto período de Odontologia",
+    },
+    {
+      id: "sixth",
+      title: "6º Período",
+      icon: <Smile className="h-6 w-6 text-primary" />,
+      description: "Sexto período de Odontologia",
+    },
+    {
+      id: "seventh",
+      title: "7º Período",
+      icon: <Smile className="h-6 w-6 text-primary" />,
+      description: "Sétimo período de Odontologia",
+    },
+    {
+      id: "eighth",
+      title: "8º Período",
+      icon: <Smile className="h-6 w-6 text-primary" />,
+      description: "Oitavo período de Odontologia",
+    },
+    {
+      id: "ninth",
+      title: "9º Período",
+      icon: <Smile className="h-6 w-6 text-primary" />,
+      description: "Nono período de Odontologia",
+    },
+    {
+      id: "tenth",
+      title: "10º Período",
+      icon: <Smile className="h-6 w-6 text-primary" />,
+      description: "Décimo período de Odontologia",
+    },
+  ],
+  pedagogy: [
+    {
+      id: "first",
+      title: "1º Período",
+      icon: <GraduationCap className="h-6 w-6 text-primary" />,
+      description: "Primeiro período de Pedagogia",
+    },
+    {
+      id: "second",
+      title: "2º Período",
+      icon: <GraduationCap className="h-6 w-6 text-primary" />,
+      description: "Segundo período de Pedagogia",
+    },
+    {
+      id: "third",
+      title: "3º Período",
+      icon: <GraduationCap className="h-6 w-6 text-primary" />,
+      description: "Terceiro período de Pedagogia",
+    },
+    {
+      id: "fourth",
+      title: "4º Período",
+      icon: <GraduationCap className="h-6 w-6 text-primary" />,
+      description: "Quarto período de Pedagogia",
+    },
+    {
+      id: "fifth",
+      title: "5º Período",
+      icon: <GraduationCap className="h-6 w-6 text-primary" />,
+      description: "Quinto período de Pedagogia",
+    },
+    {
+      id: "sixth",
+      title: "6º Período",
+      icon: <GraduationCap className="h-6 w-6 text-primary" />,
+      description: "Sexto período de Pedagogia",
+    },
+    {
+      id: "seventh",
+      title: "7º Período",
+      icon: <GraduationCap className="h-6 w-6 text-primary" />,
+      description: "Sétimo período de Pedagogia",
+    },
+    {
+      id: "eighth",
+      title: "8º Período",
+      icon: <GraduationCap className="h-6 w-6 text-primary" />,
+      description: "Oitavo período de Pedagogia",
     },
   ],
 };
@@ -396,7 +950,7 @@ export const disciplinesBySemesterAndDepartment: Record<
   string,
   Record<string, Discipline[]>
 > = {
-  cs: {
+  itManagement: {
     first: [
       {
         id: "intro-programming",
@@ -446,79 +1000,104 @@ export const disciplinesBySemesterAndDepartment: Record<
       },
     ],
   },
-  math: {
-    first: [
-      {
-        id: "calculus-1",
-        title: "Calculus I",
-        description: "Limits, derivatives, and applications",
-      },
-      {
-        id: "linear-algebra",
-        title: "Linear Algebra",
-        description: "Vector spaces, matrices, and linear transformations",
-      },
-    ],
-    second: [
-      {
-        id: "calculus-2",
-        title: "Calculus II",
-        description: "Integration techniques and applications",
-      },
-      {
-        id: "probability",
-        title: "Probability Theory",
-        description: "Fundamentals of probability and random variables",
-      },
-    ],
-    third: [
-      {
-        id: "statistics",
-        title: "Statistics",
-        description: "Statistical methods and data analysis",
-      },
-      {
-        id: "differential-equations",
-        title: "Differential Equations",
-        description: "Solving and applications of differential equations",
-      },
-    ],
-    fourth: [
-      {
-        id: "numerical-methods",
-        title: "Numerical Methods",
-        description: "Computational techniques for mathematical problems",
-      },
-      {
-        id: "math-modeling",
-        title: "Mathematical Modeling",
-        description: "Building and analyzing mathematical models",
-      },
-    ],
-  },
   medicine: {
     first: [
       {
         id: "anatomy-1",
-        title: "Human Anatomy I",
+        title: "Anatomia Aplicada a Medicina I",
         description: "Structure of the human body",
       },
       {
-        id: "biochemistry",
-        title: "Medical Biochemistry",
+        id: "2",
+        title: "Genética Geral",
+        description: "Biochemical processes in the human body",
+      },
+      {
+        id: "3",
+        title: "Biologia Celular e Molecular",
+        description: "Biochemical processes in the human body",
+      },
+      {
+        id: "4",
+        title: "Biofísica Médica",
+        description: "Biochemical processes in the human body",
+      },
+      {
+        id: "5",
+        title: "Embriologia",
+        description: "Biochemical processes in the human body",
+      },
+      {
+        id: "6",
+        title: "Bioética",
+        description: "Biochemical processes in the human body",
+      },
+      {
+        id: "7",
+        title: "Fisiologia Humana I",
+        description: "Biochemical processes in the human body",
+      },
+      {
+        id: "8",
+        title: "Casos Clinicos Colaborativos I",
+        description: "Biochemical processes in the human body",
+      },
+      {
+        id: "9",
+        title: "Habilidades Médicas I",
+        description: "Biochemical processes in the human body",
+      },
+      {
+        id: "10",
+        title: "MISCO - Medicina Integrada à Comunidade I",
         description: "Biochemical processes in the human body",
       },
     ],
     second: [
       {
-        id: "physiology",
-        title: "Human Physiology",
-        description: "Functions of the human body systems",
+        id: "anatomy-1",
+        title: "Anatomia Aplicada a Medicina II",
+        description: "Structure of the human body",
       },
       {
-        id: "histology",
-        title: "Histology",
-        description: "Microscopic structure of tissues",
+        id: "",
+        title: "Psicologia Médica",
+        description: "Biochemical processes in the human body",
+      },
+      {
+        id: "",
+        title: "Metodologia Científica",
+        description: "Biochemical processes in the human body",
+      },
+      {
+        id: "biochemistry",
+        title: "Bioquímica I",
+        description: "Biochemical processes in the human body",
+      },
+      {
+        id: "",
+        title: "Histologia Humana I",
+        description: "Biochemical processes in the human body",
+      },
+      {
+        id: "",
+        title: "Parasitologia Médica",
+        description: "Biochemical processes in the human body",
+      },
+      {
+        id: "",
+        title: "Habilidades Médicas II",
+        description: "Biochemical processes in the human body",
+      },
+      {
+        id: "",
+        title: "Casos Clinicos Colaborativos II",
+        description: "Biochemical processes in the human body",
+      },
+      {
+        id: "",
+        title: "MISCO - Medicina Integrada à Comunidade II",
+        description: "Biochemical processes in the human body",
       },
     ],
     third: [
@@ -543,56 +1122,6 @@ export const disciplinesBySemesterAndDepartment: Record<
         id: "medical-ethics",
         title: "Medical Ethics",
         description: "Ethical issues in medicine",
-      },
-    ],
-  },
-  biology: {
-    first: [
-      {
-        id: "cell-biology",
-        title: "Cell Biology",
-        description: "Structure and function of cells",
-      },
-      {
-        id: "genetics",
-        title: "Genetics",
-        description: "Principles of inheritance and gene expression",
-      },
-    ],
-    second: [
-      {
-        id: "ecology",
-        title: "Ecology",
-        description: "Interactions between organisms and their environment",
-      },
-      {
-        id: "evolution",
-        title: "Evolutionary Biology",
-        description: "Mechanisms and evidence for evolution",
-      },
-    ],
-    third: [
-      {
-        id: "microbiology",
-        title: "Microbiology",
-        description: "Study of microorganisms",
-      },
-      {
-        id: "botany",
-        title: "Botany",
-        description: "Structure and function of plants",
-      },
-    ],
-    fourth: [
-      {
-        id: "zoology",
-        title: "Zoology",
-        description: "Study of animals",
-      },
-      {
-        id: "marine-biology",
-        title: "Marine Biology",
-        description: "Study of marine organisms and ecosystems",
       },
     ],
   },
@@ -644,58 +1173,6 @@ export const disciplinesBySemesterAndDepartment: Record<
         id: "health",
         title: "Health Psychology",
         description: "Psychological factors in health and illness",
-      },
-    ],
-  },
-  geography: {
-    first: [
-      {
-        id: "physical-geo",
-        title: "Physical Geography",
-        description: "Natural features and processes of the Earth",
-      },
-      {
-        id: "human-geo",
-        title: "Human Geography",
-        description:
-          "Human activities and their relationship to the environment",
-      },
-    ],
-    second: [
-      {
-        id: "cartography",
-        title: "Cartography",
-        description: "Map making and spatial representation",
-      },
-      {
-        id: "climate",
-        title: "Climatology",
-        description: "Study of climate and climate change",
-      },
-    ],
-    third: [
-      {
-        id: "gis",
-        title: "Geographic Information Systems",
-        description:
-          "Computer systems for capturing and analyzing spatial data",
-      },
-      {
-        id: "urban",
-        title: "Urban Geography",
-        description: "Study of cities and urban areas",
-      },
-    ],
-    fourth: [
-      {
-        id: "economic-geo",
-        title: "Economic Geography",
-        description: "Spatial distribution of economic activities",
-      },
-      {
-        id: "environmental",
-        title: "Environmental Geography",
-        description: "Human-environment interactions and sustainability",
       },
     ],
   },
