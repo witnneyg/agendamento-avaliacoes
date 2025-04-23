@@ -84,12 +84,15 @@ export function BookingConfirmation({
       <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
         <Button
           variant="outline"
-          className="flex-1"
+          className="flex-1 cursor-pointer"
           onClick={onScheduleAnother}
         >
           Agendar outro
         </Button>
-        <Button className="flex-1">Adicionar ao calendário</Button>
+
+        <Button variant="default" className="cursor-pointer">
+          Ver meu calendário
+        </Button>
       </div>
     </div>
   );

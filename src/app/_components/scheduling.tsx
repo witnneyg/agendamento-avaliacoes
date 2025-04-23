@@ -25,6 +25,7 @@ import {
   semestersByCourse,
 } from "../mocks";
 import { Semester, SemesterSelector } from "./semester-selector";
+import { useAppointments } from "../context/appointment";
 
 type Step =
   | "course"
@@ -43,6 +44,7 @@ type BookingDetails = {
 };
 
 export function AppointmentScheduler() {
+  const { addAppointment } = useAppointments();
   const [step, setStep] = useState<Step>("course");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | undefined>(
@@ -90,6 +92,23 @@ export function AppointmentScheduler() {
 
   const handleDetailsSubmit = (details: BookingDetails) => {
     setBookingDetails(details);
+
+    if (
+      selectedCourse &&
+      selectedSemester &&
+      selectedDate &&
+      selectedTime &&
+      selectedDiscipline
+    ) {
+      addAppointment({
+        course: selectedCourse,
+        semester: selectedSemester,
+        date: selectedDate,
+        time: selectedTime,
+        discipline: selectedDiscipline,
+        details,
+      });
+    }
     setStep("confirmation");
   };
 
