@@ -4,7 +4,6 @@ import { useState } from "react";
 import { format, startOfWeek, addDays, isSameDay } from "date-fns";
 import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-// import { useAppointments } from "@/context/appointment-context";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -23,74 +22,33 @@ import { useRouter } from "next/navigation";
 import { academicCourses } from "../mocks";
 import { NavBar } from "../_components/navbar";
 import { ptBR } from "date-fns/locale";
+import { useAppointments } from "../context/appointment";
 
-// Function to get color for each department
 const getDepartmentColor = (departmentId: string) => {
   const colors: Record<string, string> = {
-    cs: "bg-blue-100 border-blue-500 text-blue-800",
-    medicine: "bg-green-100 border-green-500 text-green-800",
-    math: "bg-purple-100 border-purple-500 text-purple-800",
-    biology: "bg-yellow-100 border-yellow-500 text-yellow-800",
-    psychology: "bg-pink-100 border-pink-500 text-pink-800",
-    geography: "bg-orange-100 border-orange-500 text-orange-800",
+    itManagement: "bg-teal-500 border-teal-600 text-teal-100",
+    medicine: "bg-emerald-500 border-emerald-600 text-emerald-100",
+    psychology: "bg-indigo-500 border-indigo-600 text-indigo-100",
+    administration: "bg-amber-500 border-amber-600 text-amber-100",
+    agronomy: "bg-pink-500 border-pink-600 text-pink-100",
+    accounting: "bg-orange-500 border-orange-600 text-orange-100",
+    law: "bg-red-500 border-red-600 text-red-100",
+    physicalEducation: "bg-yellow-500 border-yellow-600 text-yellow-100",
+    nursing: "bg-lime-500 border-lime-600 text-lime-100",
+    civilEngineering: "bg-blue-500 border-blue-600 text-blue-100",
+    physiotherapy: "bg-cyan-500 border-cyan-600 text-cyan-100",
+    literature: "bg-purple-500 border-purple-600 text-purple-100",
+    veterinary: "bg-gray-500 border-brown-600 text-brown-100",
+    dentistry: "bg-gray-500 border-gray-600 text-gray-100",
+    pedagogy: "bg-green-500 border-green-600 text-green-100",
   };
-  return colors[departmentId] || "bg-gray-100 border-gray-500 text-gray-800";
+  return colors[departmentId] || "bg-gray-500 border-gray-500 text-gray-800";
 };
 
-// Time slots for the calendar
 const timeSlots = Array.from({ length: 12 }, (_, i) => i + 8); // 8 AM to 7 PM
 
 export default function CalendarPage() {
-  // const { appointments, removeAppointment } = useAppointments();
-  const appointments = [
-    {
-      id: "1",
-      course: {
-        id: "course-1",
-        name: "Engenharia de Software",
-      },
-      semester: {
-        id: "sem-1",
-        name: "1º Semestre de 2025",
-      },
-      discipline: {
-        id: "disc-1",
-        name: "Programação Orientada a Objetos",
-      },
-      date: new Date("2025-05-10"),
-      time: "10:00",
-      details: {
-        name: "João da Silva",
-        email: "joao@example.com",
-        phone: "11999999999",
-        notes: "Gostaria de discutir o projeto final.",
-      },
-    },
-    {
-      id: "2",
-      course: {
-        id: "course-2",
-        name: "Ciência da Computação",
-      },
-      semester: {
-        id: "sem-2",
-        name: "2º Semestre de 2025",
-      },
-      discipline: {
-        id: "disc-2",
-        name: "Estrutura de Dados",
-      },
-      date: new Date("2025-05-12"),
-      time: "14:30",
-      details: {
-        name: "Maria Oliveira",
-        email: "maria@example.com",
-        phone: "21988888888",
-        notes: "Precisa de ajuda com a atividade da semana.",
-      },
-    },
-  ];
-
+  const { appointments, removeAppointment } = useAppointments();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [visibleDepartments, setVisibleDepartments] = useState<
     Record<string, boolean>
@@ -99,24 +57,18 @@ export default function CalendarPage() {
   );
   const [view, setView] = useState<"week" | "day">("week");
   const router = useRouter();
-
-  // Calculate the days to display based on the current view
   const daysToShow = view === "week" ? 7 : 1;
   const startDate =
     view === "week"
       ? startOfWeek(currentDate, { weekStartsOn: 0 })
       : currentDate;
-
   const days = Array.from({ length: daysToShow }, (_, i) =>
     addDays(startDate, i)
   );
-
-  // Filter appointments based on visible departments
   const filteredAppointments = appointments.filter(
     (appointment) => visibleDepartments[appointment.course.id]
   );
 
-  // Navigate to previous/next week or day
   const navigatePrevious = () => {
     setCurrentDate((prev) => addDays(prev, view === "week" ? -7 : -1));
   };
@@ -125,7 +77,6 @@ export default function CalendarPage() {
     setCurrentDate((prev) => addDays(prev, view === "week" ? 7 : 1));
   };
 
-  // Toggle department visibility
   const toggleDepartment = (departmentId: string) => {
     setVisibleDepartments((prev) => ({
       ...prev,
@@ -133,7 +84,6 @@ export default function CalendarPage() {
     }));
   };
 
-  // Handle new appointment
   const handleNewAppointment = () => {
     router.push("/");
   };
@@ -141,8 +91,8 @@ export default function CalendarPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <NavBar />
-      <div className="flex flex-1 overflow-hidden">
-        <aside className="w-72 border-r p-4 flex flex-col h-[calc(100vh-4rem)] overflow-y-auto">
+      <div className="flex flex-1">
+        <aside className="w-72 border-r p-4 flex flex-col overflow-y-auto">
           <div className="mb-6">
             <Button
               onClick={handleNewAppointment}
@@ -169,20 +119,18 @@ export default function CalendarPage() {
               {academicCourses.map((course) => (
                 <div key={course.id} className="flex items-center space-x-2">
                   <Checkbox
-                    id={`dept-${course.id}`}
+                    id={course.id}
                     checked={visibleDepartments[course.id]}
                     onCheckedChange={() => toggleDepartment(course.id)}
                   />
                   <div
                     className={cn(
-                      "w-3 h-3 rounded-full",
+                      "w-3 h-3 rounded-full flex-shrink-0",
                       getDepartmentColor(course.id)
-                        .split(" ")[1]
-                        .replace("border", "bg")
                     )}
                   />
                   <label
-                    htmlFor={`dept-${course.id}`}
+                    htmlFor={course.id}
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
                     {course.title}
@@ -193,7 +141,7 @@ export default function CalendarPage() {
           </div>
         </aside>
 
-        <main className="flex-1 flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+        <main className="flex-1 flex flex-col">
           <div className="p-4 border-b flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Button variant="outline" size="icon" onClick={navigatePrevious}>
@@ -230,15 +178,14 @@ export default function CalendarPage() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto h-full">
             <div className="flex h-full">
               <div className="w-16 flex-shrink-0 border-r">
                 <div className="h-12 border-b"></div> {/* Header spacer */}
                 {timeSlots.map((hour) => (
                   <div key={hour} className="h-20 border-b relative">
                     <span className="absolute -top-2 right-2 text-xs text-gray-500">
-                      {hour % 12 === 0 ? 12 : hour % 12}{" "}
-                      {hour < 12 ? "AM" : "PM"}
+                      {String(hour).padStart(2, "0")}:00
                     </span>
                   </div>
                 ))}
@@ -246,7 +193,10 @@ export default function CalendarPage() {
 
               <div className="flex-1 flex">
                 {days.map((day, dayIndex) => (
-                  <div key={dayIndex} className="flex-1 min-w-[120px] border-r">
+                  <div
+                    key={dayIndex}
+                    className="flex-1 min-w-[120px] border-r "
+                  >
                     {/* Day header */}
                     <div className="h-12 border-b flex flex-col items-center justify-center">
                       <div className="text-xs text-gray-500">
@@ -271,34 +221,23 @@ export default function CalendarPage() {
                           {filteredAppointments
                             .filter((appointment) => {
                               const appointmentDate = appointment.date;
+                              const [hourStr] = appointment.time.split(":");
                               const appointmentHour = Number.parseInt(
-                                appointment.time.split(":")[0]
+                                hourStr,
+                                10
                               );
-                              const isPM =
-                                appointment.time.includes("PM") &&
-                                appointmentHour !== 12;
-                              const hour24 = isPM
-                                ? appointmentHour + 12
-                                : appointmentHour;
 
                               return (
                                 isSameDay(appointmentDate, day) &&
-                                hour24 === hour
+                                appointmentHour === hour
                               );
                             })
                             .map((appointment) => {
-                              const timeMatch =
-                                appointment.time.match(/(\d+):(\d+) (AM|PM)/);
-                              if (!timeMatch) return null;
-
-                              const [_, hourStr, minuteStr, ampm] = timeMatch;
-                              let hour = Number.parseInt(hourStr);
-                              if (ampm === "PM" && hour !== 12) hour += 12;
-                              if (ampm === "AM" && hour === 12) hour = 0;
-
-                              const minute = Number.parseInt(minuteStr);
+                              const [hourStr, minuteStr] =
+                                appointment.time.split(":");
+                              const hour = Number.parseInt(hourStr, 10);
+                              const minute = Number.parseInt(minuteStr, 10);
                               const topOffset = (minute / 60) * 100;
-
                               return (
                                 <div
                                   key={appointment.id}
@@ -314,12 +253,13 @@ export default function CalendarPage() {
                                   <div className="flex justify-between items-start">
                                     <div className="overflow-hidden">
                                       <div className="font-medium text-xs truncate">
-                                        {/* {appointment.discipline.title} */}
-                                        {"title"}
+                                        {appointment.discipline.title}
                                       </div>
                                       <div className="text-xs truncate">
-                                        {/* {appointment.details.name} */}
-                                        {"name"}
+                                        {appointment.details.name}
+                                      </div>
+                                      <div className="text-xs truncate">
+                                        {appointment.time}
                                       </div>
                                     </div>
                                     <AlertDialog>
@@ -335,25 +275,25 @@ export default function CalendarPage() {
                                       <AlertDialogContent>
                                         <AlertDialogHeader>
                                           <AlertDialogTitle>
-                                            Cancel Appointment
+                                            Excluir Agendamento
                                           </AlertDialogTitle>
                                           <AlertDialogDescription>
-                                            Are you sure you want to cancel this
-                                            appointment? This action cannot be
-                                            undone.
+                                            Tem certeza de que deseja excluir
+                                            este agendamento? Essa ação não
+                                            poderá ser desfeita.
                                           </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                           <AlertDialogCancel>
-                                            Keep Appointment
+                                            Manter Agendamento
                                           </AlertDialogCancel>
                                           <AlertDialogAction
                                             className="bg-red-500 hover:bg-red-600"
-                                            // onClick={() =>
-                                            //   removeAppointment(appointment.id)
-                                            // }
+                                            onClick={() =>
+                                              removeAppointment(appointment.id)
+                                            }
                                           >
-                                            Cancel Appointment
+                                            Excluir Agendamento
                                           </AlertDialogAction>
                                         </AlertDialogFooter>
                                       </AlertDialogContent>
