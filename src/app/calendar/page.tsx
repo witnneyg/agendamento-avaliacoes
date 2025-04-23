@@ -45,7 +45,7 @@ const getDepartmentColor = (departmentId: string) => {
   return colors[departmentId] || "bg-gray-500 border-gray-500 text-gray-800";
 };
 
-const timeSlots = Array.from({ length: 12 }, (_, i) => i + 8); // 8 AM to 7 PM
+const timeSlots = Array.from({ length: 12 }, (_, i) => i + 8);
 
 export default function CalendarPage() {
   const { appointments, removeAppointment } = useAppointments();
@@ -96,7 +96,7 @@ export default function CalendarPage() {
           <div className="mb-6">
             <Button
               onClick={handleNewAppointment}
-              className="w-full flex items-center gap-2"
+              className="w-full flex items-center gap-2 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               Novo Agendamento
@@ -108,7 +108,7 @@ export default function CalendarPage() {
               mode="single"
               selected={currentDate}
               onSelect={(date) => date && setCurrentDate(date)}
-              className="rounded-md border"
+              className="rounded-md border "
               locale={ptBR}
             />
           </div>
@@ -122,6 +122,7 @@ export default function CalendarPage() {
                     id={course.id}
                     checked={visibleDepartments[course.id]}
                     onCheckedChange={() => toggleDepartment(course.id)}
+                    className="cursor-pointer"
                   />
                   <div
                     className={cn(
@@ -131,7 +132,7 @@ export default function CalendarPage() {
                   />
                   <label
                     htmlFor={course.id}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    className="text-sm font-medium leading-none cursor-pointer"
                   >
                     {course.title}
                   </label>
@@ -144,10 +145,20 @@ export default function CalendarPage() {
         <main className="flex-1 flex flex-col">
           <div className="p-4 border-b flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={navigatePrevious}>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={navigatePrevious}
+                className="cursor-pointer"
+              >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" onClick={navigateNext}>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={navigateNext}
+                className="cursor-pointer"
+              >
                 <ChevronRight className="h-4 w-4" />
               </Button>
               <h2 className="text-xl font-semibold ml-2">
@@ -165,6 +176,7 @@ export default function CalendarPage() {
                 variant={view === "day" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setView("day")}
+                className="cursor-pointer"
               >
                 Dia
               </Button>
@@ -172,6 +184,7 @@ export default function CalendarPage() {
                 variant={view === "week" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setView("week")}
+                className="cursor-pointer"
               >
                 Semana
               </Button>
@@ -181,7 +194,9 @@ export default function CalendarPage() {
           <div className="flex-1 overflow-y-auto h-full">
             <div className="flex h-full">
               <div className="w-16 flex-shrink-0 border-r">
-                <div className="h-12 border-b"></div> {/* Header spacer */}
+                <div className="h-12 border-b text-xs text-gray-500 flex items-center justify-center">
+                  GMT-03
+                </div>
                 {timeSlots.map((hour) => (
                   <div key={hour} className="h-20 border-b relative">
                     <span className="absolute -top-2 right-2 text-xs text-gray-500">
@@ -197,10 +212,12 @@ export default function CalendarPage() {
                     key={dayIndex}
                     className="flex-1 min-w-[120px] border-r "
                   >
-                    {/* Day header */}
                     <div className="h-12 border-b flex flex-col items-center justify-center">
                       <div className="text-xs text-gray-500">
-                        {format(day, "EEE", { locale: ptBR })}
+                        {format(day, "EEE", { locale: ptBR })
+                          .charAt(0)
+                          .toUpperCase() +
+                          format(day, "EEE", { locale: ptBR }).slice(1)}
                       </div>
                       <div
                         className={cn(
@@ -217,7 +234,6 @@ export default function CalendarPage() {
                     <div>
                       {timeSlots.map((hour) => (
                         <div key={hour} className="h-20 border-b relative">
-                          {/* Render appointments for this day and hour */}
                           {filteredAppointments
                             .filter((appointment) => {
                               const appointmentDate = appointment.date;
@@ -237,7 +253,7 @@ export default function CalendarPage() {
                                 appointment.time.split(":");
                               const hour = Number.parseInt(hourStr, 10);
                               const minute = Number.parseInt(minuteStr, 10);
-                              const topOffset = (minute / 60) * 100;
+                              const topOffset = (minute / 60) * 100 + 3;
                               return (
                                 <div
                                   key={appointment.id}
@@ -267,7 +283,7 @@ export default function CalendarPage() {
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-5 w-5 text-red-500 hover:text-red-600 -mt-1 -mr-1"
+                                          className="h-5 w-5 text-red-500 hover:text-red-600 -mt-1 -mr-1 cursor-pointer"
                                         >
                                           <Trash2 className="h-3 w-3" />
                                         </Button>
@@ -288,7 +304,7 @@ export default function CalendarPage() {
                                             Manter Agendamento
                                           </AlertDialogCancel>
                                           <AlertDialogAction
-                                            className="bg-red-500 hover:bg-red-600"
+                                            className="bg-red-500 hover:bg-red-600 cursor-pointer"
                                             onClick={() =>
                                               removeAppointment(appointment.id)
                                             }

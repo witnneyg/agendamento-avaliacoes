@@ -2,11 +2,12 @@
 
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Router } from "lucide-react";
 import { Course } from "./course-selector";
 import { Semester } from "./semester-selector";
 import { Discipline } from "./discipline-selector";
 import { ptBR } from "date-fns/locale";
+import { useRouter } from "next/navigation";
 
 interface BookingConfirmationProps {
   course: Course;
@@ -32,6 +33,12 @@ export function BookingConfirmation({
   discipline,
   onScheduleAnother,
 }: BookingConfirmationProps) {
+  const router = useRouter();
+
+  function handleViewCalendar() {
+    router.push("calendar");
+  }
+
   return (
     <div className="flex flex-col items-center space-y-6 py-4">
       <div className="flex flex-col items-center text-center">
@@ -90,7 +97,11 @@ export function BookingConfirmation({
           Agendar outro
         </Button>
 
-        <Button variant="default" className="cursor-pointer">
+        <Button
+          variant="default"
+          className="cursor-pointer"
+          onClick={handleViewCalendar}
+        >
           Ver meu calendário
         </Button>
       </div>

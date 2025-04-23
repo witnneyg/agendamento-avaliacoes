@@ -47,7 +47,6 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
       prev.filter((appointment) => appointment.id !== id)
     );
   }
-  console.log(appointments);
 
   return (
     <AppointmentContext.Provider

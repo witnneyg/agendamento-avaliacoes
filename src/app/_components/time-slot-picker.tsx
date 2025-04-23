@@ -10,7 +10,6 @@ interface TimeSlotPickerProps {
 }
 
 const generateTimeSlots = (date: Date) => {
-  console.log(date);
   const slots = [
     "09:00",
     "09:30",
