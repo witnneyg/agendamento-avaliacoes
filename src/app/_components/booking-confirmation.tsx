@@ -23,7 +23,6 @@ interface BookingConfirmationProps {
   discipline: Discipline;
   onScheduleAnother: () => void;
 }
-
 export function BookingConfirmation({
   course,
   semester,
