@@ -1,6 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import clsx from "clsx";
 import { ChevronLeft } from "lucide-react";
 
 interface TimeSlotPickerProps {
@@ -54,7 +56,7 @@ export function TimeSlotPicker({
             variant={slot.available ? "outline" : "ghost"}
             className={
               slot.available
-                ? "hover:bg-primary/10"
+                ? "hover:bg-primary/10 cursor-pointer"
                 : "opacity-50 cursor-not-allowed"
             }
             disabled={!slot.available}

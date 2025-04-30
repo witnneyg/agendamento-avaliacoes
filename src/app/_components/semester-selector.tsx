@@ -46,7 +46,9 @@ export function SemesterSelector({
                 <p className="text-sm text-muted-foreground">
                   {semester.description}
                 </p>
-                <Button className="mt-2 w-full">Selecionar</Button>
+                <Button className="mt-2 w-full cursor-pointer">
+                  Selecionar
+                </Button>
               </div>
             </CardContent>
           </Card>

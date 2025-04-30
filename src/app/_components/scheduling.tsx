@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -10,8 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ChevronLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Course, CourseSelector } from "./course-selector";
 import { TimeSlotPicker } from "./time-slot-picker";
 import { BookingForm } from "./booking-form";
@@ -26,6 +23,7 @@ import {
 } from "../mocks";
 import { Semester, SemesterSelector } from "./semester-selector";
 import { useAppointments } from "../context/appointment";
+import { CalendarDate } from "./calendar-date";
 
 type Step =
   | "course"
@@ -43,7 +41,7 @@ type BookingDetails = {
   notes: string;
 };
 
-export function AppointmentScheduler() {
+export function Scheduling() {
   const { addAppointment } = useAppointments();
   const [step, setStep] = useState<Step>("course");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -188,31 +186,11 @@ export function AppointmentScheduler() {
           />
         )}
         {step === "date" && (
-          <div className="flex flex-col space-y-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setStep("discipline")}
-              className="self-start mb-2"
-            >
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Voltar a disciplinas
-            </Button>
-            <div className="flex justify-center">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={handleDateSelect}
-                disabled={(date) =>
-                  date < new Date() ||
-                  date.getDay() === 0 ||
-                  date.getDay() === 6
-                }
-                locale={ptBR}
-                className="rounded-md border"
-              />
-            </div>
-          </div>
+          <CalendarDate
+            date={selectedDate}
+            onSelectDate={handleDateSelect}
+            onBack={() => setStep("discipline")}
+          />
         )}
         {step === "time" && selectedDate && (
           <TimeSlotPicker

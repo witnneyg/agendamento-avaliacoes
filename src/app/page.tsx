@@ -1,5 +1,5 @@
 import { NavBar } from "./_components/navbar";
-import { AppointmentScheduler } from "./_components/scheduling";
+import { Scheduling } from "./_components/scheduling";
 
 export default function Home() {
   return (
@@ -14,7 +14,7 @@ export default function Home() {
             Selecione seu curso, disciplina, turma, data e horário convenientes
             para você e, em seguida, receba um e-mail de confirmação.
           </p>
-          <AppointmentScheduler />
+          <Scheduling />
         </div>
       </main>
     </>
