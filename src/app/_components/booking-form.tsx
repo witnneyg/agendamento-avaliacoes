@@ -6,9 +6,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ChevronLeft } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { teacherByDisciplines } from "../mocks";
+import { Course } from "./course-selector";
 
 interface BookingFormProps {
   onSubmit: (details: {
@@ -18,10 +29,11 @@ interface BookingFormProps {
     notes: string;
   }) => void;
   onBack: () => void;
+  course: Course;
 }
 
 const bookingSchema = z.object({
-  name: z.string().nonempty("O nome deve ser obrigatório"),
+  name: z.string().nonempty("Selecione o nome"),
   email: z
     .string()
     .email("Email inválido")
@@ -50,10 +62,11 @@ const bookingSchema = z.object({
 
 type BookingSchema = z.infer<typeof bookingSchema>;
 
-export function BookingForm({ onSubmit, onBack }: BookingFormProps) {
+export function BookingForm({ onSubmit, onBack, course }: BookingFormProps) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<BookingSchema>({
     resolver: zodResolver(bookingSchema),
@@ -78,11 +91,26 @@ export function BookingForm({ onSubmit, onBack }: BookingFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="name">Nome completo</Label>
-        <Input
-          id="name"
-          placeholder="Nome"
-          {...register("name")}
-          className={errors.name ? "border-red-500" : ""}
+        <Controller
+          control={control}
+          name="name"
+          render={({ field }) => (
+            <Select onValueChange={field.onChange} value={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o nome" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Professor</SelectLabel>
+                  {teacherByDisciplines[course.id].map((teacher, index) => (
+                    <SelectItem key={index} value={teacher}>
+                      {teacher}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          )}
         />
         {errors.name && (
           <p className="text-red-500 text-sm">{errors.name.message}</p>

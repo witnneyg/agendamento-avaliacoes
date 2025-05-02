@@ -1060,12 +1060,12 @@ export const disciplinesBySemesterAndDepartment: Record<
         description: "Structure of the human body",
       },
       {
-        id: "",
+        id: "2",
         title: "Psicologia Médica",
         description: "Biochemical processes in the human body",
       },
       {
-        id: "",
+        id: "3",
         title: "Metodologia Científica",
         description: "Biochemical processes in the human body",
       },
@@ -1075,27 +1075,27 @@ export const disciplinesBySemesterAndDepartment: Record<
         description: "Biochemical processes in the human body",
       },
       {
-        id: "",
+        id: "4",
         title: "Histologia Humana I",
         description: "Biochemical processes in the human body",
       },
       {
-        id: "",
+        id: "5",
         title: "Parasitologia Médica",
         description: "Biochemical processes in the human body",
       },
       {
-        id: "",
+        id: "6",
         title: "Habilidades Médicas II",
         description: "Biochemical processes in the human body",
       },
       {
-        id: "",
+        id: "7",
         title: "Casos Clinicos Colaborativos II",
         description: "Biochemical processes in the human body",
       },
       {
-        id: "",
+        id: "8",
         title: "MISCO - Medicina Integrada à Comunidade II",
         description: "Biochemical processes in the human body",
       },
@@ -1176,4 +1176,29 @@ export const disciplinesBySemesterAndDepartment: Record<
       },
     ],
   },
+};
+
+export const teacherByDisciplines: Record<string, string[]> = {
+  itManagement: ["Vinicius", "Pauliane", "Paulo", "Reginaldo", "Messias"],
+  medicine: [
+    "medicina prof1",
+    "medicina prof2",
+    "medicina prof3",
+    "medicina prof4",
+    "medicina prof5",
+  ],
+  psychology: [
+    "psicologia prof1",
+    "psicologia prof2",
+    "psicologia prof3",
+    "psicologia prof4",
+    "psicologia prof5",
+  ],
+  administration: [
+    "adm prof1",
+    "adm prof2",
+    "adm prof3",
+    "adm prof4",
+    "adm prof5",
+  ],
 };

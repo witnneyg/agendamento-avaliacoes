@@ -199,12 +199,16 @@ export function Scheduling() {
             onBack={() => setStep("date")}
           />
         )}
-        {step === "details" && selectedDate && selectedTime && (
-          <BookingForm
-            onSubmit={handleDetailsSubmit}
-            onBack={() => setStep("time")}
-          />
-        )}
+        {step === "details" &&
+          selectedDate &&
+          selectedTime &&
+          selectedCourse && (
+            <BookingForm
+              onSubmit={handleDetailsSubmit}
+              course={selectedCourse}
+              onBack={() => setStep("time")}
+            />
+          )}
         {step === "confirmation" &&
           bookingDetails &&
           selectedDate &&
