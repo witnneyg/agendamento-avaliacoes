@@ -283,9 +283,9 @@ export default function CalendarPage() {
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-5 w-5 text-red-500 hover:text-red-600 -mt-1 -mr-1 cursor-pointer"
+                                          className="h-5 w-5 text-red-500 hover:text-red-600 hover:bg-transparent -mt-1 -mr-1 cursor-pointer "
                                         >
-                                          <Trash2 className="h-3 w-3" />
+                                          <Trash2 className="h-3 w-3 border-none" />
                                         </Button>
                                       </AlertDialogTrigger>
                                       <AlertDialogContent>
@@ -300,7 +300,7 @@ export default function CalendarPage() {
                                           </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
-                                          <AlertDialogCancel>
+                                          <AlertDialogCancel className="cursor-pointer">
                                             Manter Agendamento
                                           </AlertDialogCancel>
                                           <AlertDialogAction
