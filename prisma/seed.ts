@@ -1,12 +1,18 @@
-import { PrismaClient } from "@prisma/client";
+import { Period, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.scheduling.deleteMany();
+  await prisma.discipline.deleteMany();
+  await prisma.semester.deleteMany();
+  await prisma.course.deleteMany();
+
   const course = await prisma.course.create({
     data: {
       name: "Engenharia de Software",
       description: "Curso voltado para desenvolvimento de sistemas.",
+      periods: [Period.EVENING],
       semester: {
         create: [
           {

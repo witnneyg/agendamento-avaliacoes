@@ -49,7 +49,7 @@ model Discipline {
 model Scheduling {
   id    String   @id @default(uuid())
   name  String
-  email String   @unique
+  email String
   phone String
   notes String?
   date  DateTime
