@@ -1,4 +1,4 @@
-import { Course } from "./_components/course-selector";
+import { Course, Period } from "./_components/course-selector";
 import { Discipline } from "./_components/discipline-selector";
 import { Semester } from "./_components/semester-selector";
 
@@ -28,24 +28,28 @@ export const academicCourses: Course[] = [
     icon: <Code className="h-6 w-6 text-primary" />,
     description:
       "Programação, algoritmos, ciência de dados e inteligência artificial",
+    periods: [Period.EVENING],
   },
   {
     id: "medicine",
     title: "Medicina",
     icon: <Microscope className="h-6 w-6 text-primary" />,
     description: "Ciências médicas, saúde e estudos clínicos",
+    periods: [Period.MORNING, Period.AFTERNOON],
   },
   {
     id: "psychology",
     title: "Psicologia",
     icon: <Brain className="h-6 w-6 text-primary" />,
     description: "Comportamento humano, processos cognitivos e saúde mental",
+    periods: [Period.EVENING],
   },
   {
     id: "administration",
     title: "Administração",
     icon: <Briefcase className="h-6 w-6 text-primary" />,
     description: "Gestão empresarial, finanças, marketing e empreendedorismo",
+    periods: [Period.EVENING],
   },
   {
     id: "agronomy",
@@ -53,6 +57,7 @@ export const academicCourses: Course[] = [
     icon: <Leaf className="h-6 w-6 text-primary" />,
     description:
       "Agricultura, manejo de solo, produção vegetal e sustentabilidade",
+    periods: [Period.EVENING],
   },
   {
     id: "accounting",
@@ -60,6 +65,7 @@ export const academicCourses: Course[] = [
     icon: <FileText className="h-6 w-6 text-primary" />,
     description:
       "Contabilidade, auditoria, controladoria e planejamento financeiro",
+    periods: [Period.EVENING],
   },
   {
     id: "law",
@@ -67,18 +73,21 @@ export const academicCourses: Course[] = [
     icon: <Gavel className="h-6 w-6 text-primary" />,
     description:
       "Leis, justiça, direito civil, penal, trabalhista e constitucional",
+    periods: [Period.EVENING],
   },
   {
     id: "physicalEducation",
     title: "Educação Física",
     icon: <Dumbbell className="h-6 w-6 text-primary" />,
     description: "Atividade física, saúde, esportes e qualidade de vida",
+    periods: [Period.EVENING],
   },
   {
     id: "nursing",
     title: "Enfermagem",
     icon: <Syringe className="h-6 w-6 text-primary" />,
     description: "Cuidado ao paciente, saúde pública e práticas clínicas",
+    periods: [Period.EVENING],
   },
   {
     id: "civilEngineering",
@@ -86,18 +95,21 @@ export const academicCourses: Course[] = [
     icon: <Hammer className="h-6 w-6 text-primary" />,
     description:
       "Construção civil, estruturas, geotecnia e planejamento urbano",
+    periods: [Period.EVENING],
   },
   {
     id: "physiotherapy",
     title: "Fisioterapia",
     icon: <Activity className="h-6 w-6 text-primary" />,
     description: "Reabilitação física, terapias manuais e biomecânica",
+    periods: [Period.EVENING],
   },
   {
     id: "literature",
     title: "Letras",
     icon: <BookOpen className="h-6 w-6 text-primary" />,
     description: "Linguística, literatura, tradução e ensino de idiomas",
+    periods: [Period.EVENING],
   },
   {
     id: "veterinary",
@@ -105,12 +117,14 @@ export const academicCourses: Course[] = [
     icon: <PawPrint className="h-6 w-6 text-primary" />,
     description:
       "Saúde animal, clínica veterinária, zootecnia e bem-estar animal",
+    periods: [Period.EVENING],
   },
   {
     id: "dentistry",
     title: "Odontologia",
     icon: <Smile className="h-6 w-6 text-primary" />,
     description: "Saúde bucal, ortodontia, periodontia e odontopediatria",
+    periods: [Period.EVENING],
   },
   {
     id: "pedagogy",
@@ -118,6 +132,7 @@ export const academicCourses: Course[] = [
     icon: <GraduationCap className="h-6 w-6 text-primary" />,
     description:
       "Educação, didática, psicologia da aprendizagem e gestão escolar",
+    periods: [Period.EVENING],
   },
 ];
 

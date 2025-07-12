@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  // output   = "../generated/prisma"
 }
 
 datasource db {
@@ -8,10 +8,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Period {
+  MORNING
+  AFTERNOON
+  EVENING
+}
+
 model Course {
   id          String     @id @default(uuid())
   name        String
   description String
+  periods     Period[]
   semester    Semester[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -29,28 +36,24 @@ model Semester {
 }
 
 model Discipline {
-  id           String        @id @default(uuid())
+  id           String       @id @default(uuid())
   name         String
   description  String
   semesterId   String
-  semester     Semester      @relation(fields: [semesterId], references: [id])
-  appointments Appointment[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  semester     Semester     @relation(fields: [semesterId], references: [id])
+  appointments Scheduling[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 }
 
-model Appointment {
+model Scheduling {
   id    String   @id @default(uuid())
   name  String
-  email String
+  email String   @unique
   phone String
   notes String?
   date  DateTime
   time  DateTime
-
-  courseName     String
-  semesterName   String
-  disciplineName String
 
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt

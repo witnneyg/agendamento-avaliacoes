@@ -192,9 +192,10 @@ export function Scheduling() {
             onBack={() => setStep("discipline")}
           />
         )}
-        {step === "time" && selectedDate && (
+        {step === "time" && selectedDate && selectedCourse && (
           <TimeSlotPicker
             date={selectedDate}
+            coursePeriod={selectedCourse.periods}
             onSelectTime={handleTimeSelect}
             onBack={() => setStep("date")}
           />

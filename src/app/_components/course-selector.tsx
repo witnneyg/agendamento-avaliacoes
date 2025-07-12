@@ -5,9 +5,16 @@ import type React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
+export enum Period {
+  MORNING = "MORNING",
+  AFTERNOON = "AFTERNOON",
+  EVENING = "EVENING",
+}
+
 export interface Course {
   id: string;
   title: string;
+  periods: Period[];
   icon: React.ReactNode;
   description: string;
 }

@@ -1,16 +1,74 @@
-import { PrismaClient } from "../generated/prisma";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-async function seed() {}
+async function main() {
+  const course = await prisma.course.create({
+    data: {
+      name: "Engenharia de Software",
+      description: "Curso voltado para desenvolvimento de sistemas.",
+      semester: {
+        create: [
+          {
+            name: "1º Semestre",
+            description: "Semestre introdutório",
+            disciplines: {
+              create: [
+                {
+                  name: "Lógica de Programação",
+                  description: "Introdução à lógica e algoritmos.",
+                },
+                {
+                  name: "Matemática Discreta",
+                  description: "Conceitos matemáticos para computação.",
+                },
+              ],
+            },
+          },
+          {
+            name: "2º Semestre",
+            description: "Continuação do curso",
+            disciplines: {
+              create: [
+                {
+                  name: "Estrutura de Dados",
+                  description:
+                    "Estudo de estruturas como listas, pilhas e árvores.",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  });
 
-seed()
-  .then(async () => {
-    console.log("seed gerado com sucesso!");
-    await prisma.$disconnect();
-  })
-  .catch(async (e) => {
+  const disciplina = await prisma.discipline.findFirst({
+    where: { name: "Lógica de Programação" },
+  });
+
+  if (disciplina) {
+    await prisma.scheduling.create({
+      data: {
+        name: "João da Silva",
+        email: "joao@example.com",
+        phone: "11999999999",
+        notes: "Interessado em agendar uma visita.",
+        date: new Date("2025-08-10"),
+        time: new Date("2025-08-10T14:00:00Z"),
+        disciplineId: disciplina.id,
+      },
+    });
+  }
+
+  console.log("Seed executado com sucesso!");
+}
+
+main()
+  .catch((e) => {
     console.error(e);
-    await prisma.$disconnect();
     process.exit(1);
+  })
+  .finally(() => {
+    prisma.$disconnect();
   });
