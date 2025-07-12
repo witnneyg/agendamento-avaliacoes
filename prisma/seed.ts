@@ -8,7 +8,7 @@ async function main() {
   await prisma.semester.deleteMany();
   await prisma.course.deleteMany();
 
-  const course = await prisma.course.create({
+  await prisma.course.create({
     data: {
       name: "Engenharia de Software",
       description: "Curso voltado para desenvolvimento de sistemas.",
@@ -49,20 +49,82 @@ async function main() {
     },
   });
 
-  const disciplina = await prisma.discipline.findFirst({
-    where: { name: "Lógica de Programação" },
+  await prisma.course.create({
+    data: {
+      name: "Medicina",
+      description:
+        "Curso focado na formação de profissionais da área da saúde.",
+      periods: [Period.MORNING, Period.AFTERNOON],
+      semester: {
+        create: [
+          {
+            name: "1º Semestre",
+            description: "Base para as ciências médicas.",
+            disciplines: {
+              create: [
+                {
+                  name: "Anatomia Humana",
+                  description: "Estudo da estrutura do corpo humano.",
+                },
+                {
+                  name: "Bioquímica",
+                  description: "Processos químicos dos seres vivos.",
+                },
+              ],
+            },
+          },
+          {
+            name: "2º Semestre",
+            description: "Introdução à prática médica.",
+            disciplines: {
+              create: [
+                {
+                  name: "Fisiologia",
+                  description: "Funcionamento dos órgãos e sistemas.",
+                },
+                {
+                  name: "Histologia",
+                  description: "Estudo dos tecidos biológicos.",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
   });
 
-  if (disciplina) {
+  const disciplinaTI = await prisma.discipline.findFirst({
+    where: { name: "Lógica de Programação" },
+  });
+  const disciplinaMedicina = await prisma.discipline.findFirst({
+    where: { name: "Anatomia Humana" },
+  });
+
+  if (disciplinaTI) {
     await prisma.scheduling.create({
       data: {
         name: "João da Silva",
         email: "joao@example.com",
         phone: "11999999999",
-        notes: "Interessado em agendar uma visita.",
+        notes: "Interessado em agendar uma avaliação",
         date: new Date("2025-08-10"),
         time: new Date("2025-08-10T14:00:00Z"),
-        disciplineId: disciplina.id,
+        disciplineId: disciplinaTI.id,
+      },
+    });
+  }
+
+  if (disciplinaMedicina) {
+    await prisma.scheduling.create({
+      data: {
+        name: "Pedro da Silva",
+        email: "pedro@example.com",
+        phone: "11999999999",
+        notes: "Interessado em agendar uma avaliação",
+        date: new Date("2025-08-10"),
+        time: new Date("2025-08-10T14:00:00Z"),
+        disciplineId: disciplinaMedicina.id,
       },
     });
   }
