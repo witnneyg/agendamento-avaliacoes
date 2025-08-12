@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, set } from "date-fns";
 import {
   Card,
   CardContent,
@@ -16,14 +16,10 @@ import { BookingConfirmation } from "./booking-confirmation";
 import { Discipline, DisciplineSelector } from "./discipline-selector";
 
 import { ptBR } from "date-fns/locale";
-import {
-  academicCourses,
-  disciplinesBySemesterAndDepartment,
-  semestersByCourse,
-} from "../mocks";
 import { Semester, SemesterSelector } from "./semester-selector";
 import { useAppointments } from "../context/appointment";
 import { CalendarDate } from "./calendar-date";
+import { createScheduling } from "../_actions/create-schedule";
 
 type Step =
   | "course"
@@ -44,13 +40,6 @@ type BookingDetails = {
 export function Scheduling() {
   const { addAppointment } = useAppointments();
   const [step, setStep] = useState<Step>("course");
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedTime, setSelectedTime] = useState<string | undefined>(
-    undefined
-  );
-  const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(
-    null
-  );
   const [selectedCourse, setSelectedCourse] = useState<Course | undefined>(
     undefined
   );
@@ -60,6 +49,13 @@ export function Scheduling() {
   const [selectedDiscipline, setSelectedDiscipline] = useState<
     Discipline | undefined
   >(undefined);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTime, setSelectedTime] = useState<string | undefined>(
+    undefined
+  );
+  const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(
+    null
+  );
 
   const handleCourseSelect = (course: Course) => {
     setSelectedCourse(course);
@@ -88,7 +84,29 @@ export function Scheduling() {
     setStep("details");
   };
 
-  const handleDetailsSubmit = (details: BookingDetails) => {
+  function extractTimes(date: Date, timeRange: string) {
+    const [startStr, endStr] = timeRange.split(" - ");
+
+    const [startHour, startMinute] = startStr.split(":").map(Number);
+    const [endHour, endMinute] = endStr.split(":").map(Number);
+
+    const startTime = set(date, {
+      hours: startHour,
+      minutes: startMinute,
+      seconds: 0,
+      milliseconds: 0,
+    });
+    const endTime = set(date, {
+      hours: endHour,
+      minutes: endMinute,
+      seconds: 0,
+      milliseconds: 0,
+    });
+
+    return { startTime, endTime };
+  }
+
+  const handleCreateScheduling = async (details: BookingDetails) => {
     setBookingDetails(details);
 
     if (
@@ -98,14 +116,28 @@ export function Scheduling() {
       selectedTime &&
       selectedDiscipline
     ) {
-      addAppointment({
-        course: selectedCourse,
-        semester: selectedSemester,
-        date: selectedDate,
-        time: selectedTime,
-        discipline: selectedDiscipline,
-        details,
-      });
+      const { startTime, endTime } = extractTimes(
+        new Date(selectedDate),
+        selectedTime
+      );
+
+      const data = {
+        courseName: selectedCourse.name,
+        disciplineName: selectedDiscipline.name,
+        disciplineId: selectedDiscipline.id,
+        semesterName: selectedSemester.name,
+        date: new Date(selectedDate),
+        startTime,
+        endTime,
+        details: {
+          name: details.name,
+          email: details.email,
+          phone: details.phone,
+          notes: details.notes,
+        },
+      };
+
+      await createScheduling(data);
     }
     setStep("confirmation");
   };
@@ -117,16 +149,6 @@ export function Scheduling() {
     setSelectedDate(undefined);
     setSelectedTime(undefined);
     setBookingDetails(null);
-  };
-
-  const getAvailableDisciplines = () => {
-    if (!selectedCourse || !selectedSemester) return [];
-
-    const departmentDisciplines =
-      disciplinesBySemesterAndDepartment[selectedCourse.id];
-    if (!departmentDisciplines) return [];
-
-    return departmentDisciplines[selectedSemester.id] || [];
   };
 
   return (
@@ -147,10 +169,10 @@ export function Scheduling() {
           {step === "semester" && "Selecione o periodo da sua turma"}
           {step === "discipline" &&
             selectedCourse &&
-            `Selecione uma disciplina específica em ${selectedCourse.title}`}
+            `Selecione uma disciplina específica em ${selectedCourse.name}`}
           {step === "date" &&
             selectedCourse &&
-            `Disciplina selecionada: ${selectedCourse.title}`}
+            `Disciplina selecionada: ${selectedCourse.name}`}
           {step === "time" &&
             selectedDate &&
             `Data selecionada: ${format(selectedDate, "PPPP", {
@@ -166,21 +188,18 @@ export function Scheduling() {
       </CardHeader>
       <CardContent>
         {step === "course" && (
-          <CourseSelector
-            courses={academicCourses}
-            onSelectCourse={handleCourseSelect}
-          />
+          <CourseSelector onSelectCourse={handleCourseSelect} />
         )}
         {step === "semester" && selectedCourse && (
           <SemesterSelector
-            semesters={semestersByCourse[selectedCourse.id]}
+            courseId={selectedCourse.id}
             onSelectSemester={handleSelectSemester}
             onBack={() => setStep("course")}
           />
         )}
-        {step === "discipline" && selectedCourse && (
+        {step === "discipline" && selectedCourse && selectedSemester && (
           <DisciplineSelector
-            disciplines={getAvailableDisciplines()}
+            semesterId={selectedSemester.id}
             onSelectDiscipline={handleDisciplineSelect}
             onBack={() => setStep("semester")}
           />
@@ -192,21 +211,25 @@ export function Scheduling() {
             onBack={() => setStep("discipline")}
           />
         )}
-        {step === "time" && selectedDate && selectedCourse && (
-          <TimeSlotPicker
-            date={selectedDate}
-            coursePeriod={selectedCourse.periods}
-            onSelectTime={handleTimeSelect}
-            onBack={() => setStep("date")}
-          />
-        )}
+        {step === "time" &&
+          selectedDate &&
+          selectedCourse &&
+          selectedDiscipline && (
+            <TimeSlotPicker
+              date={selectedDate}
+              coursePeriod={selectedCourse.periods}
+              disciplineId={selectedDiscipline.id}
+              onSelectTime={handleTimeSelect}
+              onBack={() => setStep("date")}
+            />
+          )}
         {step === "details" &&
           selectedDate &&
           selectedTime &&
           selectedCourse && (
             <BookingForm
-              onSubmit={handleDetailsSubmit}
-              course={selectedCourse}
+              onSubmit={handleCreateScheduling}
+              courseId={selectedCourse.id}
               onBack={() => setStep("time")}
             />
           )}

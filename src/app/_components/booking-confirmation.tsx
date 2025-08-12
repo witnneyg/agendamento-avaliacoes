@@ -53,15 +53,15 @@ export function BookingConfirmation({
       <div className="w-full max-w-md bg-muted/50 rounded-lg p-4 space-y-3">
         <div className="flex justify-between">
           <span className="font-medium">Curso:</span>
-          <span>{course.title}</span>
+          <span>{course.name}</span>
         </div>
         <div className="flex justify-between">
           <span className="font-medium">Semestre:</span>
-          <span>{semester.title}</span>
+          <span>{semester.name}</span>
         </div>
         <div className="flex justify-between">
           <span className="font-medium">Disciplina:</span>
-          <span>{discipline.title}</span>
+          <span>{discipline.name}</span>
         </div>
         <div className="flex justify-between">
           <span className="font-medium">Data:</span>

@@ -2,36 +2,47 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronLeft, NotebookPen } from "lucide-react";
-import { JSX } from "react";
+import { ChevronLeft } from "lucide-react";
+import { JSX, useEffect, useState } from "react";
+import { getSemesterByCourse } from "../_actions/get-semester-by-course-selected";
 
 export interface Semester {
   id: string;
-  title: string;
-  icon: JSX.Element;
+  name: string;
   description: string;
 }
 
 interface SemesterSelectorProps {
-  semesters: Semester[];
+  courseId: string;
   onSelectSemester: (semester: Semester) => void;
   onBack: () => void;
 }
 
 export function SemesterSelector({
-  semesters,
+  courseId,
   onSelectSemester,
   onBack,
 }: SemesterSelectorProps) {
+  const [semesterByCourse, setSemesterByCourse] = useState<Semester[]>([]);
+
+  useEffect(() => {
+    async function fetch() {
+      const data = await getSemesterByCourse(courseId);
+
+      setSemesterByCourse(data);
+    }
+
+    fetch();
+  }, []);
+
   return (
     <div className="space-y-4">
       <Button variant="ghost" size="sm" onClick={onBack} className="mb-2">
         <ChevronLeft className="mr-2 h-4 w-4" />
         Voltar para cursos
       </Button>
-
       <div className="grid gap-4 md:grid-cols-2">
-        {semesters.map((semester) => (
+        {semesterByCourse.map((semester) => (
           <Card
             key={semester.id}
             className="cursor-pointer transition-all hover:bg-primary/5"
@@ -40,8 +51,7 @@ export function SemesterSelector({
             <CardContent className="p-6">
               <div className="flex flex-col space-y-2">
                 <div className="flex gap-2 items-center">
-                  {semester.icon}
-                  <h3 className="font-medium text-lg">{semester.title}</h3>
+                  <h3 className="font-medium text-lg">{semester.name}</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {semester.description}

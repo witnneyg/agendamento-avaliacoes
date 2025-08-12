@@ -6,11 +6,12 @@ async function main() {
   await prisma.scheduling.deleteMany();
   await prisma.discipline.deleteMany();
   await prisma.semester.deleteMany();
+  await prisma.teacher.deleteMany();
   await prisma.course.deleteMany();
 
-  await prisma.course.create({
+  const cursoTI = await prisma.course.create({
     data: {
-      name: "Engenharia de Software",
+      name: "Gestão da Tecnologia da Informação",
       description: "Curso voltado para desenvolvimento de sistemas.",
       periods: [Period.EVENING],
       semester: {
@@ -49,7 +50,7 @@ async function main() {
     },
   });
 
-  await prisma.course.create({
+  const cursoMedicina = await prisma.course.create({
     data: {
       name: "Medicina",
       description:
@@ -94,6 +95,24 @@ async function main() {
     },
   });
 
+  const professorCarlos = await prisma.teacher.create({
+    data: {
+      name: "Carlos Silva",
+      courses: {
+        connect: [{ id: cursoMedicina.id }, { id: cursoTI.id }],
+      },
+    },
+  });
+
+  const professorAna = await prisma.teacher.create({
+    data: {
+      name: "Ana Costa",
+      courses: {
+        connect: [{ id: cursoMedicina.id }],
+      },
+    },
+  });
+
   const disciplinaTI = await prisma.discipline.findFirst({
     where: { name: "Lógica de Programação" },
   });
@@ -108,8 +127,12 @@ async function main() {
         email: "joao@example.com",
         phone: "11999999999",
         notes: "Interessado em agendar uma avaliação",
-        date: new Date("2025-08-10"),
-        time: new Date("2025-08-10T14:00:00Z"),
+        date: new Date("2025-08-10T00:00:00Z"), // só a data, hora 0
+        startTime: new Date("2025-08-10T14:00:00Z"),
+        endTime: new Date("2025-08-10T14:30:00Z"), // exemplo: 30 min depois
+        courseName: "Tecnologia da Informação", // Ajuste conforme seu dado real
+        semesterName: "1º Semestre", // Ajuste conforme seu dado real
+        disciplineName: disciplinaTI.name, // Usando o nome da disciplina
         disciplineId: disciplinaTI.id,
       },
     });
@@ -122,8 +145,12 @@ async function main() {
         email: "pedro@example.com",
         phone: "11999999999",
         notes: "Interessado em agendar uma avaliação",
-        date: new Date("2025-08-10"),
-        time: new Date("2025-08-10T14:00:00Z"),
+        date: new Date("2025-08-10T00:00:00Z"),
+        startTime: new Date("2025-08-10T14:00:00Z"),
+        endTime: new Date("2025-08-10T14:30:00Z"),
+        courseName: "Medicina",
+        semesterName: "2º Semestre",
+        disciplineName: disciplinaMedicina.name,
         disciplineId: disciplinaMedicina.id,
       },
     });

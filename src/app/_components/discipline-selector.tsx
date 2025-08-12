@@ -3,24 +3,39 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getDisciplinesBySemester } from "../_actions/get-disciplines-by-semester";
 
 export interface Discipline {
   id: string;
-  title: string;
+  name: string;
   description: string;
 }
 
 interface DisciplineSelectorProps {
-  disciplines: Discipline[];
+  semesterId: string;
   onSelectDiscipline: (discipline: Discipline) => void;
   onBack: () => void;
 }
 
 export function DisciplineSelector({
-  disciplines,
+  semesterId,
   onSelectDiscipline,
   onBack,
 }: DisciplineSelectorProps) {
+  const [disciplines, setDisciplines] = useState<Discipline[]>([]);
+
+  useEffect(() => {
+    async function fetch() {
+      const data = await getDisciplinesBySemester(semesterId);
+
+      setDisciplines(data);
+    }
+
+    fetch();
+  }, []);
+
+  console.log(semesterId);
   return (
     <div className="space-y-4">
       <Button variant="ghost" size="sm" onClick={onBack} className="mb-2">
@@ -37,7 +52,7 @@ export function DisciplineSelector({
           >
             <CardContent className="p-6 h-full">
               <div className="flex flex-col space-y-2 h-full justify-between">
-                <h3 className="font-medium text-lg">{discipline.title}</h3>
+                <h3 className="font-medium text-lg">{discipline.name}</h3>
                 <p className="text-sm text-muted-foreground">
                   {discipline.description}
                 </p>

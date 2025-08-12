@@ -18,8 +18,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { teacherByDisciplines } from "../mocks";
-import { Course } from "./course-selector";
+import { useEffect, useState } from "react";
+import { getTeacherByCourse } from "../_actions/get-teacher-by-disciplines";
+
+interface Teacher {
+  name: string;
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 interface BookingFormProps {
   onSubmit: (details: {
@@ -29,7 +36,7 @@ interface BookingFormProps {
     notes: string;
   }) => void;
   onBack: () => void;
-  course: Course;
+  courseId: string;
 }
 
 const bookingSchema = z.object({
@@ -62,7 +69,9 @@ const bookingSchema = z.object({
 
 type BookingSchema = z.infer<typeof bookingSchema>;
 
-export function BookingForm({ onSubmit, onBack, course }: BookingFormProps) {
+export function BookingForm({ onSubmit, onBack, courseId }: BookingFormProps) {
+  const [teacher, setTeacher] = useState<Teacher[]>([]);
+
   const {
     register,
     handleSubmit,
@@ -75,6 +84,15 @@ export function BookingForm({ onSubmit, onBack, course }: BookingFormProps) {
   function handleSubmitForm(data: any) {
     onSubmit(data);
   }
+
+  useEffect(() => {
+    async function fetch() {
+      const data = await getTeacherByCourse(courseId);
+      setTeacher(data);
+    }
+
+    fetch();
+  }, []);
 
   return (
     <form onSubmit={handleSubmit(handleSubmitForm)} className="space-y-4">
@@ -102,9 +120,9 @@ export function BookingForm({ onSubmit, onBack, course }: BookingFormProps) {
               <SelectContent>
                 <SelectGroup>
                   <SelectLabel>Professor</SelectLabel>
-                  {teacherByDisciplines[course.id].map((teacher, index) => (
-                    <SelectItem key={index} value={teacher}>
-                      {teacher}
+                  {teacher.map(({ name, id }) => (
+                    <SelectItem key={id} value={name}>
+                      {name}
                     </SelectItem>
                   ))}
                 </SelectGroup>

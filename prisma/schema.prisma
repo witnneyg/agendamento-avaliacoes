@@ -20,8 +20,11 @@ model Course {
   description String
   periods     Period[]
   semester    Semester[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+
+  teachers Teacher[] @relation("CourseTeachers")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Semester {
@@ -36,27 +39,40 @@ model Semester {
 }
 
 model Discipline {
-  id           String       @id @default(uuid())
-  name         String
-  description  String
-  semesterId   String
-  semester     Semester     @relation(fields: [semesterId], references: [id])
-  appointments Scheduling[]
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id          String       @id @default(uuid())
+  name        String
+  description String
+  semesterId  String
+  semester    Semester     @relation(fields: [semesterId], references: [id])
+  schedulings Scheduling[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
 model Scheduling {
-  id    String   @id @default(uuid())
-  name  String
-  email String
-  phone String
-  notes String?
-  date  DateTime
-  time  DateTime
+  id             String     @id @default(uuid())
+  date           DateTime
+  startTime      DateTime
+  endTime        DateTime
+  name           String
+  email          String
+  phone          String
+  notes          String?
+  courseName     String
+  semesterName   String
+  disciplineName String
+  disciplineId   String
+  discipline     Discipline @relation(fields: [disciplineId], references: [id])
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
 
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  Discipline   Discipline? @relation(fields: [disciplineId], references: [id])
-  disciplineId String?
+model Teacher {
+  id   String @id @default(uuid())
+  name String
+
+  courses Course[] @relation("CourseTeachers")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

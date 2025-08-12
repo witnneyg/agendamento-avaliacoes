@@ -2,16 +2,15 @@
 
 import { createContext, useContext, useState, ReactNode } from "react";
 import { Course } from "../_components/course-selector";
-import { Semester } from "../_components/semester-selector";
-import { Discipline } from "../_components/discipline-selector";
-
 export interface Appointment {
-  id: string;
-  course: Course;
-  semester: Semester;
-  discipline: Discipline;
+  id?: string;
+  courseName: string;
+  semesterName: string;
+  disciplineName: string;
+  disciplineId: string;
   date: Date;
-  time: string;
+  endTime: Date;
+  startTime: Date;
   details: {
     name: string;
     email: string;

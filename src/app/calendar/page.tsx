@@ -1,8 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format, startOfWeek, addDays, isSameDay } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Trash2,
+  Edit,
+  MoreVertical,
+  X,
+  Calendar1Icon,
+  Timer,
+  FileText,
+} from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
@@ -19,42 +31,50 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
-import { academicCourses } from "../mocks";
 import { NavBar } from "../_components/navbar";
 import { ptBR } from "date-fns/locale";
 import { useAppointments } from "../context/appointment";
+import { getCourses } from "../_actions/get-courses";
+import { Course, Scheduling } from "@prisma/client";
+import { getScheduling } from "../_actions/get-scheduling";
+import { deleteSchedule } from "../_actions/delete-schedule";
 
 const getDepartmentColor = (departmentId: string) => {
   const colors: Record<string, string> = {
-    itManagement: "bg-teal-500 border-teal-600 text-teal-100",
-    medicine: "bg-emerald-500 border-emerald-600 text-emerald-100",
-    psychology: "bg-indigo-500 border-indigo-600 text-indigo-100",
-    administration: "bg-amber-500 border-amber-600 text-amber-100",
-    agronomy: "bg-pink-500 border-pink-600 text-pink-100",
-    accounting: "bg-orange-500 border-orange-600 text-orange-100",
-    law: "bg-red-500 border-red-600 text-red-100",
-    physicalEducation: "bg-yellow-500 border-yellow-600 text-yellow-100",
-    nursing: "bg-lime-500 border-lime-600 text-lime-100",
-    civilEngineering: "bg-blue-500 border-blue-600 text-blue-100",
-    physiotherapy: "bg-cyan-500 border-cyan-600 text-cyan-100",
-    literature: "bg-purple-500 border-purple-600 text-purple-100",
-    veterinary: "bg-gray-500 border-brown-600 text-brown-100",
-    dentistry: "bg-gray-500 border-gray-600 text-gray-100",
-    pedagogy: "bg-green-500 border-green-600 text-green-100",
+    "Gestão da Tecnologia da Informação":
+      "bg-teal-500 border-teal-600 text-teal-100",
+    Medicina: "bg-emerald-500 border-emerald-600 text-emerald-100",
+    Psicologia: "bg-indigo-500 border-indigo-600 text-indigo-100",
+    Administração: "bg-amber-500 border-amber-600 text-amber-100",
+    Agronomia: "bg-pink-500 border-pink-600 text-pink-100",
+    Contabilidade: "bg-orange-500 border-orange-600 text-orange-100",
+    Direito: "bg-red-500 border-red-600 text-red-100",
+    "Educação Física": "bg-yellow-500 border-yellow-600 text-yellow-100",
+    Enfermagem: "bg-lime-500 border-lime-600 text-lime-100",
+    "Engenharia Civil": "bg-blue-500 border-blue-600 text-blue-100",
+    Fisioterapia: "bg-cyan-500 border-cyan-600 text-cyan-100",
+    Literatura: "bg-purple-500 border-purple-600 text-purple-100",
+    Veterinária: "bg-gray-500 border-brown-600 text-brown-100",
+    Odontologia: "bg-gray-500 border-gray-600 text-gray-100",
+    Pedagogia: "bg-green-500 border-green-600 text-green-100",
   };
   return colors[departmentId] || "bg-gray-500 border-gray-500 text-gray-800";
 };
 
-const timeSlots = Array.from({ length: 12 }, (_, i) => i + 8);
+const timeSlots = Array.from({ length: 24 }, (_, i) => i + 0);
 
 export default function CalendarPage() {
   const { appointments, removeAppointment } = useAppointments();
+  const [academicCourses, setAcademicCourses] = useState<Course[]>([]);
+  const [schedulingCourses, setSchedulingCourses] = useState<Scheduling[]>([]);
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [visibleDepartments, setVisibleDepartments] = useState<
     Record<string, boolean>
   >(
     academicCourses.reduce((acc, course) => ({ ...acc, [course.id]: true }), {})
   );
+
   const [view, setView] = useState<"week" | "day">("week");
   const router = useRouter();
   const daysToShow = view === "week" ? 7 : 1;
@@ -65,10 +85,13 @@ export default function CalendarPage() {
   const days = Array.from({ length: daysToShow }, (_, i) =>
     addDays(startDate, i)
   );
-  const filteredAppointments = appointments.filter(
-    (appointment) => visibleDepartments[appointment.course.id]
-  );
 
+  const filteredAppointments = schedulingCourses.filter((appointment) =>
+    academicCourses.some(
+      (course) =>
+        course.name === appointment.courseName && visibleDepartments[course.id]
+    )
+  );
   const navigatePrevious = () => {
     setCurrentDate((prev) => addDays(prev, view === "week" ? -7 : -1));
   };
@@ -88,6 +111,25 @@ export default function CalendarPage() {
     router.push("/");
   };
 
+  useEffect(() => {
+    async function fetch() {
+      const coursesData = await getCourses();
+      const schedulingData = await getScheduling();
+
+      setSchedulingCourses(schedulingData);
+      setAcademicCourses(coursesData);
+    }
+
+    fetch();
+  }, []);
+
+  const handleDeleteSchedule = async (scheduleId: string) => {
+    await deleteSchedule(scheduleId);
+
+    setSchedulingCourses((prev) =>
+      prev.filter((schedule) => schedule.id !== scheduleId)
+    );
+  };
   return (
     <div className="min-h-screen flex flex-col">
       <NavBar />
@@ -127,14 +169,14 @@ export default function CalendarPage() {
                   <div
                     className={cn(
                       "w-3 h-3 rounded-full flex-shrink-0",
-                      getDepartmentColor(course.id)
+                      getDepartmentColor(course.name)
                     )}
                   />
                   <label
                     htmlFor={course.id}
                     className="text-sm font-medium leading-none cursor-pointer"
                   >
-                    {course.title}
+                    {course.name}
                   </label>
                 </div>
               ))}
@@ -198,7 +240,7 @@ export default function CalendarPage() {
                   GMT-03
                 </div>
                 {timeSlots.map((hour) => (
-                  <div key={hour} className="h-20 border-b relative">
+                  <div key={hour} className="h-12 border-b relative">
                     <span className="absolute -top-2 right-2 text-xs text-gray-500">
                       {String(hour).padStart(2, "0")}:00
                     </span>
@@ -233,89 +275,125 @@ export default function CalendarPage() {
 
                     <div>
                       {timeSlots.map((hour) => (
-                        <div key={hour} className="h-20 border-b relative">
+                        <div key={hour} className="h-12 border-b relative">
                           {filteredAppointments
                             .filter((appointment) => {
-                              const appointmentDate = appointment.date;
-                              const [hourStr] = appointment.time.split(":");
-                              const appointmentHour = Number.parseInt(
-                                hourStr,
-                                10
-                              );
-
                               return (
-                                isSameDay(appointmentDate, day) &&
-                                appointmentHour === hour
+                                isSameDay(new Date(appointment.date), day) &&
+                                new Date(appointment.startTime).getHours() ===
+                                  hour
                               );
                             })
                             .map((appointment) => {
-                              const [hourStr, minuteStr] =
-                                appointment.time.split(":");
-                              const hour = Number.parseInt(hourStr, 10);
-                              const minute = Number.parseInt(minuteStr, 10);
-                              const topOffset = (minute / 60) * 100 + 3;
                               return (
-                                <div
-                                  key={appointment.id}
-                                  className={cn(
-                                    "absolute left-0 right-0 mx-1 p-2 rounded border-l-4 overflow-hidden",
-                                    getDepartmentColor(appointment.course.id)
-                                  )}
-                                  style={{
-                                    top: `${topOffset}%`,
-                                    height: "calc(100% - 4px)",
-                                  }}
-                                >
-                                  <div className="flex justify-between items-start">
-                                    <div className="overflow-hidden">
-                                      <div className="font-medium text-xs truncate">
-                                        {appointment.discipline.title}
-                                      </div>
-                                      <div className="text-xs truncate">
-                                        {appointment.details.name}
-                                      </div>
-                                      <div className="text-xs truncate">
-                                        {appointment.time}
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <div
+                                      key={appointment.id}
+                                      className={cn(
+                                        "absolute left-0 right-0 mx-1 p-2 rounded border-l-4 overflow-hidden cursor-pointer",
+                                        getDepartmentColor(
+                                          appointment.courseName
+                                        )
+                                      )}
+                                    >
+                                      <div className="overflow-hidden">
+                                        <div className="flex gap-2 font-medium text-xs truncate">
+                                          {appointment.disciplineName}{" "}
+                                          <div className="text-xs truncate">
+                                            {new Intl.DateTimeFormat("pt-BR", {
+                                              hour: "numeric",
+                                              minute: "2-digit",
+                                              hour12: false,
+                                            }).format(
+                                              new Date(appointment.startTime)
+                                            )}
+
+                                            {" – "}
+
+                                            {new Intl.DateTimeFormat("pt-BR", {
+                                              hour: "numeric",
+                                              minute: "2-digit",
+                                              hour12: false,
+                                            }).format(
+                                              new Date(appointment.endTime)
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="text-xs truncate">
+                                          {appointment.name}
+                                        </div>
                                       </div>
                                     </div>
-                                    <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-5 w-5 text-red-500 hover:text-red-600 hover:bg-transparent -mt-1 -mr-1 cursor-pointer "
-                                        >
-                                          <Trash2 className="h-3 w-3 border-none" />
-                                        </Button>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                          <AlertDialogTitle>
-                                            Excluir Agendamento
-                                          </AlertDialogTitle>
-                                          <AlertDialogDescription>
-                                            Tem certeza de que deseja excluir
-                                            este agendamento? Essa ação não
-                                            poderá ser desfeita.
-                                          </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                          <AlertDialogCancel className="cursor-pointer">
-                                            Manter Agendamento
-                                          </AlertDialogCancel>
-                                          <AlertDialogAction
-                                            className="bg-red-500 hover:bg-red-600 cursor-pointer"
-                                            onClick={() =>
-                                              removeAppointment(appointment.id)
-                                            }
-                                          >
-                                            Excluir Agendamento
-                                          </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                    </AlertDialog>
-                                  </div>
-                                </div>
+                                  </AlertDialogTrigger>
+
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <div className="flex gap-4 justify-end">
+                                        <Edit className="h-4 w-4 cursor-pointer" />
+                                        <Trash2
+                                          className="h-4 w-4 cursor-pointer"
+                                          onClick={() =>
+                                            handleDeleteSchedule(appointment.id)
+                                          }
+                                        />
+                                        <MoreVertical className="h-4 w-4 cursor-pointer" />
+
+                                        <AlertDialogCancel className="h-4 w-4 cursor-pointer border-none">
+                                          <X />
+                                        </AlertDialogCancel>
+                                      </div>
+                                      <AlertDialogTitle className="flex gap-2 items-center mt-2">
+                                        <div
+                                          className={cn(
+                                            "flex gap-2 w-3 h-3 rounded-xs flex-shrink-0",
+                                            getDepartmentColor(
+                                              appointment.courseName
+                                            )
+                                          )}
+                                        />
+                                        {appointment.disciplineName}
+                                      </AlertDialogTitle>
+                                    </AlertDialogHeader>
+
+                                    <div className="space-y-3 text-sm pt-2">
+                                      <p className="flex gap-2 items-center">
+                                        <Calendar1Icon className="h-4 w-4" />
+                                        {appointment.name}
+                                      </p>
+                                      <p className="flex gap-2 items-center">
+                                        <Timer className="h-4 w-4" />
+                                        {new Intl.DateTimeFormat("pt-BR", {
+                                          weekday: "long",
+                                          day: "2-digit",
+                                          month: "long",
+                                        }).format(
+                                          new Date(appointment.startTime)
+                                        )}
+                                        {" ⋅ "}
+                                        {new Intl.DateTimeFormat("pt-BR", {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                          hour12: false,
+                                        }).format(
+                                          new Date(appointment.startTime)
+                                        )}
+                                        {" – "}
+                                        {new Intl.DateTimeFormat("pt-BR", {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                          hour12: false,
+                                        }).format(
+                                          new Date(appointment.endTime)
+                                        )}
+                                      </p>
+                                      <p className="flex gap-2 items-center">
+                                        <FileText className="h-4 w-4" />
+                                        {appointment.notes}
+                                      </p>
+                                    </div>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               );
                             })}
                         </div>
@@ -330,4 +408,38 @@ export default function CalendarPage() {
       </div>
     </div>
   );
+}
+
+{
+  /* <AlertDialog>
+  <AlertDialogTrigger asChild>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-5 w-5 text-red-500 hover:text-red-600 hover:bg-transparent -mt-1 -mr-1 cursor-pointer "
+    >
+      <Trash2 className="h-3 w-3 border-none" />
+    </Button>
+  </AlertDialogTrigger>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Excluir Agendamento</AlertDialogTitle>
+      <AlertDialogDescription>
+        Tem certeza de que deseja excluir este agendamento? Essa ação não poderá
+        ser desfeita.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel className="cursor-pointer">
+        Manter Agendamento
+      </AlertDialogCancel>
+      <AlertDialogAction
+        className="bg-red-500 hover:bg-red-600 cursor-pointer"
+        onClick={() => handleDeleteSchedule(appointment.id)}
+      >
+        Excluir Agendamento
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>; */
 }
