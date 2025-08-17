@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { useEffect, useState } from "react";
 import { getTeacherByCourse } from "../_actions/get-teacher-by-disciplines";
+import { sendSchedulingEmail } from "../_actions/send-scheduling-email";
 
 interface Teacher {
   name: string;
@@ -37,6 +38,8 @@ interface BookingFormProps {
   }) => void;
   onBack: () => void;
   courseId: string;
+  date: Date;
+  time: string;
 }
 
 const bookingSchema = z.object({
@@ -69,9 +72,14 @@ const bookingSchema = z.object({
 
 type BookingSchema = z.infer<typeof bookingSchema>;
 
-export function BookingForm({ onSubmit, onBack, courseId }: BookingFormProps) {
+export function BookingForm({
+  onSubmit,
+  onBack,
+  courseId,
+  date,
+  time,
+}: BookingFormProps) {
   const [teacher, setTeacher] = useState<Teacher[]>([]);
-
   const {
     register,
     handleSubmit,
@@ -81,7 +89,14 @@ export function BookingForm({ onSubmit, onBack, courseId }: BookingFormProps) {
     resolver: zodResolver(bookingSchema),
   });
 
-  function handleSubmitForm(data: any) {
+  async function handleSubmitForm(data: any) {
+    await sendSchedulingEmail({
+      to: data.email,
+      name: data.name,
+      date,
+      time,
+    });
+
     onSubmit(data);
   }
 

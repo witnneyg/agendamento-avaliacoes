@@ -230,6 +230,8 @@ export function Scheduling() {
             <BookingForm
               onSubmit={handleCreateScheduling}
               courseId={selectedCourse.id}
+              date={selectedDate}
+              time={selectedTime}
               onBack={() => setStep("time")}
             />
           )}

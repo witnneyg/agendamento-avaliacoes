@@ -35,7 +35,6 @@ export function DisciplineSelector({
     fetch();
   }, []);
 
-  console.log(semesterId);
   return (
     <div className="space-y-4">
       <Button variant="ghost" size="sm" onClick={onBack} className="mb-2">

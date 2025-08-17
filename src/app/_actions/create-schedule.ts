@@ -21,10 +21,6 @@ export async function createScheduling(data: Appointment) {
     },
   });
 
-  console.log(hasConflict, "conlfict");
-  console.log(data.startTime, "startime ");
-  console.log(data.endTime, "endtimee ");
-
   if (hasConflict) {
     throw new Error("Este horário já está agendado.");
   }
