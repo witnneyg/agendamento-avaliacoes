@@ -3,7 +3,7 @@
 import { Resend } from "resend";
 import { SchedulingTemplateEmail } from "../api/email/templateEmail";
 
-const resend = new Resend("re_Lnb9Jysb_9VwC5NzmoHGQiYLf8Wnhvrba");
+const resend = new Resend(`${process.env.DATABASE_UR}`);
 
 interface SendSchedulingEmail {
   to: string;
