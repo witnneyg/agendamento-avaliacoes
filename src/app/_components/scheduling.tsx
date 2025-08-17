@@ -19,6 +19,7 @@ import { Semester, SemesterSelector } from "./semester-selector";
 import { useAppointments } from "../context/appointment";
 import { CalendarDate } from "./calendar-date";
 import { createScheduling } from "../_actions/create-schedule";
+import { useSession } from "next-auth/react";
 
 type Step =
   | "course"
@@ -38,6 +39,7 @@ type BookingDetails = {
 
 export function Scheduling() {
   const { addAppointment } = useAppointments();
+
   const [step, setStep] = useState<Step>("course");
   const [selectedCourse, setSelectedCourse] = useState<Course | undefined>(
     undefined

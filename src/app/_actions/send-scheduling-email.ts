@@ -20,7 +20,7 @@ export async function sendSchedulingEmail({
 }: SendSchedulingEmail) {
   try {
     const { data, error } = await resend.emails.send({
-      from: "Acme <onboarding@resend.dev>",
+      from: `${process.env.EMAIL_FROM_NAME}, ${"<onboarding@resend.dev>"}`,
       to: ["witnneygabriel13@gmail.com"],
       subject: "Horário agendado com sucesso",
       react: SchedulingTemplateEmail({ name, date, time }),
