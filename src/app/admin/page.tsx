@@ -214,9 +214,9 @@ export default function AdminPage() {
               <AppointmentsTab />
             </TabsContent>
 
-            {/* <TabsContent value="settings">
+            <TabsContent value="settings">
               <SettingsTab />
-            </TabsContent> */}
+            </TabsContent>
           </Tabs>
         </div>
       </main>
