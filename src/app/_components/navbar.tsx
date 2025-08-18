@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, Home } from "lucide-react";
+import { Calendar, Home, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function NavBar() {
@@ -36,6 +36,18 @@ export function NavBar() {
           >
             <Calendar className="mr-2 h-4 w-4" />
             Calendário
+          </Link>
+          <Link
+            href="/admin"
+            className={cn(
+              "flex items-center px-3 py-2 text-sm transition-colors hover:text-primary",
+              pathname.startsWith("/admin")
+                ? "text-primary"
+                : "text-muted-foreground"
+            )}
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            Admin
           </Link>
         </div>
       </div>
