@@ -10,12 +10,18 @@ export const authOptions: NextAuthOptions = {
     EmailProvider({
       maxAge: 15 * 60,
       async sendVerificationRequest({ identifier: email, url }) {
-        await resend.emails.send({
-          from: `${process.env.EMAIL_FROM_NAME}, ${"<onboarding@resend.dev>"}`,
-          to: ["witnneygabriel13@gmail.com"],
-          subject: "Seu link de login",
-          html: `<p>Clique <a href="${url}">aqui</a> para entrar.<br/>Este link expira em 15 minutos.</p>`,
-        });
+        try {
+          await resend.emails.send({
+            from: `${process.env.EMAIL_FROM_NAME}, ${"<onboarding@resend.dev>"}`,
+            to: ["witnneygabriel13@gmail.com"],
+            subject: "Seu link de login",
+            html: `<p>Clique <a href="${url}">aqui</a> para entrar.<br/>Este link expira em 15 minutos.</p>`,
+          });
+        } catch (error) {
+          console.error("Erro ao enviar e-mail de verificação:", error);
+
+          throw new Error("Falha ao enviar e-mail de verificação");
+        }
       },
     }),
   ],
