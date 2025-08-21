@@ -12,8 +12,8 @@ export const authOptions: NextAuthOptions = {
       async sendVerificationRequest({ identifier: email, url }) {
         try {
           await resend.emails.send({
-            from: `${process.env.EMAIL_FROM_NAME}, ${"<onboarding@resend.dev>"}`,
-            to: ["witnneygabriel13@gmail.com"],
+            from: `${process.env.EMAIL_FROM_EMAIL}`,
+            to: `${process.env.EMAIL_TO_EMAIL}`,
             subject: "Seu link de login",
             html: `<p>Clique <a href="${url}">aqui</a> para entrar.<br/>Este link expira em 15 minutos.</p>`,
           });
