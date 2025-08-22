@@ -19,13 +19,15 @@ import { Semester, SemesterSelector } from "./semester-selector";
 import { useAppointments } from "../context/appointment";
 import { CalendarDate } from "./calendar-date";
 import { createScheduling } from "../_actions/create-schedule";
-import { useSession } from "next-auth/react";
+import { TimePeriod, TimePeriodSelector } from "./time-period.selector";
+import { timePeriods } from "../mocks";
 
 type Step =
   | "course"
   | "discipline"
   | "semester"
   | "date"
+  | "timePeriod"
   | "time"
   | "details"
   | "confirmation";
@@ -51,6 +53,9 @@ export function Scheduling() {
     Discipline | undefined
   >(undefined);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTimePeriod, setSelectedTimePeriod] = useState<
+    TimePeriod | undefined
+  >(undefined);
   const [selectedTime, setSelectedTime] = useState<string | undefined>(
     undefined
   );
@@ -76,8 +81,13 @@ export function Scheduling() {
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
     if (date) {
-      setStep("time");
+      setStep("timePeriod");
     }
+  };
+
+  const handleTimePeriodSelect = (timePeriod: TimePeriod) => {
+    setSelectedTimePeriod(timePeriod);
+    setStep("time");
   };
 
   const handleTimeSelect = (time: string) => {
@@ -160,6 +170,7 @@ export function Scheduling() {
           {step === "semester" && "Selecione seu periodo"}
           {step === "discipline" && "Selecione uma disciplina"}
           {step === "date" && "Selecione uma data"}
+          {step === "timePeriod" && "Selecione um período"}
           {step === "time" && "Escolha um horário"}
           {step === "details" && "Seus detalhes"}
           {step === "confirmation" && "Agendamento confirmado"}
@@ -212,18 +223,30 @@ export function Scheduling() {
             onBack={() => setStep("discipline")}
           />
         )}
+
+        {step === "timePeriod" && selectedCourse && (
+          <TimePeriodSelector
+            coursePeriod={selectedCourse?.periods}
+            timePeriods={timePeriods}
+            onSelectTimePeriod={handleTimePeriodSelect}
+            onBack={() => setStep("date")}
+          />
+        )}
+
         {step === "time" &&
           selectedDate &&
           selectedCourse &&
-          selectedDiscipline && (
+          selectedDiscipline &&
+          selectedTimePeriod && (
             <TimeSlotPicker
               date={selectedDate}
-              coursePeriod={selectedCourse.periods}
               disciplineId={selectedDiscipline.id}
+              timePeriodId={selectedTimePeriod.id}
               onSelectTime={handleTimeSelect}
-              onBack={() => setStep("date")}
+              onBack={() => setStep("timePeriod")}
             />
           )}
+
         {step === "details" &&
           selectedDate &&
           selectedTime &&
