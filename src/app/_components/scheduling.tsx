@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format, set } from "date-fns";
 import {
   Card,
@@ -21,6 +21,7 @@ import { CalendarDate } from "./calendar-date";
 import { createScheduling } from "../_actions/create-schedule";
 import { TimePeriod, TimePeriodSelector } from "./time-period.selector";
 import { timePeriods } from "../mocks";
+import { getLoggedUserId } from "../_actions/get-logged-user";
 
 type Step =
   | "course"
@@ -53,6 +54,7 @@ export function Scheduling() {
     Discipline | undefined
   >(undefined);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [userId, setUserId] = useState<string | undefined>("");
   const [selectedTimePeriod, setSelectedTimePeriod] = useState<
     TimePeriod | undefined
   >(undefined);
@@ -117,6 +119,16 @@ export function Scheduling() {
     return { startTime, endTime };
   }
 
+  useEffect(() => {
+    async function fetch() {
+      const data = await getLoggedUserId();
+
+      setUserId(data);
+    }
+
+    fetch();
+  }, []);
+
   const handleCreateScheduling = async (details: BookingDetails) => {
     setBookingDetails(details);
 
@@ -125,6 +137,7 @@ export function Scheduling() {
       selectedSemester &&
       selectedDate &&
       selectedTime &&
+      userId &&
       selectedDiscipline
     ) {
       const { startTime, endTime } = extractTimes(
@@ -133,10 +146,10 @@ export function Scheduling() {
       );
 
       const data = {
-        courseName: selectedCourse.name,
-        disciplineName: selectedDiscipline.name,
+        userId: userId,
+        courseId: selectedCourse.id,
         disciplineId: selectedDiscipline.id,
-        semesterName: selectedSemester.name,
+        semesterId: selectedSemester.id,
         date: new Date(selectedDate),
         startTime,
         endTime,

@@ -1,12 +1,11 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from "react";
-import { Course } from "../_components/course-selector";
 export interface Appointment {
   id?: string;
-  courseName: string;
-  semesterName: string;
-  disciplineName: string;
+  courseId: string;
+  userId: string;
+  semesterId: string;
   disciplineId: string;
   date: Date;
   endTime: Date;

@@ -6,16 +6,13 @@ import { Appointment } from "../context/appointment";
 export async function createScheduling(data: Appointment) {
   const hasConflict = await db.scheduling.findFirst({
     where: {
-      // Condição de conflito:
-      // 1. O início do novo está antes do final do existente
-      // 2. O final do novo está depois do início do existente
       disciplineId: data.disciplineId,
       AND: [
         {
-          startTime: { lt: data.endTime }, // começa antes do fim de outro
+          startTime: { lt: data.endTime },
         },
         {
-          endTime: { gt: data.startTime }, // termina depois do início de outro
+          endTime: { gt: data.startTime },
         },
       ],
     },
@@ -27,17 +24,16 @@ export async function createScheduling(data: Appointment) {
 
   await db.scheduling.create({
     data: {
-      courseName: data.courseName,
-      disciplineName: data.disciplineName,
-      disciplineId: data.disciplineId,
-      semesterName: data.semesterName,
-      date: data.date.toISOString(),
-      startTime: data.startTime,
-      endTime: data.endTime,
       name: data.details.name,
-      email: data.details.email,
       phone: data.details.phone,
       notes: data.details.notes,
+      date: data.date,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      userId: data.userId,
+      courseId: data.courseId,
+      semesterId: data.semesterId,
+      disciplineId: data.disciplineId,
     },
   });
 }

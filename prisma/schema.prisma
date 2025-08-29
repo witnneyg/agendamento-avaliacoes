@@ -29,8 +29,9 @@ model Course {
 
   teachers Teacher[] @relation("CourseTeachers")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  Scheduling Scheduling[]
 }
 
 model Semester {
@@ -42,6 +43,7 @@ model Semester {
   disciplines Discipline[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  Scheduling  Scheduling[]
 }
 
 model Discipline {
@@ -56,21 +58,28 @@ model Discipline {
 }
 
 model Scheduling {
-  id             String     @id @default(uuid())
-  date           DateTime
-  startTime      DateTime
-  endTime        DateTime
-  name           String
-  email          String
-  phone          String
-  notes          String?
-  courseName     String
-  semesterName   String
-  disciplineName String
-  disciplineId   String
-  discipline     Discipline @relation(fields: [disciplineId], references: [id])
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  id        String   @id @default(uuid())
+  name      String
+  phone     String
+  date      DateTime
+  startTime DateTime
+  endTime   DateTime
+  notes     String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id])
+
+  semesterId String
+  semester   Semester @relation(fields: [semesterId], references: [id])
+
+  disciplineId String
+  discipline   Discipline @relation(fields: [disciplineId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Teacher {
@@ -90,8 +99,11 @@ model User {
   emailVerified DateTime?
   image         String?
   roles         Role[]    @default([USER])
-  accounts      Account[]
-  sessions      Session[]
+
+  schedulings Scheduling[]
+
+  accounts Account[]
+  sessions Session[]
 }
 
 model Account {

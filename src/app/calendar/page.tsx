@@ -13,6 +13,7 @@ import {
   Calendar1Icon,
   Timer,
   FileText,
+  GraduationCap,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -30,11 +31,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
 import { NavBar } from "../_components/navbar";
 import { ptBR } from "date-fns/locale";
-import { useAppointments } from "../context/appointment";
 import { getCourses } from "../_actions/get-courses";
-import { Course, Scheduling } from "@prisma/client";
 import { getScheduling } from "../_actions/get-scheduling";
 import { deleteSchedule } from "../_actions/delete-schedule";
+import { useSession } from "next-auth/react";
+import { Scheduling, Course, Semester, Discipline } from "@prisma/client";
+
+export type SchedulingWithRelations = Scheduling & {
+  course: Course;
+  semester: Semester;
+  discipline: Discipline;
+};
 
 const getDepartmentColor = (departmentId: string) => {
   const colors: Record<string, string> = {
@@ -61,16 +68,20 @@ const getDepartmentColor = (departmentId: string) => {
 const timeSlots = Array.from({ length: 24 }, (_, i) => i + 0);
 
 export default function CalendarPage() {
-  const { appointments, removeAppointment } = useAppointments();
-  const [academicCourses, setAcademicCourses] = useState<Course[]>([]);
-  const [schedulingCourses, setSchedulingCourses] = useState<Scheduling[]>([]);
+  const { data: session } = useSession();
 
+  const [academicCourses, setAcademicCourses] = useState<Course[]>([]);
+  const [schedulingCourses, setSchedulingCourses] = useState<
+    SchedulingWithRelations[]
+  >([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [visibleDepartments, setVisibleDepartments] = useState<
     Record<string, boolean>
   >(
     academicCourses.reduce((acc, course) => ({ ...acc, [course.id]: true }), {})
   );
+
+  console.log(schedulingCourses);
 
   const [view, setView] = useState<"week" | "day">("week");
   const router = useRouter();
@@ -86,7 +97,7 @@ export default function CalendarPage() {
   const filteredAppointments = schedulingCourses.filter((appointment) =>
     academicCourses.some(
       (course) =>
-        course.name === appointment.courseName && visibleDepartments[course.id]
+        course.name === appointment.course.name && visibleDepartments[course.id]
     )
   );
   const navigatePrevious = () => {
@@ -127,6 +138,7 @@ export default function CalendarPage() {
       prev.filter((schedule) => schedule.id !== scheduleId)
     );
   };
+
   return (
     <div className="min-h-screen flex flex-col">
       <NavBar />
@@ -290,13 +302,13 @@ export default function CalendarPage() {
                                       className={cn(
                                         "absolute left-0 right-0 mx-1 p-2 rounded border-l-4 overflow-hidden cursor-pointer",
                                         getDepartmentColor(
-                                          appointment.courseName
+                                          appointment.course.name
                                         )
                                       )}
                                     >
                                       <div className="overflow-hidden">
                                         <div className="flex gap-2 font-medium text-xs truncate">
-                                          {appointment.disciplineName}{" "}
+                                          {appointment.discipline.name}{" "}
                                           <div className="text-xs truncate">
                                             {new Intl.DateTimeFormat("pt-BR", {
                                               hour: "numeric",
@@ -328,12 +340,17 @@ export default function CalendarPage() {
                                     <AlertDialogHeader>
                                       <div className="flex gap-4 justify-end">
                                         <Edit className="h-4 w-4 cursor-pointer" />
-                                        <Trash2
-                                          className="h-4 w-4 cursor-pointer"
-                                          onClick={() =>
-                                            handleDeleteSchedule(appointment.id)
-                                          }
-                                        />
+                                        {appointment.userId ===
+                                          session?.user.id && (
+                                          <Trash2
+                                            className="h-4 w-4 cursor-pointer"
+                                            onClick={() =>
+                                              handleDeleteSchedule(
+                                                appointment.id
+                                              )
+                                            }
+                                          />
+                                        )}
                                         <MoreVertical className="h-4 w-4 cursor-pointer" />
 
                                         <AlertDialogCancel className="h-4 w-4 cursor-pointer border-none">
@@ -345,15 +362,19 @@ export default function CalendarPage() {
                                           className={cn(
                                             "flex gap-2 w-3 h-3 rounded-xs flex-shrink-0",
                                             getDepartmentColor(
-                                              appointment.courseName
+                                              appointment.course.name
                                             )
                                           )}
                                         />
-                                        {appointment.disciplineName}
+                                        {appointment.discipline.name}
                                       </AlertDialogTitle>
                                     </AlertDialogHeader>
 
                                     <div className="space-y-3 text-sm pt-2">
+                                      <p className="flex gap-2 items-center">
+                                        <GraduationCap className="h-4 w-4" />
+                                        {appointment.course.name}
+                                      </p>
                                       <p className="flex gap-2 items-center">
                                         <Calendar1Icon className="h-4 w-4" />
                                         {appointment.name}
@@ -386,7 +407,9 @@ export default function CalendarPage() {
                                       </p>
                                       <p className="flex gap-2 items-center">
                                         <FileText className="h-4 w-4" />
-                                        {appointment.notes}
+                                        {appointment.notes
+                                          ? appointment.notes
+                                          : "Sem anotações"}
                                       </p>
                                     </div>
                                   </AlertDialogContent>
@@ -405,38 +428,4 @@ export default function CalendarPage() {
       </div>
     </div>
   );
-}
-
-{
-  /* <AlertDialog>
-  <AlertDialogTrigger asChild>
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-5 w-5 text-red-500 hover:text-red-600 hover:bg-transparent -mt-1 -mr-1 cursor-pointer "
-    >
-      <Trash2 className="h-3 w-3 border-none" />
-    </Button>
-  </AlertDialogTrigger>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>Excluir Agendamento</AlertDialogTitle>
-      <AlertDialogDescription>
-        Tem certeza de que deseja excluir este agendamento? Essa ação não poderá
-        ser desfeita.
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <AlertDialogCancel className="cursor-pointer">
-        Manter Agendamento
-      </AlertDialogCancel>
-      <AlertDialogAction
-        className="bg-red-500 hover:bg-red-600 cursor-pointer"
-        onClick={() => handleDeleteSchedule(appointment.id)}
-      >
-        Excluir Agendamento
-      </AlertDialogAction>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>; */
 }
