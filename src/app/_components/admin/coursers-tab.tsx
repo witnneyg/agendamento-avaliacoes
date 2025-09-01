@@ -36,7 +36,7 @@ interface Course {
   title: string;
   description: string;
   icon: string;
-  status: "active" | "inactive";
+  status: "ativo" | "inativo";
   disciplineCount: number;
 }
 
@@ -54,7 +54,7 @@ const initialCourses: Course[] = academicCourses.map((course: any) => ({
   title: course.title,
   description: course.description,
   icon: course.id,
-  status: "active" as const,
+  status: "ativo" as const,
   disciplineCount: Math.floor(Math.random() * 10) + 5, // Contagem aleatória para demonstração
 }));
 
@@ -83,7 +83,7 @@ export function CoursesTab() {
       const newCourse: Course = {
         id: formData.title.toLowerCase().replace(/\s+/g, "-"),
         ...formData,
-        status: "active",
+        status: "ativo",
         disciplineCount: 0,
       };
       setCourses((prev) => [...prev, newCourse]);
@@ -119,7 +119,7 @@ export function CoursesTab() {
         course.id === courseId
           ? {
               ...course,
-              status: course.status === "active" ? "inactive" : "active",
+              status: course.status === "ativo" ? "inativo" : "ativo",
             }
           : course
       )
@@ -155,7 +155,7 @@ export function CoursesTab() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Título do Curso</Label>
+                <Label htmlFor="title">Nome do Curso</Label>
                 <Input
                   id="title"
                   value={formData.title}
@@ -163,22 +163,6 @@ export function CoursesTab() {
                     setFormData((prev) => ({ ...prev, title: e.target.value }))
                   }
                   placeholder="Ciência da Computação"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  placeholder="Breve descrição do curso"
-                  rows={3}
                   required
                 />
               </div>
@@ -208,11 +192,13 @@ export function CoursesTab() {
                   <div className="p-2 bg-primary/10 rounded-full">
                     {iconMap[course.icon as keyof typeof iconMap] || iconMap.cs}
                   </div>
-                  <div>
-                    <CardTitle className="text-lg">{course.title}</CardTitle>
+                  <div className="flex gap-2">
+                    <CardTitle className="text-lg">
+                      {course.title}Programação
+                    </CardTitle>
                     <Badge
                       variant={
-                        course.status === "active" ? "default" : "secondary"
+                        course.status === "ativo" ? "default" : "secondary"
                       }
                     >
                       {course.status}
@@ -222,9 +208,6 @@ export function CoursesTab() {
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                {course.description}
-              </p>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">
                   {course.disciplineCount} disciplinas
@@ -242,12 +225,12 @@ export function CoursesTab() {
                     size="icon"
                     onClick={() => toggleStatus(course.id)}
                     className={
-                      course.status === "active"
+                      course.status === "ativo"
                         ? "text-yellow-500"
                         : "text-green-500"
                     }
                   >
-                    {course.status === "active" ? "Pausar" : "Ativar"}
+                    {course.status === "ativo" ? "Pausar" : "Ativar"}
                   </Button>
                   <Button
                     variant="ghost"

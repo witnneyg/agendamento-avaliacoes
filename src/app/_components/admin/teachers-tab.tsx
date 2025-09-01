@@ -45,11 +45,8 @@ import { academicCourses } from "@/app/mocks";
 interface Teacher {
   id: string;
   name: string;
-  email: string;
-  phone: string;
-  department: string;
-  specialization: string;
-  bio: string;
+  course: string;
+  discipline: string;
   status: "active" | "inactive";
 }
 
@@ -57,31 +54,22 @@ const initialTeachers: Teacher[] = [
   {
     id: "1",
     name: "Dra. Sarah Johnson",
-    email: "sarah.johnson@university.edu",
-    phone: "(555) 123-4567",
-    department: "cs",
-    specialization: "Engenharia de Software, IA",
-    bio: "Especialista em desenvolvimento de software e inteligência artificial com mais de 10 anos de experiência.",
+    course: "cs",
+    discipline: "Programação",
     status: "active",
   },
   {
     id: "2",
     name: "Prof. Michael Chen",
-    email: "michael.chen@university.edu",
-    phone: "(555) 234-5678",
-    department: "math",
-    specialization: "Cálculo, Álgebra Linear",
-    bio: "Professor de matemática especializado em cálculo avançado e álgebra linear.",
+    course: "math",
+    discipline: "Programação",
     status: "active",
   },
   {
     id: "3",
     name: "Dra. Emily Rodriguez",
-    email: "emily.rodriguez@university.edu",
-    phone: "(555) 345-6789",
-    department: "medicine",
-    specialization: "Anatomia, Fisiologia",
-    bio: "Médica e educadora com expertise em anatomia e fisiologia humana.",
+    course: "medicine",
+    discipline: "Programação",
     status: "active",
   },
 ];
@@ -93,10 +81,8 @@ export function TeachersTab() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phone: "",
-    department: "",
-    specialization: "",
-    bio: "",
+    discipline: "",
+    course: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -125,10 +111,8 @@ export function TeachersTab() {
     setFormData({
       name: "",
       email: "",
-      phone: "",
-      department: "",
-      specialization: "",
-      bio: "",
+      discipline: "",
+      course: "",
     });
     setEditingTeacher(null);
     setIsDialogOpen(false);
@@ -137,12 +121,10 @@ export function TeachersTab() {
   const handleEdit = (teacher: Teacher) => {
     setEditingTeacher(teacher);
     setFormData({
-      name: teacher.name,
-      email: teacher.email,
-      phone: teacher.phone,
-      department: teacher.department,
-      specialization: teacher.specialization,
-      bio: teacher.bio,
+      name: "",
+      email: "",
+      discipline: "",
+      course: "",
     });
     setIsDialogOpen(true);
   };
@@ -200,7 +182,7 @@ export function TeachersTab() {
                   required
                 />
               </div>
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
@@ -212,29 +194,18 @@ export function TeachersTab() {
                   placeholder="joao.silva@university.edu"
                   required
                 />
-              </div>
+              </div> */}
+
               <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, phone: e.target.value }))
-                  }
-                  placeholder="(555) 123-4567"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="department">Departamento</Label>
+                <Label htmlFor="department">Curso</Label>
                 <Select
-                  value={formData.department}
+                  value={formData.course}
                   onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, department: value }))
+                    setFormData((prev) => ({ ...prev, course: value }))
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o departamento" />
+                    <SelectValue placeholder="Selecione o curso" />
                   </SelectTrigger>
                   <SelectContent>
                     {academicCourses.map((course: any) => (
@@ -246,32 +217,26 @@ export function TeachersTab() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="specialization">Especialização</Label>
-                <Input
-                  id="specialization"
-                  value={formData.specialization}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      specialization: e.target.value,
-                    }))
+                <Label htmlFor="department">Disciplina</Label>
+                <Select
+                  value={formData.discipline}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, discipline: value }))
                   }
-                  placeholder="Ex.: Engenharia de Software, IA"
-                  required
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o curso" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {academicCourses.map((course: any) => (
+                      <SelectItem key={course.id} value={course.id}>
+                        {course.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="bio">Biografia</Label>
-                <Textarea
-                  id="bio"
-                  value={formData.bio}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, bio: e.target.value }))
-                  }
-                  placeholder="Breve descrição da experiência e expertise"
-                  rows={3}
-                />
-              </div>
+
               <DialogFooter>
                 <Button
                   type="button"
@@ -301,9 +266,9 @@ export function TeachersTab() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
-                <TableHead>Departamento</TableHead>
-                <TableHead>Contato</TableHead>
-                <TableHead>Especialização</TableHead>
+                <TableHead>Curso</TableHead>
+                <TableHead>Disciplina</TableHead>
+                <TableHead></TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -314,25 +279,17 @@ export function TeachersTab() {
                   <TableCell>
                     <div>
                       <div className="font-medium">{teacher.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {teacher.bio}
-                      </div>
                     </div>
                   </TableCell>
-                  <TableCell>{getDepartmentName(teacher.department)}</TableCell>
+                  <TableCell>{getDepartmentName(teacher.course)}</TableCell>
                   <TableCell>
                     <div className="space-y-1">
                       <div className="flex items-center text-sm">
-                        <Mail className="mr-1 h-3 w-3" />
-                        {teacher.email}
-                      </div>
-                      <div className="flex items-center text-sm">
-                        <Phone className="mr-1 h-3 w-3" />
-                        {teacher.phone}
+                        {teacher.discipline}
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{teacher.specialization}</TableCell>
+                  <TableCell></TableCell>
                   <TableCell>
                     <Badge
                       variant={

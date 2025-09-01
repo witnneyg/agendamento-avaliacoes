@@ -172,7 +172,7 @@ export function DisciplinesTab() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Título da Disciplina</Label>
+                <Label htmlFor="title">Nome da Disciplina</Label>
                 <Input
                   id="title"
                   value={formData.name}
@@ -180,22 +180,6 @@ export function DisciplinesTab() {
                     setFormData((prev) => ({ ...prev, name: e.target.value }))
                   }
                   placeholder="Introdução à Programação"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  placeholder="Breve descrição da disciplina"
-                  rows={3}
                   required
                 />
               </div>
@@ -271,7 +255,6 @@ export function DisciplinesTab() {
                 <TableHead>Título</TableHead>
                 <TableHead>Curso</TableHead>
                 <TableHead>Semestre</TableHead>
-                <TableHead>Descrição</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -285,9 +268,6 @@ export function DisciplinesTab() {
                   <TableCell>{getCurso(disciplina.courseId)?.name}</TableCell>
                   <TableCell>
                     {getSemestre(disciplina.semesterId)?.name}
-                  </TableCell>
-                  <TableCell className="max-w-xs truncate">
-                    {disciplina.description}
                   </TableCell>
                   <TableCell>
                     <Badge
