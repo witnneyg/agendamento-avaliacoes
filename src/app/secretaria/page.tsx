@@ -11,10 +11,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, BookOpen, GraduationCap, Calendar, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { TeachersTab } from "../_components/secretaria/teachers-tab";
-import { CoursesTab } from "../_components/secretaria/coursers-tab";
-import { SettingsTab } from "../_components/secretaria/settings-tab";
-import { DisciplinesTab } from "../_components/secretaria/disciplines-tab";
+import { TeachersTab } from "./secretaria/teachers-tab";
+import { CoursesTab } from "./secretaria/coursers-tab";
+import { SettingsTab } from "./secretaria/settings-tab";
+import DisciplinesTab from "./secretaria/disciplines-tab";
 import { NavBar } from "../_components/navbar";
 
 export default function AdminPage() {

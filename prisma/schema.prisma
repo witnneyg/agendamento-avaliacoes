@@ -57,12 +57,11 @@ model Semester {
 model Discipline {
   id          String    @id @default(uuid())
   name        String
-  description String
   semesterId  String
   semester    Semester  @relation(fields: [semesterId], references: [id])
   teachers    Teacher[] @relation("DisciplineTeachers")
   courses     Course[]  @relation("CourseDisciplines")
-
+  status Status @default(ACTIVE)
 
   schedulings Scheduling[]
   createdAt   DateTime     @default(now())

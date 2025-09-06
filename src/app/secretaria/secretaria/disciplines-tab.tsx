@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -40,10 +40,12 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2 } from "lucide-react";
-import {
-  academicCourses,
-  disciplinesBySemesterAndDepartment,
-} from "@/app/mocks";
+import { getDisciplines } from "@/app/_actions/get-disciplines";
+import { Course, Discipline, Prisma, Semester } from "@prisma/client";
+import { getCourses } from "@/app/_actions/get-courses";
+import { getSemesters } from "@/app/_actions/get-semester";
+import { translateTeacherStatus } from "@/utils/translate-teacher-status";
+import { createDiscipline } from "@/app/_actions/create-discipline";
 
 interface Disciplina {
   id: string;
@@ -54,62 +56,82 @@ interface Disciplina {
   status: "ativa" | "inativa";
 }
 
-// Converter disciplinas existentes para o novo formato
-const disciplinasIniciais: Disciplina[] = [];
-Object.entries(disciplinesBySemesterAndDepartment).forEach(
-  ([courseId, semesters]) => {
-    Object.entries(semesters).forEach(([semesterId, disciplinas]) => {
-      disciplinas.forEach((disciplina) => {
-        disciplinasIniciais.push({
-          ...disciplina,
-          courseId,
-          semesterId,
-          status: "ativa",
-        });
-      });
-    });
-  }
-);
+type DisciplineWithRelations = Prisma.DisciplineGetPayload<{
+  include: {
+    courses: true;
+    semester: true;
+  };
+}>;
 
-export function DisciplinesTab() {
-  const [disciplinas, setDisciplinas] =
-    useState<Disciplina[]>(disciplinasIniciais);
+// Converter disciplinas existentes para o novo formato
+// const disciplinasIniciais: Disciplina[] = [];
+// Object.entries(disciplinesBySemesterAndDepartment).forEach(
+//   ([courseId, semesters]) => {
+//     Object.entries(semesters).forEach(([semesterId, disciplinas]) => {
+//       disciplinas.forEach((disciplina) => {
+//         disciplinasIniciais.push({
+//           ...disciplina,
+//           courseId,
+//           semesterId,
+//           status: "ativa",
+//         });
+//       });
+//     });
+//   }
+
+export default function DisciplinesTab() {
+  const [disciplinas, setDisciplinas] = useState<DisciplineWithRelations[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [disciplinaEditando, setDisciplinaEditando] =
     useState<Disciplina | null>(null);
   const [formData, setFormData] = useState({
     name: "",
-    description: "",
     courseId: "",
     semesterId: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  console.log({ formData });
+
+  useEffect(() => {
+    const fetch = async () => {
+      const data = await getDisciplines();
+      setDisciplinas(data);
+    };
+
+    fetch();
+  }, []);
+
+  useEffect(() => {
+    const fetch = async () => {
+      const data = await getCourses();
+      setCourses(data);
+    };
+
+    fetch();
+  }, []);
+  useEffect(() => {
+    const fetch = async () => {
+      const data = await getSemesters();
+      setSemesters(data);
+    };
+
+    fetch();
+  }, []);
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (disciplinaEditando) {
-      // Atualizar disciplina existente
-      setDisciplinas((prev) =>
-        prev.map((disciplina) =>
-          disciplina.id === disciplinaEditando.id
-            ? { ...disciplina, ...formData }
-            : disciplina
-        )
-      );
-    } else {
-      // Adicionar nova disciplina
-      const novaDisciplina: Disciplina = {
-        id: Date.now().toString(),
-        ...formData,
-        status: "ativa",
-      };
-      setDisciplinas((prev) => [...prev, novaDisciplina]);
-    }
+    const newDiscipline = await createDiscipline({
+      courseId: formData.courseId,
+      name: formData.name,
+      semesterId: formData.semesterId,
+    });
 
-    // Resetar formulário
+    setDisciplinas((prev) => [...prev, newDiscipline]);
     setFormData({
       name: "",
-      description: "",
       courseId: "",
       semesterId: "",
     });
@@ -117,12 +139,12 @@ export function DisciplinesTab() {
     setIsDialogOpen(false);
   };
 
-  const handleEdit = (disciplina: Disciplina) => {
-    setDisciplinaEditando(disciplina);
+  console.log({ disciplinas });
+
+  const handleEdit = (disciplina: DisciplineWithRelations) => {
     setFormData({
       name: disciplina.name ?? "",
-      description: disciplina.description,
-      courseId: disciplina.courseId,
+      courseId: disciplina.id,
       semesterId: disciplina.semesterId,
     });
     setIsDialogOpen(true);
@@ -132,15 +154,6 @@ export function DisciplinesTab() {
     setDisciplinas((prev) =>
       prev.filter((disciplina) => disciplina.id !== disciplinaId)
     );
-  };
-
-  const getCurso = (courseId: string) => {
-    return academicCourses.find((curso: any) => curso.id === courseId);
-  };
-
-  const getSemestre = (semesterId: string) => {
-    return academicCourses.find((semestre: any) => semestre.id === semesterId);
-    // return semestres.find((semestre: any) => semestre.id === semesterId);
   };
 
   return (
@@ -195,9 +208,9 @@ export function DisciplinesTab() {
                     <SelectValue placeholder="Selecione um curso" />
                   </SelectTrigger>
                   <SelectContent>
-                    {academicCourses.map((curso: any) => (
+                    {courses.map((curso) => (
                       <SelectItem key={curso.id} value={curso.id}>
-                        {curso.title}
+                        {curso.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -215,12 +228,11 @@ export function DisciplinesTab() {
                     <SelectValue placeholder="Selecione um semestre" />
                   </SelectTrigger>
                   <SelectContent>
-                    {/* {semestres.map((semestre: any) => (
+                    {semesters.map((semestre) => (
                       <SelectItem key={semestre.id} value={semestre.id}>
-                        {semestre.title}
+                        {semestre.name}
                       </SelectItem>
-                    ))} */}
-                    semestres semestres semestres semestres semestres
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -265,17 +277,17 @@ export function DisciplinesTab() {
                   <TableCell className="font-medium">
                     {disciplina.name}
                   </TableCell>
-                  <TableCell>{getCurso(disciplina.courseId)?.name}</TableCell>
                   <TableCell>
-                    {getSemestre(disciplina.semesterId)?.name}
+                    {disciplina.courses.map((item) => item.name)}
                   </TableCell>
+                  <TableCell>{disciplina.semester.name}</TableCell>
                   <TableCell>
                     <Badge
                       variant={
-                        disciplina.status === "ativa" ? "default" : "secondary"
+                        disciplina.status === "ACTIVE" ? "default" : "secondary"
                       }
                     >
-                      {disciplina.status}
+                      {translateTeacherStatus(disciplina.status)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">

@@ -205,7 +205,9 @@ export function CoursesTab() {
                     {/* {iconMap[course. as keyof typeof iconMap] || iconMap.cs} */}
                   </div>
                   <div className="flex gap-2">
-                    <CardTitle className="text-lg">{course.name}</CardTitle>
+                    <CardTitle className="text-lg truncate">
+                      {course.name}
+                    </CardTitle>
                     <Badge
                       variant={
                         course.status === "ACTIVE" ? "default" : "secondary"
