@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +22,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -39,11 +48,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Mail, Phone } from "lucide-react";
-import { academicCourses } from "@/app/mocks";
-import { getTeacherByCourse } from "@/app/_actions/get-teacher-by-disciplines";
+import { Plus, Edit, Trash2 } from "lucide-react";
 import { getTeachers } from "@/app/_actions/get-teacher";
-import { Course, Discipline, Prisma, Teacher } from "@prisma/client";
+import type { Course, Discipline, Prisma, Teacher } from "@prisma/client";
 import { translateTeacherStatus } from "@/utils/translate-teacher-status";
 import { getCourses } from "@/app/_actions/get-courses";
 import { getDisciplinesByCourseId } from "@/app/_actions/get-discipline-by-course-id";
@@ -58,6 +65,8 @@ export function TeachersTab() {
   const [coursers, setCourses] = useState<Course[]>([]);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [teacherToDelete, setTeacherToDelete] = useState<string | null>(null);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -96,7 +105,6 @@ export function TeachersTab() {
     e.preventDefault();
 
     if (editingTeacher) {
-      // Atualiza professor existente (opcional)
       setTeachers((prev) =>
         prev.map((teacher) =>
           teacher.id === editingTeacher.id
@@ -105,18 +113,15 @@ export function TeachersTab() {
         )
       );
     } else {
-      // Cria no banco e adiciona no estado
       const newTeacher: any = await createTeacher({
         name: formData.name,
         courseId: formData.courseId,
         disciplineId: formData.disciplineId,
       });
 
-      // Atualiza a lista de professores em tela sem precisar F5
       setTeachers((prev) => [...prev, newTeacher]);
     }
 
-    // Reseta formulário e fecha modal
     setFormData({
       name: "",
       disciplineId: "",
@@ -137,7 +142,18 @@ export function TeachersTab() {
   };
 
   const handleDelete = (teacherId: string) => {
-    setTeachers((prev) => prev.filter((teacher) => teacher.id !== teacherId));
+    setTeacherToDelete(teacherId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (teacherToDelete) {
+      setTeachers((prev) =>
+        prev.filter((teacher) => teacher.id !== teacherToDelete)
+      );
+      setTeacherToDelete(null);
+    }
+    setDeleteConfirmOpen(false);
   };
 
   return (
@@ -333,6 +349,27 @@ export function TeachersTab() {
           </Table>
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este professor? Esta ação não pode
+              ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

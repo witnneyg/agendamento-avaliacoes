@@ -13,7 +13,6 @@ import { Users, BookOpen, GraduationCap, Calendar, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TeachersTab } from "../_components/secretaria/teachers-tab";
 import { CoursesTab } from "../_components/secretaria/coursers-tab";
-import { AppointmentsTab } from "../_components/secretaria/scheduling-tab";
 import { SettingsTab } from "../_components/secretaria/settings-tab";
 import { DisciplinesTab } from "../_components/secretaria/disciplines-tab";
 import { NavBar } from "../_components/navbar";
@@ -42,12 +41,12 @@ export default function AdminPage() {
             onValueChange={setActiveTab}
             className="space-y-4"
           >
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="teachers">Professores</TabsTrigger>
               <TabsTrigger value="courses">Cursos</TabsTrigger>
               <TabsTrigger value="disciplines">Disciplinas</TabsTrigger>
-              <TabsTrigger value="appointments">Agendamentos</TabsTrigger>
+              {/* <TabsTrigger value="appointments">Agendamentos</TabsTrigger> */}
               <TabsTrigger value="settings">Configurações</TabsTrigger>
             </TabsList>
 
@@ -210,9 +209,9 @@ export default function AdminPage() {
               <DisciplinesTab />
             </TabsContent>
 
-            <TabsContent value="appointments">
+            {/* <TabsContent value="appointments">
               <AppointmentsTab />
-            </TabsContent>
+            </TabsContent> */}
 
             <TabsContent value="settings">
               <SettingsTab />

@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +16,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import {
   Plus,
@@ -24,14 +33,13 @@ import {
   Trash2,
   Code,
   Calculator,
-  FlaskRoundIcon as Flask,
+  Flag as Flask,
   Globe,
   Microscope,
   Brain,
 } from "lucide-react";
-import { academicCourses } from "@/app/mocks";
 import { getCourses } from "@/app/_actions/get-courses";
-import { Course } from "@prisma/client";
+import type { Course } from "@prisma/client";
 
 const iconMap = {
   cs: <Code className="h-5 w-5" />,
@@ -45,10 +53,13 @@ const iconMap = {
 export function CoursesTab() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState<string | null>(null);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [formData, setFormData] = useState({
     name: "",
   });
+
   useEffect(() => {
     const fetch = async () => {
       const data = await getCourses();
@@ -100,7 +111,18 @@ export function CoursesTab() {
   };
 
   const handleDelete = (courseId: string) => {
-    setCourses((prev) => prev.filter((course) => course.id !== courseId));
+    setCourseToDelete(courseId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (courseToDelete) {
+      setCourses((prev) =>
+        prev.filter((course) => course.id !== courseToDelete)
+      );
+      setCourseToDelete(null);
+    }
+    setDeleteConfirmOpen(false);
   };
 
   const toggleStatus = (courseId: string) => {
@@ -234,6 +256,27 @@ export function CoursesTab() {
           </Card>
         ))}
       </div>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este curso? Esta ação não pode ser
+              desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
