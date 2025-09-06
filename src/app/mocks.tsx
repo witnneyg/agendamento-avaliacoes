@@ -3,27 +3,7 @@ import { Discipline } from "./_components/discipline-selector";
 import { Semester } from "./_components/semester-selector";
 import { Period } from "@prisma/client";
 
-import {
-  BookOpen,
-  Calculator,
-  Microscope,
-  Brain,
-  Code,
-  Briefcase,
-  Leaf,
-  FileText,
-  Gavel,
-  Dumbbell,
-  Syringe,
-  Hammer,
-  Activity,
-  PawPrint,
-  GraduationCap,
-  Smile,
-  Sun,
-  Sunset,
-  Moon,
-} from "lucide-react";
+import { Sun, Sunset, Moon } from "lucide-react";
 import { TimePeriod } from "./_components/time-period.selector";
 
 export const academicCourses: Course[] = [
@@ -828,48 +808,40 @@ export const disciplinesBySemesterAndDepartment: Record<
       {
         id: "intro-programming",
         name: "Introduction to Programming",
-        description: "Fundamentals of programming using Python",
       },
       {
         id: "discrete-math",
         name: "Discrete Mathematics",
-        description: "Mathematical foundations for computer science",
       },
     ],
     second: [
       {
         id: "data-structures",
         name: "Data Structures",
-        description: "Implementation and analysis of data structures",
       },
       {
         id: "algorithms",
         name: "Algorithms",
-        description: "Design and analysis of algorithms",
       },
     ],
     third: [
       {
         id: "web-dev",
         name: "Web Development",
-        description: "Building web applications with modern technologies",
       },
       {
         id: "databases",
         name: "Database Systems",
-        description: "Design and implementation of database systems",
       },
     ],
     fourth: [
       {
         id: "ai-intro",
         name: "Introduction to AI",
-        description: "Foundations of artificial intelligence",
       },
       {
         id: "mobile-dev",
         name: "Mobile App Development",
-        description: "Building applications for iOS and Android",
       },
     ],
   },
@@ -878,123 +850,100 @@ export const disciplinesBySemesterAndDepartment: Record<
       {
         id: "anatomy-1",
         name: "Anatomia Aplicada a Medicina I",
-        description: "Structure of the human body",
       },
       {
         id: "2",
         name: "Genética Geral",
-        description: "Biochemical processes in the human body",
       },
       {
         id: "3",
         name: "Biologia Celular e Molecular",
-        description: "Biochemical processes in the human body",
       },
       {
         id: "4",
         name: "Biofísica Médica",
-        description: "Biochemical processes in the human body",
       },
       {
         id: "5",
         name: "Embriologia",
-        description: "Biochemical processes in the human body",
       },
       {
         id: "6",
         name: "Bioética",
-        description: "Biochemical processes in the human body",
       },
       {
         id: "7",
         name: "Fisiologia Humana I",
-        description: "Biochemical processes in the human body",
       },
       {
         id: "8",
         name: "Casos Clinicos Colaborativos I",
-        description: "Biochemical processes in the human body",
       },
       {
         id: "9",
         name: "Habilidades Médicas I",
-        description: "Biochemical processes in the human body",
       },
       {
         id: "10",
         name: "MISCO - Medicina Integrada à Comunidade I",
-        description: "Biochemical processes in the human body",
       },
     ],
     second: [
       {
         id: "anatomy-1",
         name: "Anatomia Aplicada a Medicina II",
-        description: "Structure of the human body",
       },
       {
         id: "2",
         name: "Psicologia Médica",
-        description: "Biochemical processes in the human body",
       },
       {
         id: "3",
         name: "Metodologia Científica",
-        description: "Biochemical processes in the human body",
       },
       {
         id: "biochemistry",
         name: "Bioquímica I",
-        description: "Biochemical processes in the human body",
       },
       {
         id: "4",
         name: "Histologia Humana I",
-        description: "Biochemical processes in the human body",
       },
       {
         id: "5",
         name: "Parasitologia Médica",
-        description: "Biochemical processes in the human body",
       },
       {
         id: "6",
         name: "Habilidades Médicas II",
-        description: "Biochemical processes in the human body",
       },
       {
         id: "7",
         name: "Casos Clinicos Colaborativos II",
-        description: "Biochemical processes in the human body",
       },
       {
         id: "8",
         name: "MISCO - Medicina Integrada à Comunidade II",
-        description: "Biochemical processes in the human body",
       },
     ],
     third: [
       {
         id: "pharmacology",
         name: "Basic Pharmacology",
-        description: "Principles of drug action",
       },
       {
         id: "pathology",
         name: "General Pathology",
-        description: "Mechanisms of disease",
       },
     ],
     fourth: [
       {
         id: "clinical-skills",
         name: "Clinical Skills",
-        description: "Basic clinical examination techniques",
       },
       {
         id: "medical-ethics",
         name: "Medical Ethics",
-        description: "Ethical issues in medicine",
       },
     ],
   },
@@ -1003,49 +952,40 @@ export const disciplinesBySemesterAndDepartment: Record<
       {
         id: "intro-psych",
         name: "Introduction to Psychology",
-        description: "Overview of psychological principles",
       },
       {
         id: "developmental",
         name: "Developmental Psychology",
-        description: "Psychological development across the lifespan",
       },
     ],
     second: [
       {
         id: "cognitive",
         name: "Cognitive Psychology",
-        description: "Mental processes such as thinking and memory",
       },
       {
         id: "social",
         name: "Social Psychology",
-        description:
-          "How people's thoughts and behaviors are influenced by others",
       },
     ],
     third: [
       {
         id: "abnormal",
         name: "Abnormal Psychology",
-        description: "Psychological disorders and treatments",
       },
       {
         id: "personality",
         name: "Personality Psychology",
-        description: "Theories and research on personality",
       },
     ],
     fourth: [
       {
         id: "clinical",
         name: "Clinical Psychology",
-        description: "Assessment and treatment of mental disorders",
       },
       {
         id: "health",
         name: "Health Psychology",
-        description: "Psychological factors in health and illness",
       },
     ],
   },

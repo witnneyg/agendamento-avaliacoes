@@ -9,7 +9,6 @@ import { getDisciplinesBySemester } from "../_actions/get-disciplines-by-semeste
 export interface Discipline {
   id: string;
   name: string;
-  description: string;
 }
 
 interface DisciplineSelectorProps {
@@ -52,9 +51,6 @@ export function DisciplineSelector({
             <CardContent className="p-6 h-full">
               <div className="flex flex-col space-y-2 h-full justify-between">
                 <h3 className="font-medium text-lg">{discipline.name}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {discipline.description}
-                </p>
                 <Button className="mt-2 w-full cursor-pointer">
                   Selecionar
                 </Button>
