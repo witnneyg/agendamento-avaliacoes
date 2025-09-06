@@ -50,7 +50,6 @@ async function main() {
   const disciplinaLP = await prisma.discipline.create({
     data: {
       name: "Lógica de Programação",
-      description: "Introdução à lógica e algoritmos.",
       semesterId: semestreTI1.id,
       courses: { connect: { id: cursoTI.id } },
     },
@@ -59,7 +58,6 @@ async function main() {
   const disciplinaMD = await prisma.discipline.create({
     data: {
       name: "Matemática Discreta",
-      description: "Conceitos matemáticos para computação.",
       semesterId: semestreTI1.id,
       courses: { connect: { id: cursoTI.id } },
     },
@@ -68,7 +66,6 @@ async function main() {
   const disciplinaED = await prisma.discipline.create({
     data: {
       name: "Estrutura de Dados",
-      description: "Estudo de estruturas como listas, pilhas e árvores.",
       semesterId: semestreTI2.id,
       courses: { connect: { id: cursoTI.id } },
     },
@@ -130,7 +127,6 @@ async function main() {
   const disciplinaAnatomia = await prisma.discipline.create({
     data: {
       name: "Anatomia Humana",
-      description: "Estudo das estruturas do corpo humano.",
       semesterId: semestreMed1.id,
       courses: { connect: { id: cursoMed.id } },
     },
@@ -139,7 +135,6 @@ async function main() {
   const disciplinaFisiologia = await prisma.discipline.create({
     data: {
       name: "Fisiologia",
-      description: "Funcionamento dos sistemas do corpo humano.",
       semesterId: semestreMed1.id,
       courses: { connect: { id: cursoMed.id } },
     },
@@ -148,7 +143,6 @@ async function main() {
   const disciplinaBioquimica = await prisma.discipline.create({
     data: {
       name: "Bioquímica",
-      description: "Estudo das reações químicas nos organismos vivos.",
       semesterId: semestreMed2.id,
       courses: { connect: { id: cursoMed.id } },
     },
