@@ -11,8 +11,5 @@ export async function getScheduling() {
       user: true,
     },
   });
-
-  console.log(schedulings);
-
   return schedulings;
 }

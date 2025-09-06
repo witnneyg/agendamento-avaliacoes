@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,15 +30,8 @@ import {
   Brain,
 } from "lucide-react";
 import { academicCourses } from "@/app/mocks";
-
-interface Course {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  status: "ativo" | "inativo";
-  disciplineCount: number;
-}
+import { getCourses } from "@/app/_actions/get-courses";
+import { Course } from "@prisma/client";
 
 const iconMap = {
   cs: <Code className="h-5 w-5" />,
@@ -49,51 +42,50 @@ const iconMap = {
   geography: <Globe className="h-5 w-5" />,
 };
 
-const initialCourses: Course[] = academicCourses.map((course: any) => ({
-  id: course.id,
-  title: course.title,
-  description: course.description,
-  icon: course.id,
-  status: "ativo" as const,
-  disciplineCount: Math.floor(Math.random() * 10) + 5, // Contagem aleatória para demonstração
-}));
-
 export function CoursesTab() {
-  const [courses, setCourses] = useState<Course[]>(initialCourses);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    icon: "cs",
+    name: "",
   });
+  useEffect(() => {
+    const fetch = async () => {
+      const data = await getCourses();
+      setCourses(data);
+    };
+
+    fetch();
+  }, []);
+
+  function statusPt(status: "ACTIVE" | "INACTIVE") {
+    return status === "ACTIVE" ? "ativo" : "inativo";
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (editingCourse) {
-      // Atualiza curso existente
-      setCourses((prev) =>
-        prev.map((course) =>
-          course.id === editingCourse.id ? { ...course, ...formData } : course
-        )
-      );
-    } else {
-      // Adiciona novo curso
-      const newCourse: Course = {
-        id: formData.title.toLowerCase().replace(/\s+/g, "-"),
-        ...formData,
-        status: "ativo",
-        disciplineCount: 0,
-      };
-      setCourses((prev) => [...prev, newCourse]);
-    }
+    // if (editingCourse) {
+    //   // Atualiza curso existente
+    //   setCourses((prev) =>
+    //     prev.map((course) =>
+    //       course.id === editingCourse.id ? { ...course, ...formData } : course
+    //     )
+    //   );
+    // } else {
+    //   // Adiciona novo curso
+    //   const newCourse: Course = {
+    //     id: formData.name.toLowerCase().replace(/\s+/g, "-"),
+    //     ...formData,
+    //     status: "ativo",
+    //     disciplineCount: 0,
+    //   };
+    //   setCourses((prev) => [...prev, newCourse]);
+    // }
 
     // Reseta formulário
     setFormData({
-      title: "",
-      description: "",
-      icon: "cs",
+      name: "",
     });
     setEditingCourse(null);
     setIsDialogOpen(false);
@@ -102,9 +94,7 @@ export function CoursesTab() {
   const handleEdit = (course: Course) => {
     setEditingCourse(course);
     setFormData({
-      title: course.title,
-      description: course.description,
-      icon: course.icon,
+      name: course.name,
     });
     setIsDialogOpen(true);
   };
@@ -119,7 +109,7 @@ export function CoursesTab() {
         course.id === courseId
           ? {
               ...course,
-              status: course.status === "ativo" ? "inativo" : "ativo",
+              status: course.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
             }
           : course
       )
@@ -155,12 +145,12 @@ export function CoursesTab() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Nome do Curso</Label>
+                <Label htmlFor="name">Nome do Curso</Label>
                 <Input
-                  id="title"
-                  value={formData.title}
+                  id="name"
+                  value={formData.name}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, title: e.target.value }))
+                    setFormData((prev) => ({ ...prev, name: e.target.value }))
                   }
                   placeholder="Ciência da Computação"
                   required
@@ -190,18 +180,16 @@ export function CoursesTab() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-primary/10 rounded-full">
-                    {iconMap[course.icon as keyof typeof iconMap] || iconMap.cs}
+                    {/* {iconMap[course. as keyof typeof iconMap] || iconMap.cs} */}
                   </div>
                   <div className="flex gap-2">
-                    <CardTitle className="text-lg">
-                      {course.title}Programação
-                    </CardTitle>
+                    <CardTitle className="text-lg">{course.name}</CardTitle>
                     <Badge
                       variant={
-                        course.status === "ativo" ? "default" : "secondary"
+                        course.status === "ACTIVE" ? "default" : "secondary"
                       }
                     >
-                      {course.status}
+                      {statusPt(course.status)}
                     </Badge>
                   </div>
                 </div>
@@ -210,7 +198,7 @@ export function CoursesTab() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">
-                  {course.disciplineCount} disciplinas
+                  {courses.length} disciplinas
                 </span>
                 <div className="flex gap-2">
                   <Button
@@ -225,12 +213,12 @@ export function CoursesTab() {
                     size="icon"
                     onClick={() => toggleStatus(course.id)}
                     className={
-                      course.status === "ativo"
+                      course.status === "ACTIVE"
                         ? "text-yellow-500"
                         : "text-green-500"
                     }
                   >
-                    {course.status === "ativo" ? "Pausar" : "Ativar"}
+                    {course.status === "ACTIVE" ? "Pausar" : "Ativar"}
                   </Button>
                   <Button
                     variant="ghost"

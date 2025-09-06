@@ -20,6 +20,11 @@ enum Role {
   ADMIN
 }
 
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
 model Course {
   id          String     @id @default(uuid())
   name        String
@@ -28,6 +33,9 @@ model Course {
   semester    Semester[]
 
   teachers Teacher[] @relation("CourseTeachers")
+  disciplines Discipline[] @relation("CourseDisciplines")
+
+  status Status @default(ACTIVE)
 
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
@@ -47,11 +55,15 @@ model Semester {
 }
 
 model Discipline {
-  id          String       @id @default(uuid())
+  id          String    @id @default(uuid())
   name        String
   description String
   semesterId  String
-  semester    Semester     @relation(fields: [semesterId], references: [id])
+  semester    Semester  @relation(fields: [semesterId], references: [id])
+  teachers    Teacher[] @relation("DisciplineTeachers")
+  courses     Course[]  @relation("CourseDisciplines")
+
+
   schedulings Scheduling[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -86,7 +98,10 @@ model Teacher {
   id   String @id @default(uuid())
   name String
 
-  courses Course[] @relation("CourseTeachers")
+  courses     Course[]     @relation("CourseTeachers")
+  disciplines Discipline[] @relation("DisciplineTeachers")
+
+  status Status @default(ACTIVE)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

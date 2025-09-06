@@ -40,6 +40,18 @@ export function NavBar() {
               Calendário
             </Link>
             <Link
+              href="/secretaria"
+              className={cn(
+                "flex items-center px-3 py-2 text-sm transition-colors hover:text-primary",
+                pathname.startsWith("/secretaria")
+                  ? "text-primary"
+                  : "text-muted-foreground"
+              )}
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              Secretaria
+            </Link>
+            <Link
               href="/admin"
               className={cn(
                 "flex items-center px-3 py-2 text-sm transition-colors hover:text-primary",

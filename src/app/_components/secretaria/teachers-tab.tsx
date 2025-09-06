@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -41,55 +41,62 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, Mail, Phone } from "lucide-react";
 import { academicCourses } from "@/app/mocks";
+import { getTeacherByCourse } from "@/app/_actions/get-teacher-by-disciplines";
+import { getTeachers } from "@/app/_actions/get-teacher";
+import { Course, Discipline, Prisma, Teacher } from "@prisma/client";
+import { translateTeacherStatus } from "@/utils/translate-teacher-status";
+import { getCourses } from "@/app/_actions/get-courses";
+import { getDisciplinesByCourseId } from "@/app/_actions/get-discipline-by-course-id";
+import { createTeacher } from "@/app/_actions/create-teacher";
 
-interface Teacher {
-  id: string;
-  name: string;
-  course: string;
-  discipline: string;
-  status: "active" | "inactive";
-}
-
-const initialTeachers: Teacher[] = [
-  {
-    id: "1",
-    name: "Dra. Sarah Johnson",
-    course: "cs",
-    discipline: "Programação",
-    status: "active",
-  },
-  {
-    id: "2",
-    name: "Prof. Michael Chen",
-    course: "math",
-    discipline: "Programação",
-    status: "active",
-  },
-  {
-    id: "3",
-    name: "Dra. Emily Rodriguez",
-    course: "medicine",
-    discipline: "Programação",
-    status: "active",
-  },
-];
+type TeacherWithRelations = Prisma.TeacherGetPayload<{
+  include: { courses: true; disciplines: true };
+}>;
 
 export function TeachersTab() {
-  const [teachers, setTeachers] = useState<Teacher[]>(initialTeachers);
+  const [teachers, setTeachers] = useState<TeacherWithRelations[]>([]);
+  const [coursers, setCourses] = useState<Course[]>([]);
+  const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [formData, setFormData] = useState({
     name: "",
-    email: "",
-    discipline: "",
-    course: "",
+    disciplineId: "",
+    courseId: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const fetch = async () => {
+      const data = await getTeachers();
+      setTeachers(data as any);
+    };
+
+    fetch();
+  }, []);
+
+  useEffect(() => {
+    const fetch = async () => {
+      const data = await getCourses();
+      setCourses(data);
+    };
+
+    fetch();
+  }, []);
+
+  useEffect(() => {
+    const fetch = async () => {
+      const data = await getDisciplinesByCourseId(formData.courseId);
+      setDisciplines(data);
+    };
+
+    fetch();
+  }, [formData.courseId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (editingTeacher) {
-      // Atualiza professor existente
+      // Atualiza professor existente (opcional)
       setTeachers((prev) =>
         prev.map((teacher) =>
           teacher.id === editingTeacher.id
@@ -98,21 +105,22 @@ export function TeachersTab() {
         )
       );
     } else {
-      // Adiciona novo professor
-      const newTeacher: Teacher = {
-        id: Date.now().toString(),
-        ...formData,
-        status: "active",
-      };
+      // Cria no banco e adiciona no estado
+      const newTeacher: any = await createTeacher({
+        name: formData.name,
+        courseId: formData.courseId,
+        disciplineId: formData.disciplineId,
+      });
+
+      // Atualiza a lista de professores em tela sem precisar F5
       setTeachers((prev) => [...prev, newTeacher]);
     }
 
-    // Reseta formulário
+    // Reseta formulário e fecha modal
     setFormData({
       name: "",
-      email: "",
-      discipline: "",
-      course: "",
+      disciplineId: "",
+      courseId: "",
     });
     setEditingTeacher(null);
     setIsDialogOpen(false);
@@ -122,22 +130,14 @@ export function TeachersTab() {
     setEditingTeacher(teacher);
     setFormData({
       name: "",
-      email: "",
-      discipline: "",
-      course: "",
+      disciplineId: "",
+      courseId: "",
     });
     setIsDialogOpen(true);
   };
 
   const handleDelete = (teacherId: string) => {
     setTeachers((prev) => prev.filter((teacher) => teacher.id !== teacherId));
-  };
-
-  const getDepartmentName = (departmentId: string) => {
-    const department = academicCourses.find(
-      (course) => course.id === departmentId
-    );
-    return department?.name || departmentId;
   };
 
   return (
@@ -182,55 +182,44 @@ export function TeachersTab() {
                   required
                 />
               </div>
-              {/* <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, email: e.target.value }))
-                  }
-                  placeholder="joao.silva@university.edu"
-                  required
-                />
-              </div> */}
 
               <div className="space-y-2">
                 <Label htmlFor="department">Curso</Label>
+
                 <Select
-                  value={formData.course}
+                  value={formData.courseId}
                   onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, course: value }))
+                    setFormData((prev) => ({ ...prev, courseId: value }))
                   }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o curso" />
                   </SelectTrigger>
                   <SelectContent>
-                    {academicCourses.map((course: any) => (
+                    {coursers.map((course) => (
                       <SelectItem key={course.id} value={course.id}>
-                        {course.title}
+                        {course.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="department">Disciplina</Label>
+                <Label htmlFor="discipline">Disciplina</Label>
                 <Select
-                  value={formData.discipline}
+                  value={formData.disciplineId}
                   onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, discipline: value }))
+                    setFormData((prev) => ({ ...prev, disciplineId: value }))
                   }
+                  disabled={!formData.courseId}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o curso" />
+                    <SelectValue placeholder="Selecione a disciplina" />
                   </SelectTrigger>
                   <SelectContent>
-                    {academicCourses.map((course: any) => (
-                      <SelectItem key={course.id} value={course.id}>
-                        {course.title}
+                    {disciplines.map((discipline) => (
+                      <SelectItem key={discipline.id} value={discipline.id}>
+                        {discipline.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -281,24 +270,44 @@ export function TeachersTab() {
                       <div className="font-medium">{teacher.name}</div>
                     </div>
                   </TableCell>
-                  <TableCell>{getDepartmentName(teacher.course)}</TableCell>
+
+                  <TableCell>
+                    {teacher.courses.map((course) => (
+                      <div key={course.id}>{course.name}</div>
+                    ))}
+                  </TableCell>
+
                   <TableCell>
                     <div className="space-y-1">
-                      <div className="flex items-center text-sm">
-                        {teacher.discipline}
-                      </div>
+                      {teacher.disciplines.length > 0 ? (
+                        teacher.disciplines.map((discipline) => (
+                          <div
+                            key={discipline.id}
+                            className="flex items-center text-sm"
+                          >
+                            {discipline.name}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm text-gray-400">
+                          Nenhuma disciplina
+                        </div>
+                      )}
                     </div>
                   </TableCell>
+
                   <TableCell></TableCell>
+
                   <TableCell>
                     <Badge
                       variant={
-                        teacher.status === "active" ? "default" : "secondary"
+                        teacher.status === "ACTIVE" ? "default" : "secondary"
                       }
                     >
-                      {teacher.status}
+                      {translateTeacherStatus(teacher.status)}
                     </Badge>
                   </TableCell>
+
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { format, set } from "date-fns";
+import { format, set, parse } from "date-fns";
 import {
   Card,
   CardContent,
@@ -38,6 +38,7 @@ type BookingDetails = {
   email: string;
   phone: string;
   notes: string;
+  time: string;
 };
 
 export function Scheduling() {
@@ -58,9 +59,6 @@ export function Scheduling() {
   const [selectedTimePeriod, setSelectedTimePeriod] = useState<
     TimePeriod | undefined
   >(undefined);
-  const [selectedTime, setSelectedTime] = useState<string | undefined>(
-    undefined
-  );
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(
     null
   );
@@ -89,11 +87,6 @@ export function Scheduling() {
 
   const handleTimePeriodSelect = (timePeriod: TimePeriod) => {
     setSelectedTimePeriod(timePeriod);
-    setStep("time");
-  };
-
-  const handleTimeSelect = (time: string) => {
-    setSelectedTime(time);
     setStep("details");
   };
 
@@ -132,38 +125,50 @@ export function Scheduling() {
   const handleCreateScheduling = async (details: BookingDetails) => {
     setBookingDetails(details);
 
-    if (
-      selectedCourse &&
-      selectedSemester &&
-      selectedDate &&
-      selectedTime &&
-      userId &&
-      selectedDiscipline
-    ) {
-      const { startTime, endTime } = extractTimes(
-        new Date(selectedDate),
-        selectedTime
+    const slots = details.time.split(",").map((slot) => slot.trim());
+
+    for (const slot of slots) {
+      const [startStr, endStr] = slot.split(" - ");
+
+      const startTime = parse(
+        `${selectedDate!.toISOString().split("T")[0]} ${startStr}`,
+        "yyyy-MM-dd HH:mm",
+        new Date()
+      );
+      const endTime = parse(
+        `${selectedDate!.toISOString().split("T")[0]} ${endStr}`,
+        "yyyy-MM-dd HH:mm",
+        new Date()
       );
 
-      const data = {
-        userId: userId,
-        courseId: selectedCourse.id,
-        disciplineId: selectedDiscipline.id,
-        semesterId: selectedSemester.id,
-        date: new Date(selectedDate),
-        startTime,
-        endTime,
-        details: {
-          name: details.name,
-          email: details.email,
-          phone: details.phone,
-          notes: details.notes,
-        },
-      };
+      if (
+        selectedCourse &&
+        selectedSemester &&
+        selectedDate &&
+        userId &&
+        selectedDiscipline
+      ) {
+        const data = {
+          userId,
+          courseId: selectedCourse.id,
+          disciplineId: selectedDiscipline.id,
+          semesterId: selectedSemester.id,
+          date: new Date(selectedDate),
+          startTime,
+          endTime,
+          details: {
+            name: details.name,
+            email: details.email,
+            phone: details.phone,
+            notes: details.notes,
+            time: details.time,
+          },
+        };
 
-      await createScheduling(data);
+        await createScheduling(data);
+      }
+      setStep("confirmation");
     }
-    setStep("confirmation");
   };
 
   const handleReset = () => {
@@ -171,7 +176,6 @@ export function Scheduling() {
     setSelectedCourse(undefined);
     setSelectedDiscipline(undefined);
     setSelectedDate(undefined);
-    setSelectedTime(undefined);
     setBookingDetails(null);
   };
 
@@ -184,7 +188,6 @@ export function Scheduling() {
           {step === "discipline" && "Selecione uma disciplina"}
           {step === "date" && "Selecione uma data"}
           {step === "timePeriod" && "Selecione um período"}
-          {step === "time" && "Escolha um horário"}
           {step === "details" && "Seus detalhes"}
           {step === "confirmation" && "Agendamento confirmado"}
         </CardTitle>
@@ -198,16 +201,10 @@ export function Scheduling() {
           {step === "date" &&
             selectedCourse &&
             `Disciplina selecionada: ${selectedCourse.name}`}
-          {step === "time" &&
-            selectedDate &&
-            `Data selecionada: ${format(selectedDate, "PPPP", {
-              locale: ptBR,
-            })}`}
           {step === "details" &&
-            selectedTime &&
             `Data selecionada: ${format(selectedDate!, "PPPP", {
               locale: ptBR,
-            })} a ${selectedTime} horas`}
+            })} a ${bookingDetails?.time} horas`}
           {step === "confirmation" && "Seu agendamento foi agendado"}
         </CardDescription>
       </CardHeader>
@@ -246,36 +243,23 @@ export function Scheduling() {
           />
         )}
 
-        {step === "time" &&
+        {step === "details" &&
           selectedDate &&
           selectedCourse &&
           selectedDiscipline &&
           selectedTimePeriod && (
-            <TimeSlotPicker
-              date={selectedDate}
-              disciplineId={selectedDiscipline.id}
-              timePeriodId={selectedTimePeriod.id}
-              onSelectTime={handleTimeSelect}
-              onBack={() => setStep("timePeriod")}
-            />
-          )}
-
-        {step === "details" &&
-          selectedDate &&
-          selectedTime &&
-          selectedCourse && (
             <BookingForm
               onSubmit={handleCreateScheduling}
               courseId={selectedCourse.id}
               date={selectedDate}
-              time={selectedTime}
-              onBack={() => setStep("time")}
+              timePeriodId={selectedTimePeriod.id}
+              disciplineId={selectedDiscipline.id}
+              onBack={() => setStep("timePeriod")}
             />
           )}
         {step === "confirmation" &&
           bookingDetails &&
           selectedDate &&
-          selectedTime &&
           selectedCourse &&
           selectedSemester &&
           selectedDiscipline && (
@@ -284,7 +268,6 @@ export function Scheduling() {
               semester={selectedSemester}
               discipline={selectedDiscipline}
               date={selectedDate}
-              time={selectedTime}
               details={bookingDetails}
               onScheduleAnother={handleReset}
             />

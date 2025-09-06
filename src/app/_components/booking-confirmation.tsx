@@ -13,12 +13,12 @@ interface BookingConfirmationProps {
   course: Course;
   semester: Semester;
   date: Date;
-  time: string;
   details: {
     name: string;
     email: string;
     phone: string;
     notes: string;
+    time: string;
   };
   discipline: Discipline;
   onScheduleAnother: () => void;
@@ -27,7 +27,6 @@ export function BookingConfirmation({
   course,
   semester,
   date,
-  time,
   details,
   discipline,
   onScheduleAnother,
@@ -69,7 +68,7 @@ export function BookingConfirmation({
         </div>
         <div className="flex justify-between">
           <span className="font-medium">Horas:</span>
-          <span>{time}</span>
+          <span>{details.time}</span>
         </div>
         <div className="flex justify-between">
           <span className="font-medium">Nome:</span>
