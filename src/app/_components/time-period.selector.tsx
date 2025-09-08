@@ -64,7 +64,10 @@ export function TimePeriodSelector({
                   <p className="text-xs text-muted-foreground">
                     {timePeriod.description}
                   </p>
-                  <Button className="mt-2 w-full" disabled={!isAvailable}>
+                  <Button
+                    className="mt-2 w-full cursor-pointer"
+                    disabled={!isAvailable}
+                  >
                     Selecionar
                   </Button>
                 </div>

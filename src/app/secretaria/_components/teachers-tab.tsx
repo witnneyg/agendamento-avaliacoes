@@ -167,7 +167,7 @@ export function TeachersTab() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="cursor-pointer">
               <Plus className="mr-2 h-4 w-4" />
               Adicionar Professor
             </Button>
@@ -246,11 +246,12 @@ export function TeachersTab() {
                 <Button
                   type="button"
                   variant="outline"
+                  className="cursor-pointer"
                   onClick={() => setIsDialogOpen(false)}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit">
+                <Button type="submit" className="cursor-pointer">
                   {editingTeacher ? "Atualizar" : "Adicionar"} Professor
                 </Button>
               </DialogFooter>
@@ -329,6 +330,7 @@ export function TeachersTab() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="cursor-pointer"
                         onClick={() => handleEdit(teacher)}
                       >
                         <Edit className="h-4 w-4" />
@@ -339,7 +341,7 @@ export function TeachersTab() {
                         onClick={() => handleDelete(teacher.id)}
                         className="text-red-500 hover:text-red-600"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4 cursor-pointer" />
                       </Button>
                     </div>
                   </TableCell>
@@ -360,10 +362,12 @@ export function TeachersTab() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="cursor-pointer">
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-red-500 hover:bg-red-600 cursor-pointer"
             >
               Excluir
             </AlertDialogAction>

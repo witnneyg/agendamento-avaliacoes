@@ -198,8 +198,6 @@ export default function CalendarPage() {
     academicCourses.reduce((acc, course) => ({ ...acc, [course.id]: true }), {})
   );
 
-  console.log(schedulingCourses);
-
   const [view, setView] = useState<"week" | "day">("week");
   const router = useRouter();
   const daysToShow = view === "week" ? 7 : 1;
@@ -234,7 +232,7 @@ export default function CalendarPage() {
   };
 
   const handleNewAppointment = () => {
-    router.push("/new-appointment");
+    router.push("/");
   };
 
   useEffect(() => {

@@ -149,7 +149,7 @@ export function CoursesTab() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="cursor-pointer">
               <Plus className="mr-2 h-4 w-4" />
               Adicionar Curso
             </Button>
@@ -182,11 +182,12 @@ export function CoursesTab() {
                 <Button
                   type="button"
                   variant="outline"
+                  className="cursor-pointer"
                   onClick={() => setIsDialogOpen(false)}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit">
+                <Button type="submit" className="cursor-pointer">
                   {editingCourse ? "Atualizar" : "Adicionar"} Curso
                 </Button>
               </DialogFooter>
@@ -228,6 +229,7 @@ export function CoursesTab() {
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="cursor-pointer"
                     onClick={() => handleEdit(course)}
                   >
                     <Edit className="h-4 w-4" />
@@ -238,8 +240,8 @@ export function CoursesTab() {
                     onClick={() => toggleStatus(course.id)}
                     className={
                       course.status === "ACTIVE"
-                        ? "text-yellow-500"
-                        : "text-green-500"
+                        ? "text-yellow-500 cursor-pointer"
+                        : "text-green-500 cursor-pointer"
                     }
                   >
                     {course.status === "ACTIVE" ? "Pausar" : "Ativar"}
@@ -248,7 +250,7 @@ export function CoursesTab() {
                     variant="ghost"
                     size="icon"
                     onClick={() => handleDelete(course.id)}
-                    className="text-red-500 hover:text-red-600"
+                    className="text-red-500 hover:text-red-600 cursor-pointer"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -263,7 +265,7 @@ export function CoursesTab() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="cursor-pointer">
               Tem certeza que deseja excluir este curso? Esta ação não pode ser
               desfeita.
             </AlertDialogDescription>
@@ -272,7 +274,7 @@ export function CoursesTab() {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-red-500 hover:bg-red-600 cursor-pointer"
             >
               Excluir
             </AlertDialogAction>

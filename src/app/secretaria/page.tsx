@@ -11,10 +11,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, BookOpen, GraduationCap, Calendar, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { TeachersTab } from "./secretaria/teachers-tab";
-import { CoursesTab } from "./secretaria/coursers-tab";
-import { SettingsTab } from "./secretaria/settings-tab";
-import DisciplinesTab from "./secretaria/disciplines-tab";
+import { TeachersTab } from "./_components/teachers-tab";
+import { CoursesTab } from "./_components/coursers-tab";
+import { SettingsTab } from "./_components/settings-tab";
+import DisciplinesTab from "./_components/disciplines-tab";
 import { NavBar } from "../_components/navbar";
 
 export default function AdminPage() {
@@ -42,12 +42,22 @@ export default function AdminPage() {
             className="space-y-4"
           >
             <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-              <TabsTrigger value="teachers">Professores</TabsTrigger>
-              <TabsTrigger value="courses">Cursos</TabsTrigger>
-              <TabsTrigger value="disciplines">Disciplinas</TabsTrigger>
+              <TabsTrigger value="overview" className="cursor-pointer">
+                Visão Geral
+              </TabsTrigger>
+              <TabsTrigger value="teachers" className="cursor-pointer">
+                Professores
+              </TabsTrigger>
+              <TabsTrigger value="courses" className="cursor-pointer">
+                Cursos
+              </TabsTrigger>
+              <TabsTrigger value="disciplines" className="cursor-pointer">
+                Disciplinas
+              </TabsTrigger>
               {/* <TabsTrigger value="appointments">Agendamentos</TabsTrigger> */}
-              <TabsTrigger value="settings">Configurações</TabsTrigger>
+              <TabsTrigger value="settings" className="cursor-pointer">
+                Configurações
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">

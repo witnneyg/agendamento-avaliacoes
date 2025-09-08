@@ -50,7 +50,7 @@ interface BookingFormProps {
 const bookingSchema = z.object({
   teacherId: z
     .string()
-    .uuid("Professor inválido")
+    .uuid("O nome do professor deve ser obrigatório")
     .nonempty("O nome é obrigatório"),
   time: z.array(z.string()).nonempty("Selecione pelo menos um horário"),
   email: z
@@ -155,6 +155,10 @@ export function BookingForm({
     formState: { errors },
   } = useForm<BookingSchema>({
     resolver: zodResolver(bookingSchema),
+    defaultValues: {
+      time: [],
+      teacherId: "",
+    },
   });
 
   async function handleSubmitForm(data: any) {
@@ -324,7 +328,7 @@ export function BookingForm({
           />
         </div>
 
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full cursor-pointer">
           Agendar
         </Button>
       </form>

@@ -275,10 +275,6 @@ export default function AdminDashboard() {
                 </p>
               </div>
             </div>
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Usuário
-            </Button>
           </div>
 
           {/* Stats Cards */}
@@ -514,7 +510,7 @@ export default function AdminDashboard() {
                                 users.filter((u) => u.access.includes("Admin"))
                                   .length <= 1)
                             }
-                            className={`h-8 w-8 p-0 ${
+                            className={`h-8 w-8 p-0 cursor-pointer ${
                               (user.id === currentUserId &&
                                 user.access.includes("Admin")) ||
                               (user.access.includes("Admin") &&
@@ -673,14 +669,14 @@ export default function AdminDashboard() {
                 <Button
                   variant="outline"
                   onClick={cancelDelete}
-                  className="w-full sm:w-auto bg-transparent"
+                  className="w-full sm:w-auto bg-transparent cursor-pointer"
                 >
                   Não
                 </Button>
                 <Button
                   variant="destructive"
                   onClick={confirmDelete}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto cursor-pointer"
                 >
                   Sim, Excluir
                 </Button>
