@@ -24,6 +24,7 @@ import { sendSchedulingEmail } from "../_actions/send-scheduling-email";
 import { format, isSameDay } from "date-fns";
 import { Scheduling } from "@prisma/client";
 import { getSchedulingById } from "../_actions/get-scheduling-by-id";
+import { getSchedulingBySemester } from "../_actions/get-scheduling-by-semesterId";
 
 interface Teacher {
   name: string;
@@ -42,7 +43,7 @@ interface BookingFormProps {
   }) => void;
   onBack: () => void;
   courseId: string;
-  disciplineId: string;
+  semesterId: string;
   timePeriodId: string;
   date: Date;
 }
@@ -81,7 +82,7 @@ const bookingSchema = z.object({
 
 type BookingSchema = z.infer<typeof bookingSchema>;
 
-const generateTimeSlotsAndCheeckAvailability = (
+const generateTimeSlotsAndCheckAvailability = (
   date: Date,
   scheduledTimes: Scheduling[] = [],
   timePeriodId: string
@@ -141,7 +142,7 @@ export function BookingForm({
   onSubmit,
   onBack,
   courseId,
-  disciplineId,
+  semesterId,
   timePeriodId,
   date,
 }: BookingFormProps) {
@@ -187,19 +188,20 @@ export function BookingForm({
     fetch();
   }, []);
 
-  const timeSlots = generateTimeSlotsAndCheeckAvailability(
+  const timeSlots = generateTimeSlotsAndCheckAvailability(
     date,
     schedulingTimes,
     timePeriodId
   );
+
   useEffect(() => {
     async function fetch() {
-      const data = await getSchedulingById(disciplineId);
+      const data = await getSchedulingBySemester(semesterId);
       setSchedulingTimes(data);
     }
 
     fetch();
-  }, [disciplineId]);
+  }, [semesterId]);
 
   return (
     <>

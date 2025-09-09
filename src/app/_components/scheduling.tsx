@@ -246,14 +246,14 @@ export function Scheduling() {
         {step === "details" &&
           selectedDate &&
           selectedCourse &&
-          selectedDiscipline &&
+          selectedSemester &&
           selectedTimePeriod && (
             <BookingForm
               onSubmit={handleCreateScheduling}
               courseId={selectedCourse.id}
               date={selectedDate}
               timePeriodId={selectedTimePeriod.id}
-              disciplineId={selectedDiscipline.id}
+              semesterId={selectedSemester.id}
               onBack={() => setStep("timePeriod")}
             />
           )}

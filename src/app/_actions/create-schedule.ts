@@ -4,9 +4,11 @@ import { db } from "@/lib/prisma";
 import { Appointment } from "../context/appointment";
 
 export async function createScheduling(data: Appointment) {
+  console.log(data.semesterId);
+
   const hasConflict = await db.scheduling.findFirst({
     where: {
-      disciplineId: data.disciplineId,
+      semesterId: data.semesterId,
       AND: [
         {
           startTime: { lt: data.endTime },
