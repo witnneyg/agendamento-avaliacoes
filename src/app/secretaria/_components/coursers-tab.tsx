@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { createCourse } from "@/app/_actions/create-course"; // Added import for createCourse
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Plus,
   Edit,
@@ -37,9 +46,17 @@ import {
   Globe,
   Microscope,
   Brain,
+  Clock,
+  Calendar,
 } from "lucide-react";
 import { getCourses } from "@/app/_actions/get-courses";
-import type { Course } from "@prisma/client";
+import { deleteCourse } from "@/app/_actions/delete-course";
+import { Course } from "@prisma/client";
+
+type Period = "MORNING" | "AFTERNOON" | "EVENING";
+
+const PERIODS: Period[] = ["MORNING", "AFTERNOON", "EVENING"];
+const SEMESTER_DURATIONS = Array.from({ length: 12 }, (_, i) => i + 1);
 
 const iconMap = {
   cs: <Code className="h-5 w-5" />,
@@ -50,6 +67,12 @@ const iconMap = {
   geography: <Globe className="h-5 w-5" />,
 };
 
+const periodLabels = {
+  MORNING: "Manhã",
+  AFTERNOON: "Tarde",
+  EVENING: "Noite",
+};
+
 export function CoursesTab() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -58,6 +81,8 @@ export function CoursesTab() {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [formData, setFormData] = useState({
     name: "",
+    periods: [] as Period[],
+    semesterDuration: 8, // Default to 8 semesters
   });
 
   useEffect(() => {
@@ -73,30 +98,24 @@ export function CoursesTab() {
     return status === "ACTIVE" ? "ativo" : "inativo";
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // if (editingCourse) {
-    //   // Atualiza curso existente
-    //   setCourses((prev) =>
-    //     prev.map((course) =>
-    //       course.id === editingCourse.id ? { ...course, ...formData } : course
-    //     )
-    //   );
-    // } else {
-    //   // Adiciona novo curso
-    //   const newCourse: Course = {
-    //     id: formData.name.toLowerCase().replace(/\s+/g, "-"),
-    //     ...formData,
-    //     status: "ativo",
-    //     disciplineCount: 0,
-    //   };
-    //   setCourses((prev) => [...prev, newCourse]);
-    // }
+    if (editingCourse) {
+      setCourses((prev) =>
+        prev.map((course) =>
+          course.id === editingCourse.id ? { ...course, ...formData } : course
+        )
+      );
+    } else {
+      // const newCourse = await createCourse(formData); // Used formData instead of empty object
+      // setCourses((prev) => [...prev, newCourse]);
+    }
 
-    // Reseta formulário
     setFormData({
       name: "",
+      periods: [],
+      semesterDuration: 8,
     });
     setEditingCourse(null);
     setIsDialogOpen(false);
@@ -106,11 +125,31 @@ export function CoursesTab() {
     setEditingCourse(course);
     setFormData({
       name: course.name,
+      periods: (course as any).periods || [],
+      semesterDuration: (course as any).semesterDuration || 8,
     });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (courseId: string) => {
+  const handlePeriodToggle = (period: Period) => {
+    setFormData((prev) => ({
+      ...prev,
+      periods: prev.periods.includes(period)
+        ? prev.periods.filter((p) => p !== period)
+        : [...prev.periods, period],
+    }));
+  };
+
+  const handleSemesterDurationChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      semesterDuration: Number.parseInt(value),
+    }));
+  };
+
+  const handleDelete = async (courseId: string) => {
+    await deleteCourse(courseId);
+
     setCourseToDelete(courseId);
     setDeleteConfirmOpen(true);
   };
@@ -154,7 +193,7 @@ export function CoursesTab() {
               Adicionar Curso
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
                 {editingCourse ? "Editar Curso" : "Adicionar Novo Curso"}
@@ -165,7 +204,7 @@ export function CoursesTab() {
                   : "Adicione um novo curso ao sistema"}
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome do Curso</Label>
                 <Input
@@ -178,11 +217,58 @@ export function CoursesTab() {
                   required
                 />
               </div>
+
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Períodos Disponíveis
+                </Label>
+                <div className="grid grid-cols-3 gap-4">
+                  {PERIODS.map((period) => (
+                    <div key={period} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={period}
+                        checked={formData.periods.includes(period)}
+                        onCheckedChange={() => handlePeriodToggle(period)}
+                      />
+                      <Label
+                        htmlFor={period}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {periodLabels[period]}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Duração do Curso
+                </Label>
+                <Select
+                  value={formData.semesterDuration.toString()}
+                  onValueChange={handleSemesterDurationChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a duração em semestres" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SEMESTER_DURATIONS.map((duration) => (
+                      <SelectItem key={duration} value={duration.toString()}>
+                        {duration} {duration === 1 ? "semestre" : "semestres"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <DialogFooter>
                 <Button
                   type="button"
                   variant="outline"
-                  className="cursor-pointer"
+                  className="cursor-pointer bg-transparent"
                   onClick={() => setIsDialogOpen(false)}
                 >
                   Cancelar
@@ -221,39 +307,71 @@ export function CoursesTab() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">
-                  {courses.length} disciplinas
-                </span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="cursor-pointer"
-                    onClick={() => handleEdit(course)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => toggleStatus(course.id)}
-                    className={
-                      course.status === "ACTIVE"
-                        ? "text-yellow-500 cursor-pointer"
-                        : "text-green-500 cursor-pointer"
-                    }
-                  >
-                    {course.status === "ACTIVE" ? "Pausar" : "Ativar"}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(course.id)}
-                    className="text-red-500 hover:text-red-600 cursor-pointer"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+              <div className="space-y-3">
+                {(course as any).periods &&
+                  (course as any).periods.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex gap-1 flex-wrap">
+                        {(course as any).periods.map((period: Period) => (
+                          <Badge
+                            key={period}
+                            variant="outline"
+                            className="text-xs"
+                          >
+                            {periodLabels[period]}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                {(course as any).semesterDuration && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <Badge variant="outline" className="text-xs">
+                      Duração: {(course as any).semesterDuration}{" "}
+                      {(course as any).semesterDuration === 1
+                        ? "semestre"
+                        : "semestres"}
+                    </Badge>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-2">
+                  <span className="text-sm font-medium">
+                    {courses.length} disciplinas
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="cursor-pointer"
+                      onClick={() => handleEdit(course)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => toggleStatus(course.id)}
+                      className={
+                        course.status === "ACTIVE"
+                          ? "text-yellow-500 cursor-pointer"
+                          : "text-green-500 cursor-pointer"
+                      }
+                    >
+                      {course.status === "ACTIVE" ? "Pausar" : "Ativar"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(course.id)}
+                      className="text-red-500 hover:text-red-600 cursor-pointer"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>

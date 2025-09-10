@@ -55,6 +55,8 @@ import { translateTeacherStatus } from "@/utils/translate-teacher-status";
 import { getCourses } from "@/app/_actions/get-courses";
 import { getDisciplinesByCourseId } from "@/app/_actions/get-discipline-by-course-id";
 import { createTeacher } from "@/app/_actions/create-teacher";
+import { deleteCourse } from "@/app/_actions/delete-course";
+import { deleteTeacher } from "@/app/_actions/delete-teacher";
 
 type TeacherWithRelations = Prisma.TeacherGetPayload<{
   include: { courses: true; disciplines: true };
@@ -142,7 +144,9 @@ export function TeachersTab() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (teacherId: string) => {
+  const handleDelete = async (teacherId: string) => {
+    await deleteTeacher(teacherId);
+
     setTeacherToDelete(teacherId);
     setDeleteConfirmOpen(true);
   };
