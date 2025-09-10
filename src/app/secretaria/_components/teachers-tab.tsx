@@ -113,13 +113,14 @@ export function TeachersTab() {
         )
       );
     } else {
-      const newTeacher: any = await createTeacher({
+      await createTeacher({
         name: formData.name,
         courseId: formData.courseId,
         disciplineId: formData.disciplineId,
       });
 
-      setTeachers((prev) => [...prev, newTeacher]);
+      const updatedTeachers = await getTeachers();
+      setTeachers(updatedTeachers as any);
     }
 
     setFormData({
@@ -289,9 +290,11 @@ export function TeachersTab() {
                   </TableCell>
 
                   <TableCell>
-                    {teacher.courses.map((course) => (
+                    {teacher.courses?.map((course) => (
                       <div key={course.id}>{course.name}</div>
-                    ))}
+                    )) ?? (
+                      <div className="text-sm text-gray-400">Nenhum curso</div>
+                    )}
                   </TableCell>
 
                   <TableCell>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,89 +36,59 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Search, Plus, Trash2, Users, Check, X } from "lucide-react";
 import { NavBar } from "@/app/_components/navbar";
+import { getUsers } from "@/app/_actions/get-users";
+import { Role, User } from "@prisma/client";
 
-const mockUsers = [
-  {
-    id: 1,
-    name: "Ana Silva",
-    email: "ana.silva@escola.com",
-    access: ["Admin"],
-  },
-  {
-    id: 2,
-    name: "Carlos Santos",
-    email: "carlos.santos@escola.com",
-    access: ["Professor"],
-  },
-  {
-    id: 3,
-    name: "Maria Oliveira",
-    email: "maria.oliveira@escola.com",
-    access: ["Secretaria"],
-  },
-  {
-    id: 4,
-    name: "João Costa",
-    email: "joao.costa@escola.com",
-    access: ["Professor", "Direção"],
-  },
-  {
-    id: 5,
-    name: "Fernanda Lima",
-    email: "fernanda.lima@escola.com",
-    access: ["Direção"],
-  },
-  {
-    id: 6,
-    name: "Pedro Almeida",
-    email: "pedro.almeida@escola.com",
-    access: ["Professor"],
-  },
-  {
-    id: 7,
-    name: "Lucia Ferreira",
-    email: "lucia.ferreira@escola.com",
-    access: ["Secretaria", "Professor"],
-  },
-  {
-    id: 8,
-    name: "Roberto Souza",
-    email: "roberto.souza@escola.com",
-    access: ["Direção", "Admin"],
-  },
-];
+// Labels em português
+const roleLabels: Record<Role, string> = {
+  ADMIN: "Admin",
+  TEACHER: "Professor",
+  USER: "Usuário",
+};
 
-type AccessLevel = "Admin" | "Professor" | "Direção" | "Secretaria" | "Todos";
+const getAccessBadgeVariant = (access: Role) => {
+  switch (access) {
+    case "ADMIN":
+      return "destructive";
+    case "TEACHER":
+      return "outline";
+    case "USER":
+      return "secondary";
+    default:
+      return "outline";
+  }
+};
 
 export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [accessFilter, setAccessFilter] = useState<AccessLevel>("Todos");
-  const [users, setUsers] = useState(mockUsers);
+  const [accessFilter, setAccessFilter] = useState<Role | "ALL">("ALL");
+  const [users, setUsers] = useState<User[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<{
-    id: number;
-    name: string;
-  } | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [removeAccessConfirmOpen, setRemoveAccessConfirmOpen] = useState(false);
   const [accessToRemove, setAccessToRemove] = useState<{
-    userId: number;
-    accessLevel: string;
+    userId: string;
+    accessLevel: Role;
     userName: string;
   } | null>(null);
-  const currentUserId = 1;
+  const currentUserId = "1";
 
-  const handleDeleteClick = (user: {
-    id: number;
-    name: string;
-    access: string[];
-  }) => {
-    // Impede que admin se exclua
-    if (user.id === currentUserId && user.access.includes("Admin")) {
+  useEffect(() => {
+    const fetch = async () => {
+      const data = await getUsers();
+      setUsers(data);
+    };
+
+    fetch();
+  }, []);
+
+  const handleDeleteClick = (user: User) => {
+    if (user.id === currentUserId && user.roles.includes("ADMIN")) {
       return;
     }
 
-    const adminCount = users.filter((u) => u.access.includes("Admin")).length;
-    if (user.access.includes("Admin") && adminCount <= 1) {
+    const adminCount = users.filter((u) => u.roles.includes("ADMIN")).length;
+    if (user.roles.includes("ADMIN") && adminCount <= 1) {
       return;
     }
 
@@ -126,59 +96,52 @@ export default function AdminDashboard() {
     setDeleteConfirmOpen(true);
   };
 
-  const handleAccessToggle = (userId: number, accessLevel: string) => {
+  const handleAccessToggle = (userId: string, accessLevel: Role) => {
     const user = users.find((u) => u.id === userId);
     if (!user) return;
 
-    const currentAccess = [...user.access];
+    const currentAccess = [...user.roles];
     const hasAccess = currentAccess.includes(accessLevel);
 
     if (hasAccess) {
-      // Removendo acesso
-      if (accessLevel === "Admin") {
+      if (accessLevel === "ADMIN") {
         const adminCount = users.filter((u) =>
-          u.access.includes("Admin")
+          u.roles.includes("ADMIN")
         ).length;
-        if (adminCount <= 1) {
-          return; // Não permite remover o último admin
-        }
+        if (adminCount <= 1) return;
       }
+
       const newAccess = currentAccess.filter((level) => level !== accessLevel);
-      if (newAccess.length === 0) return; // Não permite usuário sem nenhum acesso
+      if (newAccess.length === 0) return;
 
       setUsers((prevUsers) =>
-        prevUsers.map((u) =>
-          u.id === userId ? { ...u, access: newAccess } : u
-        )
+        prevUsers.map((u) => (u.id === userId ? { ...u, roles: newAccess } : u))
       );
     } else {
-      // Adicionando acesso
       const newAccess = [...currentAccess, accessLevel];
       setUsers((prevUsers) =>
-        prevUsers.map((u) =>
-          u.id === userId ? { ...u, access: newAccess } : u
-        )
+        prevUsers.map((u) => (u.id === userId ? { ...u, roles: newAccess } : u))
       );
     }
   };
 
-  const handleRemoveAccess = (userId: number, accessLevel: string) => {
+  const handleRemoveAccess = (userId: string, accessLevel: Role) => {
     const user = users.find((u) => u.id === userId);
     if (!user) return;
 
-    // Validações antes de remover
-    if (accessLevel === "Admin") {
-      const adminCount = users.filter((u) => u.access.includes("Admin")).length;
-      if (adminCount <= 1) {
-        return; // Não permite remover o último admin
-      }
+    if (accessLevel === "ADMIN") {
+      const adminCount = users.filter((u) => u.roles.includes("ADMIN")).length;
+      if (adminCount <= 1) return;
     }
 
-    const newAccess = user.access.filter((level) => level !== accessLevel);
-    if (newAccess.length === 0) return; // Não permite usuário sem nenhum acesso
+    const newAccess = user.roles.filter((level) => level !== accessLevel);
+    if (newAccess.length === 0) return;
 
-    // Mostrar modal de confirmação
-    setAccessToRemove({ userId, accessLevel, userName: user.name });
+    setAccessToRemove({
+      userId,
+      accessLevel,
+      userName: user.name || "Usuário",
+    });
     setRemoveAccessConfirmOpen(true);
   };
 
@@ -189,9 +152,9 @@ export default function AdminDashboard() {
     const user = users.find((u) => u.id === userId);
     if (!user) return;
 
-    const newAccess = user.access.filter((level) => level !== accessLevel);
+    const newAccess = user.roles.filter((level) => level !== accessLevel);
     setUsers((prevUsers) =>
-      prevUsers.map((u) => (u.id === userId ? { ...u, access: newAccess } : u))
+      prevUsers.map((u) => (u.id === userId ? { ...u, roles: newAccess } : u))
     );
 
     setAccessToRemove(null);
@@ -203,45 +166,28 @@ export default function AdminDashboard() {
     setRemoveAccessConfirmOpen(false);
   };
 
-  const canRemoveAccess = (userId: number, accessLevel: string) => {
+  const canRemoveAccess = (userId: string, accessLevel: Role) => {
     const user = users.find((u) => u.id === userId);
     if (!user) return false;
 
-    // Não pode remover se for o último admin
-    if (accessLevel === "Admin") {
-      const adminCount = users.filter((u) => u.access.includes("Admin")).length;
+    if (accessLevel === "ADMIN") {
+      const adminCount = users.filter((u) => u.roles.includes("ADMIN")).length;
       if (adminCount <= 1) return false;
     }
 
-    // Não pode remover se for o último acesso do usuário
-    if (user.access.length <= 1) return false;
+    if (user.roles.length <= 1) return false;
 
     return true;
   };
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesAccess =
-      accessFilter === "Todos" || user.access.includes(accessFilter);
+      accessFilter === "ALL" || user.roles.includes(accessFilter);
     return matchesSearch && matchesAccess;
   });
-
-  const getAccessBadgeVariant = (access: string) => {
-    switch (access) {
-      case "Admin":
-        return "destructive";
-      case "Direção":
-        return "default";
-      case "Secretaria":
-        return "secondary";
-      case "Professor":
-        return "outline";
-      default:
-        return "outline";
-    }
-  };
 
   const cancelDelete = () => {
     setUserToDelete(null);
@@ -302,10 +248,7 @@ export default function AdminDashboard() {
                       Professores
                     </p>
                     <p className="text-lg sm:text-2xl font-bold text-foreground">
-                      {
-                        users.filter((u) => u.access.includes("Professor"))
-                          .length
-                      }
+                      {users.filter((u) => u.roles.includes("TEACHER")).length}
                     </p>
                   </div>
                   <Badge
@@ -322,17 +265,17 @@ export default function AdminDashboard() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div>
                     <p className="text-xs sm:text-sm text-muted-foreground">
-                      Direção
+                      Admins
                     </p>
                     <p className="text-lg sm:text-2xl font-bold text-foreground">
-                      {users.filter((u) => u.access.includes("Direção")).length}
+                      {users.filter((u) => u.roles.includes("ADMIN")).length}
                     </p>
                   </div>
                   <Badge
-                    variant="default"
+                    variant="destructive"
                     className="text-xs self-end sm:self-auto"
                   >
-                    Direção
+                    Admin
                   </Badge>
                 </div>
               </CardContent>
@@ -342,20 +285,17 @@ export default function AdminDashboard() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div>
                     <p className="text-xs sm:text-sm text-muted-foreground">
-                      Secretaria
+                      Usuários
                     </p>
                     <p className="text-lg sm:text-2xl font-bold text-foreground">
-                      {
-                        users.filter((u) => u.access.includes("Secretaria"))
-                          .length
-                      }
+                      {users.filter((u) => u.roles.includes("USER")).length}
                     </p>
                   </div>
                   <Badge
                     variant="secondary"
                     className="text-xs self-end sm:self-auto"
                   >
-                    Secretaria
+                    Usuário
                   </Badge>
                 </div>
               </CardContent>
@@ -382,22 +322,25 @@ export default function AdminDashboard() {
                 </div>
                 <Select
                   value={accessFilter}
-                  onValueChange={(value: AccessLevel) => setAccessFilter(value)}
+                  onValueChange={(value: Role | "ALL") =>
+                    setAccessFilter(value)
+                  }
                 >
                   <SelectTrigger className="bg-input border-border">
                     <SelectValue placeholder="Filtrar por acesso" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Todos">Todos os acessos</SelectItem>
-                    <SelectItem value="Admin">Admin</SelectItem>
-                    <SelectItem value="Direção">Direção</SelectItem>
-                    <SelectItem value="Secretaria">Secretaria</SelectItem>
-                    <SelectItem value="Professor">Professor</SelectItem>
+                    <SelectItem value="ALL">Todos</SelectItem>
+                    {Object.values(Role).map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {roleLabels[r]}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Users Table - Desktop */}
+              {/* Users Table */}
               <div className="hidden md:block rounded-md border border-border overflow-hidden">
                 <Table>
                   <TableHeader>
@@ -432,13 +375,13 @@ export default function AdminDashboard() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
-                            {user.access.map((access) => (
+                            {user.roles.map((access) => (
                               <div key={access} className="flex items-center">
                                 <Badge
                                   variant={getAccessBadgeVariant(access)}
                                   className="text-xs pr-1"
                                 >
-                                  {access}
+                                  {roleLabels[access]}
                                   {canRemoveAccess(user.id, access) && (
                                     <button
                                       onClick={(e) => {
@@ -446,7 +389,7 @@ export default function AdminDashboard() {
                                         handleRemoveAccess(user.id, access);
                                       }}
                                       className="ml-1 hover:bg-black/20 rounded-full p-0.5 transition-colors"
-                                      title={`Remover acesso ${access}`}
+                                      title={`Remover acesso ${roleLabels[access]}`}
                                     >
                                       <X className="h-2.5 w-2.5" />
                                     </button>
@@ -466,34 +409,22 @@ export default function AdminDashboard() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="start">
-                                {[
-                                  "Admin",
-                                  "Direção",
-                                  "Secretaria",
-                                  "Professor",
-                                ].map((level) => (
-                                  <DropdownMenuItem
-                                    key={level}
-                                    onClick={() =>
-                                      handleAccessToggle(user.id, level)
-                                    }
-                                    className="flex items-center justify-between"
-                                  >
-                                    <span>{level}</span>
-                                    {user.access.includes(level) ? (
-                                      <div className="flex items-center gap-1">
+                                {(Object.values(Role) as Role[]).map(
+                                  (level) => (
+                                    <DropdownMenuItem
+                                      key={level}
+                                      onClick={() =>
+                                        handleAccessToggle(user.id, level)
+                                      }
+                                      className="flex items-center justify-between"
+                                    >
+                                      <span>{roleLabels[level]}</span>
+                                      {user.roles.includes(level) && (
                                         <Check className="h-4 w-4 text-green-600" />
-                                        <span className="text-xs text-muted-foreground">
-                                          (clique para remover)
-                                        </span>
-                                      </div>
-                                    ) : (
-                                      <span className="text-xs text-muted-foreground">
-                                        (clique para adicionar)
-                                      </span>
-                                    )}
-                                  </DropdownMenuItem>
-                                ))}
+                                      )}
+                                    </DropdownMenuItem>
+                                  )
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>
@@ -505,16 +436,16 @@ export default function AdminDashboard() {
                             onClick={() => handleDeleteClick(user)}
                             disabled={
                               (user.id === currentUserId &&
-                                user.access.includes("Admin")) ||
-                              (user.access.includes("Admin") &&
-                                users.filter((u) => u.access.includes("Admin"))
+                                user.roles.includes("ADMIN")) ||
+                              (user.roles.includes("ADMIN") &&
+                                users.filter((u) => u.roles.includes("ADMIN"))
                                   .length <= 1)
                             }
                             className={`h-8 w-8 p-0 cursor-pointer ${
                               (user.id === currentUserId &&
-                                user.access.includes("Admin")) ||
-                              (user.access.includes("Admin") &&
-                                users.filter((u) => u.access.includes("Admin"))
+                                user.roles.includes("ADMIN")) ||
+                              (user.roles.includes("ADMIN") &&
+                                users.filter((u) => u.roles.includes("ADMIN"))
                                   .length <= 1)
                                 ? "opacity-50 cursor-not-allowed"
                                 : "hover:bg-destructive/10 hover:text-destructive"
@@ -529,122 +460,6 @@ export default function AdminDashboard() {
                 </Table>
               </div>
 
-              {/* Users Cards - Mobile */}
-              <div className="md:hidden space-y-3">
-                {filteredUsers.map((user) => (
-                  <Card key={user.id} className="border border-border">
-                    <CardContent className="p-4">
-                      <div className="flex flex-col space-y-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-foreground truncate">
-                              {user.name}
-                            </h3>
-                            <p className="text-sm text-muted-foreground truncate">
-                              {user.email}
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteClick(user)}
-                            disabled={
-                              (user.id === currentUserId &&
-                                user.access.includes("Admin")) ||
-                              (user.access.includes("Admin") &&
-                                users.filter((u) => u.access.includes("Admin"))
-                                  .length <= 1)
-                            }
-                            className={`h-8 w-8 p-0 ml-2 ${
-                              (user.id === currentUserId &&
-                                user.access.includes("Admin")) ||
-                              (user.access.includes("Admin") &&
-                                users.filter((u) => u.access.includes("Admin"))
-                                  .length <= 1)
-                                ? "opacity-50 cursor-not-allowed"
-                                : "hover:bg-destructive/10 hover:text-destructive"
-                            }`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <span className="text-sm text-muted-foreground">
-                            Níveis de Acesso:
-                          </span>
-                          <div className="flex flex-wrap gap-1 items-center">
-                            {user.access.map((access) => (
-                              <div key={access} className="flex items-center">
-                                <Badge
-                                  variant={getAccessBadgeVariant(access)}
-                                  className="text-xs pr-1"
-                                >
-                                  {access}
-                                  {canRemoveAccess(user.id, access) && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRemoveAccess(user.id, access);
-                                      }}
-                                      className="ml-1 hover:bg-black/20 rounded-full p-0.5 transition-colors"
-                                      title={`Remover acesso ${access}`}
-                                    >
-                                      <X className="h-2.5 w-2.5" />
-                                    </button>
-                                  )}
-                                </Badge>
-                              </div>
-                            ))}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0"
-                                  title="Adicionar nível de acesso"
-                                >
-                                  <Plus className="h-3 w-3" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                {[
-                                  "Admin",
-                                  "Direção",
-                                  "Secretaria",
-                                  "Professor",
-                                ].map((level) => (
-                                  <DropdownMenuItem
-                                    key={level}
-                                    onClick={() =>
-                                      handleAccessToggle(user.id, level)
-                                    }
-                                    className="flex items-center justify-between"
-                                  >
-                                    <span>{level}</span>
-                                    {user.access.includes(level) ? (
-                                      <div className="flex items-center gap-1">
-                                        <Check className="h-4 w-4 text-green-600" />
-                                        <span className="text-xs text-muted-foreground">
-                                          (remover)
-                                        </span>
-                                      </div>
-                                    ) : (
-                                      <span className="text-xs text-muted-foreground">
-                                        (adicionar)
-                                      </span>
-                                    )}
-                                  </DropdownMenuItem>
-                                ))}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
               {filteredUsers.length === 0 && (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">
@@ -655,6 +470,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
+          {/* Dialogs */}
           <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
             <DialogContent className="sm:max-w-md mx-4">
               <DialogHeader>
@@ -684,7 +500,6 @@ export default function AdminDashboard() {
             </DialogContent>
           </Dialog>
 
-          {/* Modal de confirmação para remoção de nível de acesso */}
           <Dialog
             open={removeAccessConfirmOpen}
             onOpenChange={setRemoveAccessConfirmOpen}
@@ -694,8 +509,12 @@ export default function AdminDashboard() {
                 <DialogTitle>Confirmar Remoção de Acesso</DialogTitle>
                 <DialogDescription>
                   Tem certeza que deseja remover o nível de acesso{" "}
-                  <strong>{accessToRemove?.accessLevel}</strong> do usuário{" "}
-                  <strong>{accessToRemove?.userName}</strong>?
+                  <strong>
+                    {accessToRemove
+                      ? roleLabels[accessToRemove.accessLevel]
+                      : ""}
+                  </strong>{" "}
+                  do usuário <strong>{accessToRemove?.userName}</strong>?
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter className="flex flex-col sm:flex-row gap-2">

@@ -8,12 +8,8 @@ import {
   Plus,
   Trash2,
   Edit,
-  MoreVertical,
   X,
   CalendarXIcon as Calendar1Icon,
-  Timer,
-  FileText,
-  GraduationCap,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -79,6 +75,19 @@ const getDepartmentColor = (departmentId: string) => {
   return colors[departmentId] || "bg-gray-500 border-gray-500 text-gray-800";
 };
 
+const getPeriodLabel = (period: string) => {
+  switch (period) {
+    case "MORNING":
+      return "manhä";
+    case "AFTERNOON":
+      return "tarde";
+    case "EVENING":
+      return "noite";
+    default:
+      return period;
+  }
+};
+
 const timeSlots = Array.from({ length: 24 }, (_, i) => i + 0);
 
 const AppointmentItem = ({
@@ -130,7 +139,6 @@ const AppointmentItem = ({
               onClick={() => onDelete(appointment.id)}
             />
           )}
-          <MoreVertical className="h-4 w-4 cursor-pointer" />
           <AlertDialogCancel className="h-4 w-4 cursor-pointer border-none">
             <X />
           </AlertDialogCancel>
@@ -142,21 +150,24 @@ const AppointmentItem = ({
               getDepartmentColor(appointment.course.name)
             )}
           />
+          <p className="font-medium">Disciplina:</p>
+
           {appointment.discipline.name}
         </AlertDialogTitle>
       </AlertDialogHeader>
 
       <div className="space-y-3 text-sm pt-2">
         <p className="flex gap-2 items-center">
-          <GraduationCap className="h-4 w-4" />
+          <p className="font-medium">Curso:</p>
           {appointment.course.name}
         </p>
         <p className="flex gap-2 items-center">
-          <Calendar1Icon className="h-4 w-4" />
+          <p className="font-medium">Professor:</p>
           {appointment.name}
         </p>
         <p className="flex gap-2 items-center">
-          <Timer className="h-4 w-4" />
+          <p className="font-medium">Horário:</p>
+
           {new Intl.DateTimeFormat("pt-BR", {
             weekday: "long",
             day: "2-digit",
@@ -176,7 +187,17 @@ const AppointmentItem = ({
           }).format(new Date(appointment.endTime))}
         </p>
         <p className="flex gap-2 items-center">
-          <FileText className="h-4 w-4" />
+          {appointment.course.periods.map((p) => (
+            <span key={p} className="flex gap-1 items-center">
+              <p className="font-medium">Período:</p>
+
+              {getPeriodLabel(p)}
+            </span>
+          ))}
+        </p>
+        <p className="flex gap-2 items-center">
+          <p className="font-medium">Anotações:</p>
+
           {appointment.notes ? appointment.notes : "Sem anotações"}
         </p>
       </div>
