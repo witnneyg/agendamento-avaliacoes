@@ -255,7 +255,7 @@ export function ClassesTab() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="semesterId">Semestre</Label>
+                <Label htmlFor="semesterId">Período</Label>
                 <Select
                   value={formData.semesterId}
                   onValueChange={(value) =>
@@ -268,7 +268,7 @@ export function ClassesTab() {
                   disabled={!formData.courseId}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um semestre" />
+                    <SelectValue placeholder="Selecione um período" />
                   </SelectTrigger>
                   <SelectContent>
                     {semesters.map((semester) => (

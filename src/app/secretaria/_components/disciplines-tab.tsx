@@ -236,7 +236,7 @@ export default function DisciplinesTab() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="semesterId">Semestre</Label>
+                <Label htmlFor="semesterId">Período</Label>
                 <Select
                   value={formData.semesterId}
                   onValueChange={(value) =>
@@ -244,7 +244,7 @@ export default function DisciplinesTab() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um semestre" />
+                    <SelectValue placeholder="Selecione um período" />
                   </SelectTrigger>
                   <SelectContent>
                     {semesters.map((semestre) => (
@@ -306,7 +306,7 @@ export default function DisciplinesTab() {
               <TableRow>
                 <TableHead>Título</TableHead>
                 <TableHead>Curso</TableHead>
-                <TableHead>Semestre</TableHead>
+                <TableHead>Período</TableHead>
                 <TableHead>Turma</TableHead>
                 {/* <TableHead>Status</TableHead> */}
                 <TableHead className="text-right">Ações</TableHead>

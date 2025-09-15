@@ -34,10 +34,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Plus, Trash2, Users, Check, X } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Trash2,
+  Users,
+  Check,
+  X,
+  UserPlus,
+  Settings,
+  BarChart3,
+} from "lucide-react";
 import { NavBar } from "@/app/_components/navbar";
 import { getUsers } from "@/app/_actions/get-users";
 import { Role, User } from "@prisma/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Labels em português
 const roleLabels: Record<Role, string> = {
@@ -204,6 +215,52 @@ export default function AdminDashboard() {
   return (
     <>
       <NavBar />
+
+      <Tabs defaultValue="users" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Usuários
+          </TabsTrigger>
+          <TabsTrigger value="add-user" className="flex items-center gap-2">
+            <UserPlus className="h-4 w-4" />
+            Adicionar
+          </TabsTrigger>
+          <TabsTrigger value="permissions" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Permissões
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Relatórios
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users" className="space-y-6">
+          a
+        </TabsContent>
+
+        <TabsContent value="add-user" className="space-y-6">
+          b
+        </TabsContent>
+
+        <TabsContent value="permissions" className="space-y-6">
+          c
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            d
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Relatórios Disponíveis</h3>
+              <p className="text-muted-foreground">
+                Esta seção pode ser expandida com gráficos e relatórios
+                detalhados sobre o uso do sistema.
+              </p>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
       <div className="min-h-screen bg-background p-3 sm:p-6">
         <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
           {/* Header */}

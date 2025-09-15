@@ -195,11 +195,11 @@ const AppointmentItem = ({
             </span>
           ))}
         </p>
-        <p className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center">
           <p className="font-medium">Anotações:</p>
 
           {appointment.notes ? appointment.notes : "Sem anotações"}
-        </p>
+        </div>
       </div>
     </AlertDialogContent>
   </AlertDialog>

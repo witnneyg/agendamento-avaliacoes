@@ -34,7 +34,7 @@ async function main() {
 
   const semestreTI1 = await prisma.semester.create({
     data: {
-      name: "1º Semestre",
+      name: "2025/1",
       description: "Semestre introdutório",
       courseId: cursoTI.id,
     },
@@ -42,7 +42,7 @@ async function main() {
 
   const semestreTI2 = await prisma.semester.create({
     data: {
-      name: "2º Semestre",
+      name: "2025/2",
       description: "Continuação do curso",
       courseId: cursoTI.id,
     },
@@ -135,7 +135,7 @@ async function main() {
 
   const semestreMed1 = await prisma.semester.create({
     data: {
-      name: "1º Semestre",
+      name: "2025/1",
       description: "Semestre introdutório",
       courseId: cursoMed.id,
     },
@@ -143,7 +143,7 @@ async function main() {
 
   const semestreMed2 = await prisma.semester.create({
     data: {
-      name: "2º Semestre",
+      name: "2025/1",
       description: "Continuação do curso",
       courseId: cursoMed.id,
     },
