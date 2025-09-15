@@ -1,8 +1,11 @@
 "use client";
 
 import type React from "react";
-
 import { useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,12 +14,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -49,104 +51,108 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2 } from "lucide-react";
+
 import { getTeachers } from "@/app/_actions/get-teacher";
-import type { Course, Discipline, Prisma, Teacher } from "@prisma/client";
-import { translateTeacherStatus } from "@/utils/translate-teacher-status";
 import { getCourses } from "@/app/_actions/get-courses";
 import { getDisciplinesByCourseId } from "@/app/_actions/get-discipline-by-course-id";
 import { createTeacher } from "@/app/_actions/create-teacher";
-import { deleteCourse } from "@/app/_actions/delete-course";
 import { deleteTeacher } from "@/app/_actions/delete-teacher";
+import type { Course, Discipline, Prisma, Teacher } from "@prisma/client";
+import { translateTeacherStatus } from "@/utils/translate-teacher-status";
 
 type TeacherWithRelations = Prisma.TeacherGetPayload<{
   include: { courses: true; disciplines: true };
 }>;
 
+const teacherSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  courseId: z.string().min(1, "Selecione um curso"),
+  disciplineId: z.string().min(1, "Selecione uma disciplina"),
+});
+
+type TeacherForm = z.infer<typeof teacherSchema>;
+
 export function TeachersTab() {
   const [teachers, setTeachers] = useState<TeacherWithRelations[]>([]);
-  const [coursers, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [teacherToDelete, setTeacherToDelete] = useState<string | null>(null);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    disciplineId: "",
-    courseId: "",
+
+  const {
+    control,
+    handleSubmit,
+    watch,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<TeacherForm>({
+    resolver: zodResolver(teacherSchema),
+    defaultValues: {
+      name: "",
+      courseId: "",
+      disciplineId: "",
+    },
   });
 
-  useEffect(() => {
-    const fetch = async () => {
-      const data = await getTeachers();
-      setTeachers(data as any);
-    };
+  const selectedCourseId = watch("courseId");
 
-    fetch();
+  useEffect(() => {
+    async function fetchData() {
+      const teachersData = await getTeachers();
+      setTeachers(teachersData as any);
+      const coursesData = await getCourses();
+      setCourses(coursesData);
+    }
+    fetchData();
   }, []);
 
   useEffect(() => {
-    const fetch = async () => {
-      const data = await getCourses();
-      setCourses(data);
-    };
+    async function fetchDisciplines() {
+      if (!selectedCourseId) {
+        setDisciplines([]);
+        return;
+      }
+      const disciplinesData = await getDisciplinesByCourseId(selectedCourseId);
+      setDisciplines(disciplinesData);
+    }
+    fetchDisciplines();
+  }, [selectedCourseId, setValue]);
 
-    fetch();
-  }, []);
-
-  useEffect(() => {
-    const fetch = async () => {
-      const data = await getDisciplinesByCourseId(formData.courseId);
-      setDisciplines(data);
-    };
-
-    fetch();
-  }, [formData.courseId]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const onSubmit = async (data: TeacherForm) => {
     if (editingTeacher) {
       setTeachers((prev) =>
-        prev.map((teacher) =>
-          teacher.id === editingTeacher.id
-            ? { ...teacher, ...formData }
-            : teacher
-        )
+        prev.map((t) => (t.id === editingTeacher.id ? { ...t, ...data } : t))
       );
     } else {
       await createTeacher({
-        name: formData.name,
-        courseId: formData.courseId,
-        disciplineId: formData.disciplineId,
+        name: data.name,
+        courseId: data.courseId,
+        disciplineId: data.disciplineId,
       });
-
       const updatedTeachers = await getTeachers();
       setTeachers(updatedTeachers as any);
     }
 
-    setFormData({
-      name: "",
-      disciplineId: "",
-      courseId: "",
-    });
+    reset();
     setEditingTeacher(null);
     setIsDialogOpen(false);
   };
 
-  const handleEdit = (teacher: Teacher) => {
+  const handleEdit = (teacher: TeacherWithRelations) => {
     setEditingTeacher(teacher);
-    setFormData({
-      name: "",
-      disciplineId: "",
-      courseId: "",
+    reset({
+      name: teacher.name,
+      courseId: teacher.courses[0]?.id || "",
+      disciplineId: teacher.disciplines[0]?.id || "",
     });
     setIsDialogOpen(true);
   };
 
   const handleDelete = async (teacherId: string) => {
     await deleteTeacher(teacherId);
-
     setTeacherToDelete(teacherId);
     setDeleteConfirmOpen(true);
   };
@@ -170,9 +176,10 @@ export function TeachersTab() {
             Gerencie os docentes e suas informações
           </p>
         </div>
+
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="cursor-pointer">
+            <Button>
               <Plus className="mr-2 h-4 w-4" />
               Adicionar Professor
             </Button>
@@ -184,79 +191,93 @@ export function TeachersTab() {
                   ? "Editar Professor"
                   : "Adicionar Novo Professor"}
               </DialogTitle>
-              <DialogDescription>
-                {editingTeacher
-                  ? "Atualize as informações do professor"
-                  : "Adicione um novo professor ao sistema"}
-              </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome Completo</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  placeholder="Dr. João Silva"
-                  required
+                <Controller
+                  name="name"
+                  control={control}
+                  render={({ field }) => (
+                    <Input {...field} placeholder="Dr. João Silva" />
+                  )}
                 />
+                {errors.name && (
+                  <p className="text-sm text-red-500">{errors.name.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="department">Curso</Label>
-
-                <Select
-                  value={formData.courseId}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, courseId: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o curso" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {coursers.map((course) => (
-                      <SelectItem key={course.id} value={course.id}>
-                        {course.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="course">Curso</Label>
+                <Controller
+                  name="courseId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => field.onChange(value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o curso" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {courses.map((course) => (
+                          <SelectItem key={course.id} value={course.id}>
+                            {course.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.courseId && (
+                  <p className="text-sm text-red-500">
+                    {errors.courseId.message}
+                  </p>
+                )}
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="discipline">Disciplina</Label>
-                <Select
-                  value={formData.disciplineId}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, disciplineId: value }))
-                  }
-                  disabled={!formData.courseId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a disciplina" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {disciplines.map((discipline) => (
-                      <SelectItem key={discipline.id} value={discipline.id}>
-                        {discipline.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="disciplineId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => field.onChange(value)}
+                      disabled={disciplines.length === 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a disciplina" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {disciplines.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>
+                            {d.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.disciplineId && (
+                  <p className="text-sm text-red-500">
+                    {errors.disciplineId.message}
+                  </p>
+                )}
               </div>
 
               <DialogFooter>
                 <Button
                   type="button"
                   variant="outline"
-                  className="cursor-pointer"
                   onClick={() => setIsDialogOpen(false)}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" className="cursor-pointer">
+                <Button type="submit">
                   {editingTeacher ? "Atualizar" : "Adicionar"} Professor
                 </Button>
               </DialogFooter>
@@ -269,7 +290,7 @@ export function TeachersTab() {
         <CardHeader>
           <CardTitle>Todos os Professores</CardTitle>
           <CardDescription>
-            {teachers.length} professores cadastrados no sistema
+            {teachers.length} professores cadastrados
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -279,7 +300,6 @@ export function TeachersTab() {
                 <TableHead>Nome</TableHead>
                 <TableHead>Curso</TableHead>
                 <TableHead>Disciplina</TableHead>
-                <TableHead></TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -287,41 +307,15 @@ export function TeachersTab() {
             <TableBody>
               {teachers.map((teacher) => (
                 <TableRow key={teacher.id}>
+                  <TableCell>{teacher.name}</TableCell>
                   <TableCell>
-                    <div>
-                      <div className="font-medium">{teacher.name}</div>
-                    </div>
+                    {teacher.courses.map((c) => c.name).join(", ") ||
+                      "Nenhum curso"}
                   </TableCell>
-
                   <TableCell>
-                    {teacher.courses?.map((course) => (
-                      <div key={course.id}>{course.name}</div>
-                    )) ?? (
-                      <div className="text-sm text-gray-400">Nenhum curso</div>
-                    )}
+                    {teacher.disciplines.map((d) => d.name).join(", ") ||
+                      "Nenhuma disciplina"}
                   </TableCell>
-
-                  <TableCell>
-                    <div className="space-y-1">
-                      {teacher.disciplines.length > 0 ? (
-                        teacher.disciplines.map((discipline) => (
-                          <div
-                            key={discipline.id}
-                            className="flex items-center text-sm"
-                          >
-                            {discipline.name}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-sm text-gray-400">
-                          Nenhuma disciplina
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-
-                  <TableCell></TableCell>
-
                   <TableCell>
                     <Badge
                       variant={
@@ -331,13 +325,11 @@ export function TeachersTab() {
                       {translateTeacherStatus(teacher.status)}
                     </Badge>
                   </TableCell>
-
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="cursor-pointer"
                         onClick={() => handleEdit(teacher)}
                       >
                         <Edit className="h-4 w-4" />
@@ -348,7 +340,7 @@ export function TeachersTab() {
                         onClick={() => handleDelete(teacher.id)}
                         className="text-red-500 hover:text-red-600"
                       >
-                        <Trash2 className="h-4 w-4 cursor-pointer" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
@@ -369,12 +361,10 @@ export function TeachersTab() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="cursor-pointer">
-              Cancelar
-            </AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="bg-red-500 hover:bg-red-600 cursor-pointer"
+              className="bg-red-500 hover:bg-red-600"
             >
               Excluir
             </AlertDialogAction>

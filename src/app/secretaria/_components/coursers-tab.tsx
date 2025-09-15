@@ -1,9 +1,15 @@
 "use client";
 
-import type React from "react";
-import { createCourse } from "@/app/_actions/create-course"; // Added import for createCourse
-
 import { useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import { createCourse } from "@/app/_actions/create-course";
+import { getCourses } from "@/app/_actions/get-courses";
+import { deleteCourse } from "@/app/_actions/delete-course";
+import { Course } from "@prisma/client";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,36 +42,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Code,
-  Calculator,
-  Flag as Flask,
-  Globe,
-  Microscope,
-  Brain,
-  Clock,
-  Calendar,
-} from "lucide-react";
-import { getCourses } from "@/app/_actions/get-courses";
-import { deleteCourse } from "@/app/_actions/delete-course";
-import { Course } from "@prisma/client";
+
+import { Plus, Edit, Trash2, Clock, Calendar } from "lucide-react";
 
 type Period = "MORNING" | "AFTERNOON" | "EVENING";
 
 const PERIODS: Period[] = ["MORNING", "AFTERNOON", "EVENING"];
 const SEMESTER_DURATIONS = Array.from({ length: 12 }, (_, i) => i + 1);
-
-const iconMap = {
-  cs: <Code className="h-5 w-5" />,
-  medicine: <Microscope className="h-5 w-5" />,
-  math: <Calculator className="h-5 w-5" />,
-  biology: <Flask className="h-5 w-5" />,
-  psychology: <Brain className="h-5 w-5" />,
-  geography: <Globe className="h-5 w-5" />,
-};
 
 const periodLabels = {
   MORNING: "Manhã",
@@ -73,16 +56,38 @@ const periodLabels = {
   EVENING: "Noite",
 };
 
+const courseSchema = z.object({
+  name: z.string().min(1, "O nome do curso é obrigatório"),
+  periods: z
+    .array(z.enum(["MORNING", "AFTERNOON", "EVENING"]))
+    .min(1, "Selecione pelo menos um período"),
+  semesterDuration: z
+    .number()
+    .min(1, "A duração deve ser de pelo menos 1 semestre"),
+});
+
+type CourseFormData = z.infer<typeof courseSchema>;
+
 export function CoursesTab() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState<string | null>(null);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    periods: [] as Period[],
-    semesterDuration: 0,
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<CourseFormData>({
+    resolver: zodResolver(courseSchema),
+    defaultValues: {
+      name: "",
+      periods: [],
+      semesterDuration: 0,
+    },
   });
 
   useEffect(() => {
@@ -90,40 +95,29 @@ export function CoursesTab() {
       const data = await getCourses();
       setCourses(data);
     };
-
     fetch();
   }, []);
 
-  // function statusPt(status: "ACTIVE" | "INACTIVE") {
-  //   return status === "ACTIVE" ? "ativo" : "inativo";
-  // }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const onSubmit = async (data: CourseFormData) => {
     if (editingCourse) {
       setCourses((prev) =>
         prev.map((course) =>
-          course.id === editingCourse.id ? { ...course, ...formData } : course
+          course.id === editingCourse.id ? { ...course, ...data } : course
         )
       );
     } else {
-      const newCourse = await createCourse(formData);
+      const newCourse = await createCourse(data);
       setCourses((prev) => [...prev, newCourse]);
     }
 
-    setFormData({
-      name: "",
-      periods: [],
-      semesterDuration: 8,
-    });
+    reset();
     setEditingCourse(null);
     setIsDialogOpen(false);
   };
 
   const handleEdit = (course: Course) => {
     setEditingCourse(course);
-    setFormData({
+    reset({
       name: course.name,
       periods: (course as any).periods || [],
       semesterDuration: (course as any).semesterDuration || 8,
@@ -131,25 +125,8 @@ export function CoursesTab() {
     setIsDialogOpen(true);
   };
 
-  const handlePeriodToggle = (period: Period) => {
-    setFormData((prev) => ({
-      ...prev,
-      periods: prev.periods.includes(period)
-        ? prev.periods.filter((p) => p !== period)
-        : [...prev.periods, period],
-    }));
-  };
-
-  const handleSemesterDurationChange = (value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      semesterDuration: Number.parseInt(value),
-    }));
-  };
-
   const handleDelete = async (courseId: string) => {
     await deleteCourse(courseId);
-
     setCourseToDelete(courseId);
     setDeleteConfirmOpen(true);
   };
@@ -162,19 +139,6 @@ export function CoursesTab() {
       setCourseToDelete(null);
     }
     setDeleteConfirmOpen(false);
-  };
-
-  const toggleStatus = (courseId: string) => {
-    setCourses((prev) =>
-      prev.map((course) =>
-        course.id === courseId
-          ? {
-              ...course,
-              status: course.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
-            }
-          : course
-      )
-    );
   };
 
   return (
@@ -193,7 +157,7 @@ export function CoursesTab() {
               Adicionar Curso
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl [&>button]:cursor-pointer">
             <DialogHeader>
               <DialogTitle>
                 {editingCourse ? "Editar Curso" : "Adicionar Novo Curso"}
@@ -204,18 +168,18 @@ export function CoursesTab() {
                   : "Adicione um novo curso ao sistema"}
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-6">
+
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome do Curso</Label>
                 <Input
                   id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, name: e.target.value }))
-                  }
                   placeholder="Ciência da Computação"
-                  required
+                  {...register("name")}
                 />
+                {errors.name && (
+                  <p className="text-sm text-red-500">{errors.name.message}</p>
+                )}
               </div>
 
               <div className="space-y-3">
@@ -226,20 +190,34 @@ export function CoursesTab() {
                 <div className="grid grid-cols-3 gap-4">
                   {PERIODS.map((period) => (
                     <div key={period} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={period}
-                        checked={formData.periods.includes(period)}
-                        onCheckedChange={() => handlePeriodToggle(period)}
+                      <Controller
+                        name="periods"
+                        control={control}
+                        render={({ field }) => (
+                          <Checkbox
+                            id={period}
+                            checked={field.value.includes(period)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                field.onChange([...field.value, period]);
+                              } else {
+                                field.onChange(
+                                  field.value.filter((p) => p !== period)
+                                );
+                              }
+                            }}
+                          />
+                        )}
                       />
-                      <Label
-                        htmlFor={period}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {periodLabels[period]}
-                      </Label>
+                      <Label htmlFor={period}>{periodLabels[period]}</Label>
                     </div>
                   ))}
                 </div>
+                {errors.periods && (
+                  <p className="text-sm text-red-500">
+                    {errors.periods.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-3">
@@ -247,21 +225,36 @@ export function CoursesTab() {
                   <Calendar className="h-4 w-4" />
                   Duração do Curso
                 </Label>
-                <Select
-                  value={formData.semesterDuration.toString()}
-                  onValueChange={handleSemesterDurationChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a duração em semestres" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SEMESTER_DURATIONS.map((duration) => (
-                      <SelectItem key={duration} value={duration.toString()}>
-                        {duration} {duration === 1 ? "semestre" : "semestres"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="semesterDuration"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value ? field.value.toString() : undefined}
+                      onValueChange={(val) => field.onChange(Number(val))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a duração em semestres" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SEMESTER_DURATIONS.map((duration) => (
+                          <SelectItem
+                            key={duration}
+                            value={duration.toString()}
+                          >
+                            {duration}{" "}
+                            {duration === 1 ? "semestre" : "semestres"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.semesterDuration && (
+                  <p className="text-sm text-red-500">
+                    {errors.semesterDuration.message}
+                  </p>
+                )}
               </div>
 
               <DialogFooter>
@@ -284,31 +277,13 @@ export function CoursesTab() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {courses.map((course) => (
-          <Card key={course.id} className="relative">
+          <Card key={course.id}>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {/* <div className="p-2 bg-primary/10 rounded-full">
-                    {iconMap[course. as keyof typeof iconMap] || iconMap.cs}
-                  </div> */}
-                  <div className="flex gap-2">
-                    <CardTitle className="text-lg truncate">
-                      {course.name}
-                    </CardTitle>
-                    {/* <Badge
-                      variant={
-                        course.status === "ACTIVE" ? "default" : "secondary"
-                      }
-                    >
-                      {statusPt(course.status)}
-                    </Badge> */}
-                  </div>
-                </div>
-              </div>
+              <CardTitle>{course.name}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {course.periods && course.periods.length > 0 && (
+                {course.periods && (
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <div className="flex gap-1 flex-wrap">
@@ -318,59 +293,36 @@ export function CoursesTab() {
                           variant="outline"
                           className="text-xs"
                         >
-                          Período: {periodLabels[period]}
+                          {periodLabels[period]}
                         </Badge>
                       ))}
                     </div>
                   </div>
                 )}
-
                 {course.semesterDuration && (
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <Badge variant="outline" className="text-xs">
-                      Duração: {(course as any).semesterDuration}{" "}
-                      {(course as any).semesterDuration === 1
-                        ? "semestre"
-                        : "semestres"}
+                      {(course as any).semesterDuration} semestres
                     </Badge>
                   </div>
                 )}
-
-                <div className="flex items-center justify-between pt-2">
-                  <span className="text-sm font-medium">
-                    {courses.length} disciplinas
-                  </span>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="cursor-pointer"
-                      onClick={() => handleEdit(course)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    {/* <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => toggleStatus(course.id)}
-                      className={
-                        course.status === "ACTIVE"
-                          ? "text-yellow-500 cursor-pointer"
-                          : "text-green-500 cursor-pointer"
-                      }
-                    >
-                      {course.status === "ACTIVE" ? "Pausar" : "Ativar"}
-                    </Button> */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(course.id)}
-                      className="text-red-500 hover:text-red-600 cursor-pointer"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleEdit(course)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(course.id)}
+                    className="text-red-500"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -382,16 +334,15 @@ export function CoursesTab() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription className="cursor-pointer">
-              Tem certeza que deseja excluir este curso? Esta ação não pode ser
-              desfeita.
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este curso?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="bg-red-500 hover:bg-red-600 cursor-pointer"
+              className="bg-red-500 hover:bg-red-600"
             >
               Excluir
             </AlertDialogAction>
