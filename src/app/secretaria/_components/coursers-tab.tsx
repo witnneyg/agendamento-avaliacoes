@@ -82,7 +82,7 @@ export function CoursesTab() {
   const [formData, setFormData] = useState({
     name: "",
     periods: [] as Period[],
-    semesterDuration: 8, // Default to 8 semesters
+    semesterDuration: 0,
   });
 
   useEffect(() => {
@@ -94,9 +94,9 @@ export function CoursesTab() {
     fetch();
   }, []);
 
-  function statusPt(status: "ACTIVE" | "INACTIVE") {
-    return status === "ACTIVE" ? "ativo" : "inativo";
-  }
+  // function statusPt(status: "ACTIVE" | "INACTIVE") {
+  //   return status === "ACTIVE" ? "ativo" : "inativo";
+  // }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,8 +108,8 @@ export function CoursesTab() {
         )
       );
     } else {
-      // const newCourse = await createCourse(formData); // Used formData instead of empty object
-      // setCourses((prev) => [...prev, newCourse]);
+      const newCourse = await createCourse(formData);
+      setCourses((prev) => [...prev, newCourse]);
     }
 
     setFormData({
@@ -288,45 +288,44 @@ export function CoursesTab() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-full">
-                    {/* {iconMap[course. as keyof typeof iconMap] || iconMap.cs} */}
-                  </div>
+                  {/* <div className="p-2 bg-primary/10 rounded-full">
+                    {iconMap[course. as keyof typeof iconMap] || iconMap.cs}
+                  </div> */}
                   <div className="flex gap-2">
                     <CardTitle className="text-lg truncate">
                       {course.name}
                     </CardTitle>
-                    <Badge
+                    {/* <Badge
                       variant={
                         course.status === "ACTIVE" ? "default" : "secondary"
                       }
                     >
                       {statusPt(course.status)}
-                    </Badge>
+                    </Badge> */}
                   </div>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {(course as any).periods &&
-                  (course as any).periods.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <div className="flex gap-1 flex-wrap">
-                        {(course as any).periods.map((period: Period) => (
-                          <Badge
-                            key={period}
-                            variant="outline"
-                            className="text-xs"
-                          >
-                            {periodLabels[period]}
-                          </Badge>
-                        ))}
-                      </div>
+                {course.periods && course.periods.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex gap-1 flex-wrap">
+                      {(course as any).periods.map((period: Period) => (
+                        <Badge
+                          key={period}
+                          variant="outline"
+                          className="text-xs"
+                        >
+                          Período: {periodLabels[period]}
+                        </Badge>
+                      ))}
                     </div>
-                  )}
+                  </div>
+                )}
 
-                {(course as any).semesterDuration && (
+                {course.semesterDuration && (
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <Badge variant="outline" className="text-xs">
@@ -351,7 +350,7 @@ export function CoursesTab() {
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button
+                    {/* <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => toggleStatus(course.id)}
@@ -362,7 +361,7 @@ export function CoursesTab() {
                       }
                     >
                       {course.status === "ACTIVE" ? "Pausar" : "Ativar"}
-                    </Button>
+                    </Button> */}
                     <Button
                       variant="ghost"
                       size="icon"

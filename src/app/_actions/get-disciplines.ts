@@ -7,6 +7,7 @@ export async function getDisciplines() {
     include: {
       courses: true,
       semester: true,
+      class: true,
     },
   });
 }

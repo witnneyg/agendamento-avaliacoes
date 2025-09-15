@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,244 +47,271 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2 } from "lucide-react";
-import { getDisciplines } from "@/app/_actions/get-disciplines";
-import type { Class, Course, Prisma, Semester } from "@prisma/client";
+import { Plus, Edit, Trash2, AlertTriangle } from "lucide-react";
+
 import { getCourses } from "@/app/_actions/get-courses";
-import { translateTeacherStatus } from "@/utils/translate-teacher-status";
-import { createDiscipline } from "@/app/_actions/create-discipline";
-import { getClassBySemesterId } from "@/app/_actions/get-class-by-semester-id";
+import { Class, Course, Prisma, Semester } from "@prisma/client";
 import { getSemesterByCourse } from "@/app/_actions/get-semester-by-course-selected";
+import { getDisciplinesBySemester } from "@/app/_actions/get-disciplines-by-semester";
+import { DisciplineWithRelations } from "./disciplines-tab";
+import { createClasses } from "@/app/_actions/create-classes";
+import { getClasses } from "@/app/_actions/get-classes";
+import { deleteClass } from "@/app/_actions/delete-classes";
 
-interface Disciplina {
-  id: string;
-  name?: string;
-  description: string;
-  courseId: string;
-  semesterId: string;
-  status: "ativa" | "inativa";
-}
-
-export type DisciplineWithRelations = Prisma.DisciplineGetPayload<{
+export type ClassesWithRelations = Prisma.ClassGetPayload<{
   include: {
-    courses: true;
+    course: true;
     semester: true;
-    class: true;
+    disciplines: true;
   };
 }>;
 
-export default function DisciplinesTab() {
-  const [disciplinas, setDisciplinas] = useState<DisciplineWithRelations[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [semesters, setSemesters] = useState<Semester[]>([]);
+export function ClassesTab() {
+  const [classes, setClasses] = useState<ClassesWithRelations[]>([]);
+  const [disciplines, setDisciplines] = useState<DisciplineWithRelations[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [disciplinaEditando, setDisciplinaEditando] =
-    useState<Disciplina | null>(null);
-  const [disciplinaParaDeletar, setDisciplinaParaDeletar] =
-    useState<DisciplineWithRelations | null>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [editingClass, setEditingClass] = useState<ClassesWithRelations | null>(
+    null
+  );
+  const [classToDelete, setClassToDelete] =
+    useState<ClassesWithRelations | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     courseId: "",
     semesterId: "",
-    classId: "",
+    disciplineId: "",
   });
 
-  useEffect(() => {
-    const fetch = async () => {
-      const data = await getDisciplines();
-      setDisciplinas(data as any);
-    };
-
-    fetch();
-  }, []);
+  console.log(courses);
 
   useEffect(() => {
     const fetch = async () => {
       const data = await getCourses();
       setCourses(data);
     };
-
     fetch();
   }, []);
 
   useEffect(() => {
+    if (!formData.courseId) return;
     const fetch = async () => {
       const data = await getSemesterByCourse(formData.courseId);
       setSemesters(data);
     };
-
     fetch();
   }, [formData.courseId]);
-  useEffect(() => {
-    const fetch = async () => {
-      const data = await getClassBySemesterId(formData.semesterId);
-      setClasses(data);
-    };
 
+  useEffect(() => {
+    if (!formData.semesterId) return;
+    const fetch = async () => {
+      const data = await getDisciplinesBySemester(formData.semesterId);
+      setDisciplines(data as any);
+    };
     fetch();
   }, [formData.semesterId]);
+
+  useEffect(() => {
+    const fetch = async () => {
+      const data = await getClasses();
+      setClasses(data);
+    };
+    fetch();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const newDiscipline = await createDiscipline({
-      courseId: formData.courseId,
-      name: formData.name,
-      semesterId: formData.semesterId,
-      classId: formData.classId,
-    });
+    if (editingClass) {
+      setClasses((prev) =>
+        prev.map((cls) =>
+          cls.id === editingClass.id
+            ? {
+                ...cls,
+                name: formData.name,
+                course: courses.find((c) => c.id === formData.courseId)!,
+                semester: semesters.find((s) => s.id === formData.semesterId)!,
+                disciplines: disciplines.filter(
+                  (d) => d.id === formData.disciplineId
+                ),
+              }
+            : cls
+        )
+      );
+    } else {
+      const newClass = await createClasses({
+        courseId: formData.courseId,
+        name: formData.name,
+        semesterId: formData.semesterId,
+        disciplineId: formData.disciplineId,
+      });
+      setClasses((prev) => [...prev, newClass]);
+    }
 
-    setDisciplinas((prev) => [...prev, newDiscipline]);
     setFormData({
       name: "",
       courseId: "",
       semesterId: "",
-      classId: "",
+      disciplineId: "",
     });
-    setDisciplinaEditando(null);
+    setEditingClass(null);
     setIsDialogOpen(false);
   };
 
-  const handleEdit = (disciplina: DisciplineWithRelations) => {
+  const handleEdit = (cls: ClassesWithRelations) => {
+    setEditingClass(cls);
     setFormData({
-      name: disciplina.name ?? "",
-      courseId: disciplina.id,
-      semesterId: disciplina.semesterId,
-      classId: disciplina.classId ?? "",
+      name: cls.name,
+      courseId: cls.courseId,
+      semesterId: cls.semesterId,
+      disciplineId: cls.disciplines[0]?.id || "",
     });
     setIsDialogOpen(true);
   };
 
-  const handleDeleteClick = (disciplina: DisciplineWithRelations) => {
-    setDisciplinaParaDeletar(disciplina);
+  const handleDeleteClick = async (cls: ClassesWithRelations) => {
+    await deleteClass(cls.id);
+
+    setClassToDelete(cls);
   };
 
   const handleConfirmDelete = () => {
-    if (disciplinaParaDeletar) {
-      setDisciplinas((prev) =>
-        prev.filter((disciplina) => disciplina.id !== disciplinaParaDeletar.id)
-      );
-      setDisciplinaParaDeletar(null);
+    if (classToDelete) {
+      setClasses((prev) => prev.filter((cls) => cls.id !== classToDelete.id));
+      setClassToDelete(null);
     }
   };
 
   const handleCancelDelete = () => {
-    setDisciplinaParaDeletar(null);
+    setClassToDelete(null);
   };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Disciplinas</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Turmas</h2>
           <p className="text-muted-foreground">
-            Gerencie as disciplinas e matérias dos cursos
+            Gerencie as turmas e suas configurações
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="cursor-pointer">
+            <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Adicionar Disciplina
+              Adicionar Turma
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>
-                {disciplinaEditando ? "Editar Disciplina" : "Nova Disciplina"}
+                {editingClass ? "Editar Turma" : "Nova Turma"}
               </DialogTitle>
               <DialogDescription>
-                {disciplinaEditando
-                  ? "Atualize as informações da disciplina"
-                  : "Adicione uma nova disciplina ao sistema"}
+                {editingClass
+                  ? "Atualize as informações da turma"
+                  : "Adicione uma nova turma ao sistema"}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Nome da Disciplina</Label>
+                <Label htmlFor="name">Nome da Turma</Label>
                 <Input
-                  id="title"
+                  id="name"
                   value={formData.name}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, name: e.target.value }))
                   }
-                  placeholder="Introdução à Programação"
+                  placeholder="Turma A"
                   required
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="courseId">Curso</Label>
                 <Select
                   value={formData.courseId}
                   onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, courseId: value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      courseId: value,
+                      semesterId: "",
+                      disciplineId: "",
+                    }))
                   }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um curso" />
                   </SelectTrigger>
                   <SelectContent>
-                    {courses.map((curso) => (
-                      <SelectItem key={curso.id} value={curso.id}>
-                        {curso.name}
+                    {courses.map((course) => (
+                      <SelectItem key={course.id} value={course.id}>
+                        {course.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="semesterId">Semestre</Label>
                 <Select
                   value={formData.semesterId}
                   onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, semesterId: value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      semesterId: value,
+                      disciplineId: "",
+                    }))
                   }
+                  disabled={!formData.courseId}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um semestre" />
                   </SelectTrigger>
                   <SelectContent>
-                    {semesters.map((semestre) => (
-                      <SelectItem key={semestre.id} value={semestre.id}>
-                        {semestre.name}
+                    {semesters.map((semester) => (
+                      <SelectItem key={semester.id} value={semester.id}>
+                        {semester.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="classId">Turma</Label>
+                <Label htmlFor="disciplineId">Disciplina</Label>
                 <Select
-                  value={formData.classId}
+                  value={formData.disciplineId}
                   onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, classId: value }))
+                    setFormData((prev) => ({ ...prev, disciplineId: value }))
                   }
+                  disabled={!formData.courseId || !formData.semesterId}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um curso" />
+                    <SelectValue placeholder="Selecione uma disciplina" />
                   </SelectTrigger>
                   <SelectContent>
-                    {classes.map((item) => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.name}
+                    {disciplines.map((discipline) => (
+                      <SelectItem key={discipline.id} value={discipline.id}>
+                        {discipline.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
               <DialogFooter>
                 <Button
                   type="button"
                   variant="outline"
-                  className="cursor-pointer"
                   onClick={() => setIsDialogOpen(false)}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" className="cursor-pointer">
-                  {disciplinaEditando ? "Atualizar" : "Adicionar"} Disciplina
+                <Button type="submit">
+                  {editingClass ? "Atualizar" : "Criar"} Turma
                 </Button>
               </DialogFooter>
             </form>
@@ -295,59 +321,54 @@ export default function DisciplinesTab() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Todas as Disciplinas</CardTitle>
+          <CardTitle>Todas as Turmas</CardTitle>
           <CardDescription>
-            {disciplinas.length} disciplinas cadastradas em todos os cursos
+            {classes.length} turmas cadastradas no sistema
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Título</TableHead>
+                <TableHead>Turma</TableHead>
                 <TableHead>Curso</TableHead>
                 <TableHead>Semestre</TableHead>
-                <TableHead>Turma</TableHead>
-                {/* <TableHead>Status</TableHead> */}
+                <TableHead>Disciplina</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {disciplinas.map((disciplina) => (
-                <TableRow key={disciplina.id}>
-                  <TableCell className="font-medium">
-                    {disciplina.name}
+              {classes.map((cls) => (
+                <TableRow key={cls.id}>
+                  <TableCell>
+                    <div className="font-medium">{cls.name}</div>
                   </TableCell>
                   <TableCell>
-                    {disciplina.courses.map((item) => item.name)}
+                    <div className="font-medium">{cls.course.name}</div>
                   </TableCell>
-                  <TableCell>{disciplina.semester.name}</TableCell>
-                  <TableCell>{disciplina.class?.name}</TableCell>
-                  {/* <TableCell>
-                    <Badge
-                      variant={
-                        disciplina.status === "ACTIVE" ? "default" : "secondary"
-                      }
-                    >
-                      {translateTeacherStatus(disciplina.status)}
-                    </Badge>
-                  </TableCell> */}
+                  <TableCell>
+                    <div className="text-sm">{cls.semester.name}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      {cls.disciplines.map((discipline) => discipline.name)}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="cursor-pointer"
-                        onClick={() => handleEdit(disciplina)}
+                        onClick={() => handleEdit(cls)}
                       >
-                        <Edit className="h-4 w-4 " />
+                        <Edit className="h-4 w-4" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDeleteClick(disciplina)}
+                            onClick={() => handleDeleteClick(cls)}
                             className="text-red-500 hover:text-red-600 hover:bg-red-50 cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -360,8 +381,8 @@ export default function DisciplinesTab() {
                             </AlertDialogTitle>
 
                             <AlertDialogDescription>
-                              Tem certeza que deseja excluir esta disciplina?
-                              Esta ação não pode ser desfeita.
+                              Tem certeza que deseja excluir esta turma? Esta
+                              ação não pode ser desfeita.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>

@@ -1,23 +1,35 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { Status } from "@prisma/client";
+import { Period } from "@prisma/client";
 
-interface CreateTeacherInput {
+interface CreateCourseInput {
   name: string;
-  courseId: string;
-  semesterId: string;
+  description?: string;
+  periods: Period[];
+  semesterDuration: number;
 }
 
-export async function createCourse({
-  name,
-  courseId,
-  semesterId,
-}: CreateTeacherInput) {
-  return db.course.create({
+export async function createCourse(data: CreateCourseInput) {
+  const course = await db.course.create({
     data: {
-      name,
-      description: "",
+      name: data.name,
+      description: data.description ?? "",
+      periods: data.periods,
+      semesterDuration: data.semesterDuration,
+      status: "ACTIVE",
     },
   });
+
+  if (data.semesterDuration > 0) {
+    await db.semester.createMany({
+      data: Array.from({ length: data.semesterDuration }, (_, i) => ({
+        name: `Semestre ${i + 1}`,
+        description: `Disciplinas e atividades do semestre ${i + 1}`,
+        courseId: course.id,
+      })),
+    });
+  }
+
+  return course;
 }

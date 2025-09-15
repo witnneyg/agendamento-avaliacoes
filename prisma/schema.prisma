@@ -26,41 +26,70 @@ enum Status {
 }
 
 model Course {
-  id          String     @id @default(uuid())
+  id          String       @id @default(uuid())
   name        String
   description String
   periods     Period[]
-  semester    Semester[]
 
-  teachers Teacher[] @relation("CourseTeachers")
-  disciplines Discipline[] @relation("CourseDisciplines")
+  semesters   Semester[]
+  teachers    Teacher[]     @relation("CourseTeachers")
+  disciplines Discipline[]  @relation("CourseDisciplines")
+semesterDuration Int @default(0)
+  classes     Class[]
 
   status Status @default(ACTIVE)
 
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
-  Scheduling Scheduling[]
+  schedulings Scheduling[]
 }
 
 model Semester {
   id          String       @id @default(uuid())
   name        String
   description String
+
   courseId    String
   course      Course       @relation(fields: [courseId], references: [id])
+
   disciplines Discipline[]
+  classes     Class[]
+  schedulings Scheduling[]
+
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  Scheduling  Scheduling[]
+}
+
+model Class {
+  id          String       @id @default(uuid())
+  name        String          
+  
+  courseId    String
+  course      Course       @relation(fields: [courseId], references: [id])
+
+  semesterId  String
+  semester    Semester     @relation(fields: [semesterId], references: [id])
+
+  disciplines Discipline[] 
+  schedulings Scheduling[] 
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Discipline {
-  id          String    @id @default(uuid())
+  id          String     @id @default(uuid())
   name        String
+
   semesterId  String
-  semester    Semester  @relation(fields: [semesterId], references: [id])
-  teachers    Teacher[] @relation("DisciplineTeachers")
-  courses     Course[]  @relation("CourseDisciplines")
+  semester    Semester   @relation(fields: [semesterId], references: [id])
+
+  classId     String?
+  class       Class?     @relation(fields: [classId], references: [id])
+
+  teachers    Teacher[]  @relation("DisciplineTeachers")
+  courses     Course[]   @relation("CourseDisciplines")
+
   status Status @default(ACTIVE)
 
   schedulings Scheduling[]
@@ -88,6 +117,9 @@ model Scheduling {
 
   disciplineId String
   discipline   Discipline @relation(fields: [disciplineId], references: [id])
+
+  classId   String?
+  class     Class?   @relation(fields: [classId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

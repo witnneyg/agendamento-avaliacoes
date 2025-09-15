@@ -3,15 +3,16 @@ import { PrismaClient, Period, Role, Status } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  // 🔄 Limpar tabelas na ordem correta para evitar conflitos de FK
+  // 🔄 Limpar tabelas na ordem correta
   await prisma.scheduling.deleteMany();
   await prisma.discipline.deleteMany();
+  await prisma.class.deleteMany();
   await prisma.semester.deleteMany();
   await prisma.course.deleteMany();
   await prisma.teacher.deleteMany();
   await prisma.user.deleteMany();
 
-  // ✅ Cria usuário (aluno)
+  // ✅ Usuário exemplo
   const aluno = await prisma.user.create({
     data: {
       name: "Maria da Silva",
@@ -47,10 +48,29 @@ async function main() {
     },
   });
 
+  // 🔹 Criação das turmas GTI
+  const turmaGTI1 = await prisma.class.create({
+    data: {
+      name: "GTI1",
+      courseId: cursoTI.id,
+      semesterId: semestreTI1.id,
+    },
+  });
+
+  const turmaGTI2 = await prisma.class.create({
+    data: {
+      name: "GTI2",
+      courseId: cursoTI.id,
+      semesterId: semestreTI2.id,
+    },
+  });
+
+  // Disciplinas GTI
   const disciplinaLP = await prisma.discipline.create({
     data: {
       name: "Lógica de Programação",
       semesterId: semestreTI1.id,
+      classId: turmaGTI1.id,
       courses: { connect: { id: cursoTI.id } },
     },
   });
@@ -59,6 +79,7 @@ async function main() {
     data: {
       name: "Matemática Discreta",
       semesterId: semestreTI1.id,
+      classId: turmaGTI1.id,
       courses: { connect: { id: cursoTI.id } },
     },
   });
@@ -67,11 +88,13 @@ async function main() {
     data: {
       name: "Estrutura de Dados",
       semesterId: semestreTI2.id,
+      classId: turmaGTI2.id,
       courses: { connect: { id: cursoTI.id } },
     },
   });
 
-  const professorTI = await prisma.teacher.create({
+  // Professor GTI
+  await prisma.teacher.create({
     data: {
       name: "Carlos Souza",
       status: Status.ACTIVE,
@@ -82,6 +105,7 @@ async function main() {
     },
   });
 
+  // Agendamento exemplo
   await prisma.scheduling.create({
     data: {
       name: "Agendamento Maria",
@@ -94,6 +118,7 @@ async function main() {
       courseId: cursoTI.id,
       semesterId: semestreTI1.id,
       disciplineId: disciplinaLP.id,
+      classId: turmaGTI1.id,
     },
   });
 
@@ -124,10 +149,29 @@ async function main() {
     },
   });
 
+  // 🔹 Criação das turmas MED
+  const turmaMED1 = await prisma.class.create({
+    data: {
+      name: "MED1",
+      courseId: cursoMed.id,
+      semesterId: semestreMed1.id,
+    },
+  });
+
+  const turmaMED3 = await prisma.class.create({
+    data: {
+      name: "MED3",
+      courseId: cursoMed.id,
+      semesterId: semestreMed2.id,
+    },
+  });
+
+  // Disciplinas MED
   const disciplinaAnatomia = await prisma.discipline.create({
     data: {
       name: "Anatomia Humana",
       semesterId: semestreMed1.id,
+      classId: turmaMED1.id,
       courses: { connect: { id: cursoMed.id } },
     },
   });
@@ -136,6 +180,7 @@ async function main() {
     data: {
       name: "Fisiologia",
       semesterId: semestreMed1.id,
+      classId: turmaMED1.id,
       courses: { connect: { id: cursoMed.id } },
     },
   });
@@ -144,11 +189,13 @@ async function main() {
     data: {
       name: "Bioquímica",
       semesterId: semestreMed2.id,
+      classId: turmaMED3.id,
       courses: { connect: { id: cursoMed.id } },
     },
   });
 
-  const professorMed = await prisma.teacher.create({
+  // Professor MED
+  await prisma.teacher.create({
     data: {
       name: "Dr. João Pereira",
       status: Status.ACTIVE,
@@ -162,6 +209,7 @@ async function main() {
     },
   });
 
+  // Agendamento exemplo
   await prisma.scheduling.create({
     data: {
       name: "Consulta Pedro",
@@ -174,15 +222,16 @@ async function main() {
       courseId: cursoMed.id,
       semesterId: semestreMed1.id,
       disciplineId: disciplinaAnatomia.id,
+      classId: turmaMED1.id,
     },
   });
 
-  console.log("Seed concluído com sucesso!");
+  console.log("✅ Seed concluído com sucesso!");
 }
 
 main()
   .catch((e) => {
-    console.error("Erro no seed:", e);
+    console.error("❌ Erro no seed:", e);
     process.exit(1);
   })
   .finally(async () => {

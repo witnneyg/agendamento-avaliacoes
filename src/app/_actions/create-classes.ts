@@ -1,39 +1,37 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { Status } from "@prisma/client";
 
-interface CreateTeacherInput {
+interface CreateClassInput {
   name: string;
   courseId: string;
+  disciplineId: string;
   semesterId: string;
-  classId: string;
 }
 
-export async function createDiscipline({
+export async function createClasses({
   name,
   courseId,
+  disciplineId,
   semesterId,
-  classId,
-}: CreateTeacherInput) {
-  return db.discipline.create({
+}: CreateClassInput) {
+  return db.class.create({
     data: {
       name,
-      status: Status.ACTIVE,
-      courses: {
+      course: {
         connect: { id: courseId },
       },
       semester: {
         connect: { id: semesterId },
       },
-      class: {
-        connect: { id: classId },
+      disciplines: {
+        connect: { id: disciplineId },
       },
     },
     include: {
-      courses: true,
+      course: true,
       semester: true,
-      class: true,
+      disciplines: true,
     },
   });
 }
