@@ -38,6 +38,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Plus, Edit, Trash2 } from "lucide-react";
 
 import { getCourses } from "@/app/_actions/get-courses";
@@ -72,6 +83,8 @@ export function ClassesTab() {
   const [editingClass, setEditingClass] = useState<ClassesWithRelations | null>(
     null
   );
+  const [classToDelete, setClassToDelete] =
+    useState<ClassesWithRelations | null>(null);
 
   const {
     control,
@@ -175,9 +188,20 @@ export function ClassesTab() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (clsId: string) => {
-    await deleteClass(clsId);
-    setClasses((prev) => prev.filter((cls) => cls.id !== clsId));
+  const handleDeleteClick = (cls: ClassesWithRelations) => {
+    setClassToDelete(cls);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (classToDelete) {
+      await deleteClass(classToDelete.id);
+      setClasses((prev) => prev.filter((cls) => cls.id !== classToDelete.id));
+      setClassToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setClassToDelete(null);
   };
 
   return (
@@ -356,14 +380,42 @@ export function ClassesTab() {
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(cls.id)}
-                        className="text-red-500 hover:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-500 hover:text-red-600"
+                            onClick={() => handleDeleteClick(cls)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Confirmar Exclusão
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem certeza que deseja excluir esta turma? Esta
+                              ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel onClick={handleCancelDelete}>
+                              Cancelar
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={handleConfirmDelete}
+                              className="bg-red-500 hover:bg-red-600"
+                            >
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </TableCell>
                 </TableRow>
