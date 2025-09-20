@@ -59,7 +59,7 @@ import { getClasses } from "@/app/_actions/get-classes";
 import { deleteClass } from "@/app/_actions/delete-classes";
 
 import type { Course, Prisma, Semester } from "@prisma/client";
-import type { DisciplineWithRelations } from "./disciplines-tab";
+import { DisciplineWithRelations } from "./disciplines-tab";
 
 export type ClassesWithRelations = Prisma.ClassGetPayload<{
   include: { course: true; semester: true; disciplines: true };

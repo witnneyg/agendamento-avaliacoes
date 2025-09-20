@@ -88,7 +88,7 @@ const getPeriodLabel = (period: string) => {
   }
 };
 
-const timeSlots = Array.from({ length: 24 }, (_, i) => i + 0);
+const timeSlots = Array.from({ length: 17 }, (_, i) => i + 7);
 
 const AppointmentItem = ({
   appointment,
@@ -157,15 +157,15 @@ const AppointmentItem = ({
       </AlertDialogHeader>
 
       <div className="space-y-3 text-sm pt-2">
-        <p className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center">
           <p className="font-medium">Curso:</p>
           {appointment.course.name}
-        </p>
-        <p className="flex gap-2 items-center">
+        </div>
+        <div className="flex gap-2 items-center">
           <p className="font-medium">Professor:</p>
           {appointment.name}
-        </p>
-        <p className="flex gap-2 items-center">
+        </div>
+        <div className="flex gap-2 items-center">
           <p className="font-medium">Horário:</p>
 
           {new Intl.DateTimeFormat("pt-BR", {
@@ -185,8 +185,8 @@ const AppointmentItem = ({
             minute: "2-digit",
             hour12: false,
           }).format(new Date(appointment.endTime))}
-        </p>
-        <p className="flex gap-2 items-center">
+        </div>
+        <div className="flex gap-2 items-center">
           {appointment.course.periods.map((p) => (
             <span key={p} className="flex gap-1 items-center">
               <p className="font-medium">Período:</p>
@@ -194,7 +194,7 @@ const AppointmentItem = ({
               {getPeriodLabel(p)}
             </span>
           ))}
-        </p>
+        </div>
         <div className="flex gap-2 items-center">
           <p className="font-medium">Anotações:</p>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,38 +34,40 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Search,
-  Plus,
-  Trash2,
-  Users,
-  Check,
-  X,
-  UserPlus,
-  Settings,
-  BarChart3,
-} from "lucide-react";
-import { NavBar } from "@/app/_components/navbar";
-import { getUsers } from "@/app/_actions/get-users";
-import { Role, User } from "@prisma/client";
+import { Search, Plus, Trash2, Users, Check, X, Settings } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import PermissionsPage from "./permissions";
+import ProfileManagement from "./permissions";
+import { NavBar } from "@/app/_components/navbar";
 
-// Labels em português
+type Role = "DIRECAO" | "PROFESSOR" | "SECRETARIA" | "USUARIO_PADRAO" | "ADMIN";
+
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  roles: Role[];
+};
+
 const roleLabels: Record<Role, string> = {
+  DIRECAO: "Direção",
+  PROFESSOR: "Professor",
+  SECRETARIA: "Secretaria",
+  USUARIO_PADRAO: "Usuário Padrão",
   ADMIN: "Admin",
-  TEACHER: "Professor",
-  USER: "Usuário",
 };
 
 const getAccessBadgeVariant = (access: Role) => {
   switch (access) {
+    case "DIRECAO":
+      return "destructive";
+    case "PROFESSOR":
+      return "default";
+    case "SECRETARIA":
+      return "secondary";
+    case "USUARIO_PADRAO":
+      return "outline";
     case "ADMIN":
       return "destructive";
-    case "TEACHER":
-      return "outline";
-    case "USER":
-      return "secondary";
     default:
       return "outline";
   }
@@ -74,7 +76,32 @@ const getAccessBadgeVariant = (access: Role) => {
 export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [accessFilter, setAccessFilter] = useState<Role | "ALL">("ALL");
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<User[]>([
+    {
+      id: "1",
+      name: "João Silva",
+      email: "joao@escola.com",
+      roles: ["DIRECAO", "ADMIN"],
+    },
+    {
+      id: "2",
+      name: "Maria Santos",
+      email: "maria@escola.com",
+      roles: ["PROFESSOR"],
+    },
+    {
+      id: "3",
+      name: "Ana Costa",
+      email: "ana@escola.com",
+      roles: ["SECRETARIA"],
+    },
+    {
+      id: "4",
+      name: "Pedro Oliveira",
+      email: "pedro@escola.com",
+      roles: ["USUARIO_PADRAO"],
+    },
+  ]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [removeAccessConfirmOpen, setRemoveAccessConfirmOpen] = useState(false);
@@ -84,15 +111,6 @@ export default function AdminDashboard() {
     userName: string;
   } | null>(null);
   const currentUserId = "1";
-
-  useEffect(() => {
-    const fetch = async () => {
-      const data = await getUsers();
-      setUsers(data);
-    };
-
-    fetch();
-  }, []);
 
   const handleDeleteClick = (user: User) => {
     if (user.id === currentUserId && user.roles.includes("ADMIN")) {
@@ -216,9 +234,8 @@ export default function AdminDashboard() {
   return (
     <>
       <NavBar />
-
       <div className="min-h-screen bg-background p-3 sm:p-6">
-        <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        <div className="container mx-auto space-y-4 sm:space-y-6 ">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -236,96 +253,20 @@ export default function AdminDashboard() {
           </div>
 
           <Tabs defaultValue="users" className="w-full">
-            <TabsList className="grid w-full  grid-cols-2">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="users" className="flex items-center gap-2">
-                <Users className="h-4 " />
+                <Users className="h-4" />
                 Gerenciar Usuários
               </TabsTrigger>
-              <TabsTrigger value="add-user" className="flex items-center gap-2">
-                <UserPlus className="h-4" />
+              <TabsTrigger
+                value="permissions"
+                className="flex items-center gap-2"
+              >
+                <Settings className="h-4" />
                 Gerenciar Permissões
               </TabsTrigger>
             </TabsList>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              {/* <Card>
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <div>
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        Total de Usuários
-                      </p>
-                      <p className="text-lg sm:text-2xl font-bold text-foreground">
-                        {users.length}
-                      </p>
-                    </div>
-                    <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary self-end sm:self-auto" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <div>
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        Professores
-                      </p>
-                      <p className="text-lg sm:text-2xl font-bold text-foreground">
-                        {
-                          users.filter((u) => u.roles.includes("TEACHER"))
-                            .length
-                        }
-                      </p>
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className="text-xs self-end sm:self-auto"
-                    >
-                      Professor
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <div>
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        Admins
-                      </p>
-                      <p className="text-lg sm:text-2xl font-bold text-foreground">
-                        {users.filter((u) => u.roles.includes("ADMIN")).length}
-                      </p>
-                    </div>
-                    <Badge
-                      variant="destructive"
-                      className="text-xs self-end sm:self-auto"
-                    >
-                      Admin
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <div>
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        Usuários
-                      </p>
-                      <p className="text-lg sm:text-2xl font-bold text-foreground">
-                        {users.filter((u) => u.roles.includes("USER")).length}
-                      </p>
-                    </div>
-                    <Badge
-                      variant="secondary"
-                      className="text-xs self-end sm:self-auto"
-                    >
-                      Usuário
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card> */}
-            </div>
+
             <TabsContent value="users" className="space-y-6">
               <Card>
                 <CardHeader className="pb-3 sm:pb-6">
@@ -355,7 +296,15 @@ export default function AdminDashboard() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ALL">Todos</SelectItem>
-                        {Object.values(Role).map((r) => (
+                        {(
+                          [
+                            "DIRECAO",
+                            "PROFESSOR",
+                            "SECRETARIA",
+                            "USUARIO_PADRAO",
+                            "ADMIN",
+                          ] as Role[]
+                        ).map((r) => (
                           <SelectItem key={r} value={r}>
                             {roleLabels[r]}
                           </SelectItem>
@@ -364,7 +313,6 @@ export default function AdminDashboard() {
                     </Select>
                   </div>
 
-                  {/* Users Table */}
                   <div className="hidden md:block rounded-md border border-border overflow-hidden">
                     <Table>
                       <TableHeader>
@@ -436,22 +384,28 @@ export default function AdminDashboard() {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="start">
-                                    {(Object.values(Role) as Role[]).map(
-                                      (level) => (
-                                        <DropdownMenuItem
-                                          key={level}
-                                          onClick={() =>
-                                            handleAccessToggle(user.id, level)
-                                          }
-                                          className="flex items-center justify-between"
-                                        >
-                                          <span>{roleLabels[level]}</span>
-                                          {user.roles.includes(level) && (
-                                            <Check className="h-4 w-4 text-green-600" />
-                                          )}
-                                        </DropdownMenuItem>
-                                      )
-                                    )}
+                                    {(
+                                      [
+                                        "DIRECAO",
+                                        "PROFESSOR",
+                                        "SECRETARIA",
+                                        "USUARIO_PADRAO",
+                                        "ADMIN",
+                                      ] as Role[]
+                                    ).map((level) => (
+                                      <DropdownMenuItem
+                                        key={level}
+                                        onClick={() =>
+                                          handleAccessToggle(user.id, level)
+                                        }
+                                        className="flex items-center justify-between"
+                                      >
+                                        <span>{roleLabels[level]}</span>
+                                        {user.roles.includes(level) && (
+                                          <Check className="h-4 w-4 text-green-600" />
+                                        )}
+                                      </DropdownMenuItem>
+                                    ))}
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               </div>
@@ -489,6 +443,122 @@ export default function AdminDashboard() {
                     </Table>
                   </div>
 
+                  <div className="md:hidden space-y-3">
+                    {filteredUsers.map((user) => (
+                      <Card key={user.id} className="border border-border">
+                        <CardContent className="p-4">
+                          <div className="flex flex-col space-y-3">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-medium text-foreground truncate">
+                                  {user.name}
+                                </h3>
+                                <p className="text-sm text-muted-foreground truncate">
+                                  {user.email}
+                                </p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteClick(user)}
+                                disabled={
+                                  (user.id === currentUserId &&
+                                    user.roles.includes("ADMIN")) ||
+                                  (user.roles.includes("ADMIN") &&
+                                    users.filter((u) =>
+                                      u.roles.includes("ADMIN")
+                                    ).length <= 1)
+                                }
+                                className={`h-8 w-8 p-0 ml-2 ${
+                                  (user.id === currentUserId &&
+                                    user.roles.includes("ADMIN")) ||
+                                  (user.roles.includes("ADMIN") &&
+                                    users.filter((u) =>
+                                      u.roles.includes("ADMIN")
+                                    ).length <= 1)
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : "hover:bg-destructive/10 hover:text-destructive"
+                                }`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+
+                            <div className="space-y-2">
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                Níveis de Acesso
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {user.roles.map((access) => (
+                                  <div
+                                    key={access}
+                                    className="flex items-center"
+                                  >
+                                    <Badge
+                                      variant={getAccessBadgeVariant(access)}
+                                      className="text-xs pr-1"
+                                    >
+                                      {roleLabels[access]}
+                                      {canRemoveAccess(user.id, access) && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveAccess(user.id, access);
+                                          }}
+                                          className="ml-1 hover:bg-black/20 rounded-full p-0.5 transition-colors"
+                                          title={`Remover acesso ${roleLabels[access]}`}
+                                        >
+                                          <X className="h-2.5 w-2.5" />
+                                        </button>
+                                      )}
+                                    </Badge>
+                                  </div>
+                                ))}
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-6 px-2 text-xs bg-transparent"
+                                      title="Adicionar nível de acesso"
+                                    >
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Adicionar
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="start">
+                                    {(
+                                      [
+                                        "DIRECAO",
+                                        "PROFESSOR",
+                                        "SECRETARIA",
+                                        "USUARIO_PADRAO",
+                                        "ADMIN",
+                                      ] as Role[]
+                                    ).map((level) => (
+                                      <DropdownMenuItem
+                                        key={level}
+                                        onClick={() =>
+                                          handleAccessToggle(user.id, level)
+                                        }
+                                        className="flex items-center justify-between"
+                                      >
+                                        <span>{roleLabels[level]}</span>
+                                        {user.roles.includes(level) && (
+                                          <Check className="h-4 w-4 text-green-600" />
+                                        )}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+
                   {filteredUsers.length === 0 && (
                     <div className="text-center py-8">
                       <p className="text-muted-foreground">
@@ -499,27 +569,28 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Dialogs */}
               <Dialog
                 open={deleteConfirmOpen}
                 onOpenChange={setDeleteConfirmOpen}
               >
-                <DialogContent className="sm:max-w-md mx-4">
+                <DialogContent className="sm:max-w-md mx-4 w-[calc(100vw-2rem)]">
                   <DialogHeader>
-                    <DialogTitle>Confirmar Exclusão</DialogTitle>
-                    <DialogDescription>
+                    <DialogTitle className="text-left">
+                      Confirmar Exclusão
+                    </DialogTitle>
+                    <DialogDescription className="text-left">
                       Tem certeza que deseja excluir o usuário{" "}
                       <strong>{userToDelete?.name}</strong>? Esta ação não pode
                       ser desfeita.
                     </DialogDescription>
                   </DialogHeader>
-                  <DialogFooter className="flex flex-col sm:flex-row gap-2">
+                  <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
                     <Button
                       variant="outline"
                       onClick={cancelDelete}
                       className="w-full sm:w-auto bg-transparent cursor-pointer"
                     >
-                      Não
+                      Cancelar
                     </Button>
                     <Button
                       variant="destructive"
@@ -536,10 +607,12 @@ export default function AdminDashboard() {
                 open={removeAccessConfirmOpen}
                 onOpenChange={setRemoveAccessConfirmOpen}
               >
-                <DialogContent className="sm:max-w-md mx-4">
+                <DialogContent className="sm:max-w-md mx-4 w-[calc(100vw-2rem)]">
                   <DialogHeader>
-                    <DialogTitle>Confirmar Remoção de Acesso</DialogTitle>
-                    <DialogDescription>
+                    <DialogTitle className="text-left">
+                      Confirmar Remoção de Acesso
+                    </DialogTitle>
+                    <DialogDescription className="text-left">
                       Tem certeza que deseja remover o nível de acesso{" "}
                       <strong>
                         {accessToRemove
@@ -549,7 +622,7 @@ export default function AdminDashboard() {
                       do usuário <strong>{accessToRemove?.userName}</strong>?
                     </DialogDescription>
                   </DialogHeader>
-                  <DialogFooter className="flex flex-col sm:flex-row gap-2">
+                  <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
                     <Button
                       variant="outline"
                       onClick={cancelRemoveAccess}
@@ -568,27 +641,11 @@ export default function AdminDashboard() {
                 </DialogContent>
               </Dialog>
             </TabsContent>
-            <TabsContent value="add-user" className="space-y-6">
-              <PermissionsPage />
-            </TabsContent>
 
-            <TabsContent value="analytics" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                d
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">
-                    Relatórios Disponíveis
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Esta seção pode ser expandida com gráficos e relatórios
-                    detalhados sobre o uso do sistema.
-                  </p>
-                </div>
-              </div>
+            <TabsContent value="permissions" className="space-y-6">
+              <ProfileManagement />
             </TabsContent>
           </Tabs>
-
-          {/* Stats Cards */}
         </div>
       </div>
     </>
