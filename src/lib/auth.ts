@@ -3,6 +3,7 @@ import { NextAuthOptions } from "next-auth";
 import EmailProvider from "next-auth/providers/email";
 import { db } from "./prisma";
 import { resend } from "@/app/api/email/config";
+import GoogleProvider from "next-auth/providers/google";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
@@ -23,6 +24,11 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Falha ao enviar e-mail de verificação");
         }
       },
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      allowDangerousEmailAccountLinking: true,
     }),
   ],
   pages: {

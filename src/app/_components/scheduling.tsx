@@ -22,6 +22,9 @@ import { createScheduling } from "../_actions/create-schedule";
 import { TimePeriod, TimePeriodSelector } from "./time-period.selector";
 import { timePeriods } from "../mocks";
 import { getLoggedUserId } from "../_actions/get-logged-user";
+import { getServerSession } from "next-auth";
+import { getUser } from "../_actions/getUser";
+import { User } from "@prisma/client";
 
 type Step =
   | "course"
@@ -43,7 +46,6 @@ type BookingDetails = {
 
 export function Scheduling() {
   const { addAppointment } = useAppointments();
-
   const [step, setStep] = useState<Step>("course");
   const [selectedCourse, setSelectedCourse] = useState<Course | undefined>(
     undefined
@@ -55,7 +57,9 @@ export function Scheduling() {
     Discipline | undefined
   >(undefined);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [userId, setUserId] = useState<string | undefined>("");
+  const [user, setUser] = useState<Omit<User, "emailVerified"> | undefined>(
+    undefined
+  );
   const [selectedTimePeriod, setSelectedTimePeriod] = useState<
     TimePeriod | undefined
   >(undefined);
@@ -90,37 +94,17 @@ export function Scheduling() {
     setStep("details");
   };
 
-  function extractTimes(date: Date, timeRange: string) {
-    const [startStr, endStr] = timeRange.split(" - ");
-
-    const [startHour, startMinute] = startStr.split(":").map(Number);
-    const [endHour, endMinute] = endStr.split(":").map(Number);
-
-    const startTime = set(date, {
-      hours: startHour,
-      minutes: startMinute,
-      seconds: 0,
-      milliseconds: 0,
-    });
-    const endTime = set(date, {
-      hours: endHour,
-      minutes: endMinute,
-      seconds: 0,
-      milliseconds: 0,
-    });
-
-    return { startTime, endTime };
-  }
-
   useEffect(() => {
     async function fetch() {
-      const data = await getLoggedUserId();
+      const data = await getUser();
 
-      setUserId(data);
+      setUser(data);
+      console.log({ user });
     }
 
     fetch();
   }, []);
+  console.log({ user });
 
   const handleCreateScheduling = async (details: BookingDetails) => {
     setBookingDetails(details);
@@ -145,11 +129,11 @@ export function Scheduling() {
         selectedCourse &&
         selectedSemester &&
         selectedDate &&
-        userId &&
+        user &&
         selectedDiscipline
       ) {
         const data = {
-          userId,
+          userId: user.id,
           courseId: selectedCourse.id,
           disciplineId: selectedDiscipline.id,
           semesterId: selectedSemester.id,
