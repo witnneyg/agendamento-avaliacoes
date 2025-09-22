@@ -164,6 +164,9 @@ export function Scheduling() {
   return (
     <Card className="w-full max-w-3xl">
       <CardHeader>
+        <h1>{user?.name}</h1>
+        <h1>{user?.email}</h1>
+        <h1>{user?.id}</h1>
         <CardTitle>
           {step === "course" && "Selecione um curso"}
           {step === "semester" && "Selecione seu periodo"}
