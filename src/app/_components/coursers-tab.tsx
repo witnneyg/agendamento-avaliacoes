@@ -63,7 +63,7 @@ const courseSchema = z.object({
     .min(1, "Selecione pelo menos um período"),
   semesterDuration: z
     .number()
-    .min(1, "A duração deve ser de pelo menos 1 semestre"),
+    .min(1, "A duração deve ser de pelo menos 1 período"),
 });
 
 type CourseFormData = z.infer<typeof courseSchema>;
@@ -99,6 +99,8 @@ export function CoursesTab() {
   }, []);
 
   const onSubmit = async (data: CourseFormData) => {
+    console.log({ data });
+
     if (editingCourse) {
       setCourses((prev) =>
         prev.map((course) =>
@@ -234,7 +236,7 @@ export function CoursesTab() {
                       onValueChange={(val) => field.onChange(Number(val))}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione a duração em semestres" />
+                        <SelectValue placeholder="Selecione a duração em períodos" />
                       </SelectTrigger>
                       <SelectContent>
                         {SEMESTER_DURATIONS.map((duration) => (
@@ -242,8 +244,7 @@ export function CoursesTab() {
                             key={duration}
                             value={duration.toString()}
                           >
-                            {duration}{" "}
-                            {duration === 1 ? "semestre" : "semestres"}
+                            {duration} {duration === 1 ? "período" : "períodos"}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -303,7 +304,7 @@ export function CoursesTab() {
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <Badge variant="outline" className="text-xs">
-                      {(course as any).semesterDuration} semestres
+                      {(course as any).semesterDuration} períodos
                     </Badge>
                   </div>
                 )}

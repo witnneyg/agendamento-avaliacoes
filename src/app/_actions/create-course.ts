@@ -24,7 +24,7 @@ export async function createCourse(data: CreateCourseInput) {
   if (data.semesterDuration > 0) {
     await db.semester.createMany({
       data: Array.from({ length: data.semesterDuration }, (_, i) => ({
-        name: `Semestre ${i + 1}`,
+        name: `Período ${i + 1}`,
         description: `Disciplinas e atividades do semestre ${i + 1}`,
         courseId: course.id,
       })),

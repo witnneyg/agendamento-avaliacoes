@@ -7,14 +7,14 @@ interface CreateTeacherInput {
   name: string;
   courseId: string;
   semesterId: string;
-  classId: string;
+  // classId: string;
 }
 
 export async function createDiscipline({
   name,
   courseId,
   semesterId,
-  classId,
+  // classId,
 }: CreateTeacherInput) {
   return db.discipline.create({
     data: {
@@ -26,14 +26,14 @@ export async function createDiscipline({
       semester: {
         connect: { id: semesterId },
       },
-      class: {
-        connect: { id: classId },
-      },
+      // class: {
+      //   connect: { id: classId },
+      // },
     },
     include: {
       courses: true,
       semester: true,
-      class: true,
+      // class: true,
     },
   });
 }

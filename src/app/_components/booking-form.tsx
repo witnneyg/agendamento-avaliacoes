@@ -165,17 +165,26 @@ export function BookingForm({
   async function handleSubmitForm(data: any) {
     const teacher = teachers.find((t) => t.id === data.teacherId);
 
+    const sortedTimes = data.time.sort((a: string, b: string) => {
+      const getStartHour = (time: string) => {
+        const [hour, minute] = time.split(" - ")[0].split(":").map(Number);
+        return hour * 60 + minute;
+      };
+
+      return getStartHour(a) - getStartHour(b);
+    });
+    console.log({ data });
     await sendSchedulingEmail({
       to: data.email,
       name: teacher!.name,
       date,
-      time: data.time.join(", "),
+      time: sortedTimes.join(", "),
     });
 
     onSubmit({
       ...data,
       name: teacher!.name,
-      time: data.time.join(", "),
+      time: sortedTimes.join(", "),
     });
   }
 

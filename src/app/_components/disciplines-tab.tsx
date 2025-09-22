@@ -64,7 +64,7 @@ const disciplineSchema = z.object({
   name: z.string().min(1, "O nome da disciplina é obrigatório"),
   courseId: z.string().min(1, "O curso é obrigatório"),
   semesterId: z.string().min(1, "O período é obrigatório"),
-  classId: z.string().min(1, "A turma é obrigatória"),
+  // classId: z.string().min(1, "A turma é obrigatória"),
 });
 
 type DisciplineFormData = z.infer<typeof disciplineSchema>;
@@ -73,7 +73,7 @@ export type DisciplineWithRelations = Prisma.DisciplineGetPayload<{
   include: {
     courses: true;
     semester: true;
-    class: true;
+    // class: true;
   };
 }>;
 
@@ -101,7 +101,7 @@ export default function DisciplinesTab() {
       name: "",
       courseId: "",
       semesterId: "",
-      classId: "",
+      // classId: "",
     },
   });
 
@@ -125,13 +125,13 @@ export default function DisciplinesTab() {
       if (!selectedCourseId) {
         setSemesters([]);
         setValue("semesterId", "");
-        setValue("classId", "");
+        // setValue("classId", "");
         return;
       }
       const semestersData = await getSemesterByCourse(selectedCourseId);
       setSemesters(semestersData);
       setValue("semesterId", "");
-      setValue("classId", "");
+      // setValue("classId", "");
     }
     fetchSemesters();
   }, [selectedCourseId, setValue]);
@@ -140,12 +140,12 @@ export default function DisciplinesTab() {
     async function fetchClasses() {
       if (!selectedSemesterId) {
         setClasses([]);
-        setValue("classId", "");
+        // setValue("classId", "");
         return;
       }
       const classesData = await getClassBySemesterId(selectedSemesterId);
       setClasses(classesData);
-      setValue("classId", "");
+      // setValue("classId", "");
     }
     fetchClasses();
   }, [selectedSemesterId, setValue]);
@@ -163,7 +163,7 @@ export default function DisciplinesTab() {
       name: disciplina.name ?? "",
       courseId: disciplina.id,
       semesterId: disciplina.semesterId,
-      classId: disciplina.classId ?? "",
+      // classId: disciplina.classId ?? "",
     });
     setDisciplinaEditando(disciplina);
     setIsDialogOpen(true);
@@ -288,7 +288,7 @@ export default function DisciplinesTab() {
                 )}
               </div>
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="classId">Turma</Label>
                 <Controller
                   name="classId"
@@ -316,7 +316,7 @@ export default function DisciplinesTab() {
                     {errors.classId.message}
                   </p>
                 )}
-              </div>
+              </div> */}
 
               <DialogFooter>
                 <Button
@@ -364,7 +364,7 @@ export default function DisciplinesTab() {
                     {disciplina.courses.map((item) => item.name)}
                   </TableCell>
                   <TableCell>{disciplina.semester.name}</TableCell>
-                  <TableCell>{disciplina.class?.name}</TableCell>
+                  {/* <TableCell>{disciplina.class?.name}</TableCell> */}
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button

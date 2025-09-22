@@ -62,14 +62,14 @@ import type { Course, Prisma, Semester } from "@prisma/client";
 import { DisciplineWithRelations } from "./disciplines-tab";
 
 export type ClassesWithRelations = Prisma.ClassGetPayload<{
-  include: { course: true; semester: true; disciplines: true };
+  include: { course: true; semester: true };
 }>;
 
 const classSchema = z.object({
   name: z.string().min(1, "Nome da turma é obrigatório"),
   courseId: z.string().min(1, "Selecione um curso"),
   semesterId: z.string().min(1, "Selecione um período"),
-  disciplineId: z.string().min(1, "Selecione uma disciplina"),
+  // disciplineId: z.string().min(1, "Selecione uma disciplina"),
 });
 
 type ClassForm = z.infer<typeof classSchema>;
@@ -99,7 +99,7 @@ export function ClassesTab() {
       name: "",
       courseId: "",
       semesterId: "",
-      disciplineId: "",
+      // disciplineId: "",
     },
   });
 
@@ -120,15 +120,16 @@ export function ClassesTab() {
     if (!selectedCourseId) {
       setSemesters([]);
       setValue("semesterId", "");
-      setValue("disciplineId", "");
+      // setValue("disciplineId", "");
       return;
     }
 
     async function fetchSemesters() {
       const semestersData = await getSemesterByCourse(selectedCourseId);
+      console.log({ semestersData });
       setSemesters(semestersData);
       setValue("semesterId", "");
-      setValue("disciplineId", "");
+      // setValue("disciplineId", "");
     }
 
     fetchSemesters();
@@ -137,7 +138,7 @@ export function ClassesTab() {
   useEffect(() => {
     if (!selectedSemesterId) {
       setDisciplines([]);
-      setValue("disciplineId", "");
+      // setValue("disciplineId", "");
       return;
     }
 
@@ -145,7 +146,7 @@ export function ClassesTab() {
       const disciplinesData =
         await getDisciplinesBySemester(selectedSemesterId);
       setDisciplines(disciplinesData as any);
-      setValue("disciplineId", "");
+      // setValue("disciplineId", "");
     }
 
     fetchDisciplines();
@@ -161,9 +162,9 @@ export function ClassesTab() {
                 name: data.name,
                 course: courses.find((c) => c.id === data.courseId)!,
                 semester: semesters.find((s) => s.id === data.semesterId)!,
-                disciplines: disciplines.filter(
-                  (d) => d.id === data.disciplineId
-                ),
+                // disciplines: disciplines.filter(
+                //   (d) => d.id === data.disciplineId
+                // ),
               }
             : cls
         )
@@ -183,7 +184,7 @@ export function ClassesTab() {
       name: cls.name,
       courseId: cls.course.id,
       semesterId: cls.semester.id,
-      disciplineId: cls.disciplines[0]?.id || "",
+      // disciplineId: cls.disciplines[0]?.id || "",
     });
     setIsDialogOpen(true);
   };
@@ -298,7 +299,7 @@ export function ClassesTab() {
                 )}
               </div>
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="disciplineId">Disciplina</Label>
                 <Controller
                   name="disciplineId"
@@ -327,7 +328,7 @@ export function ClassesTab() {
                     {errors.disciplineId.message}
                   </p>
                 )}
-              </div>
+              </div> */}
 
               <DialogFooter>
                 <Button
@@ -357,8 +358,8 @@ export function ClassesTab() {
               <TableRow>
                 <TableHead>Turma</TableHead>
                 <TableHead>Curso</TableHead>
-                <TableHead>Semestre</TableHead>
-                <TableHead>Disciplina</TableHead>
+                <TableHead>Período</TableHead>
+                <TableHead></TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -369,7 +370,7 @@ export function ClassesTab() {
                   <TableCell>{cls.course.name}</TableCell>
                   <TableCell>{cls.semester.name}</TableCell>
                   <TableCell>
-                    {cls.disciplines.map((d) => d.name).join(", ")}
+                    {/* {cls.disciplines.map((d) => d.name).join(", ")} */}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">

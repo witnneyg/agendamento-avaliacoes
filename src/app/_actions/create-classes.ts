@@ -5,14 +5,14 @@ import { db } from "@/lib/prisma";
 interface CreateClassInput {
   name: string;
   courseId: string;
-  disciplineId: string;
+  // disciplineId: string;
   semesterId: string;
 }
 
 export async function createClasses({
   name,
   courseId,
-  disciplineId,
+  // disciplineId,
   semesterId,
 }: CreateClassInput) {
   return db.class.create({
@@ -24,14 +24,14 @@ export async function createClasses({
       semester: {
         connect: { id: semesterId },
       },
-      disciplines: {
-        connect: { id: disciplineId },
-      },
+      // disciplines: {
+      //   connect: { id: disciplineId },
+      // },
     },
     include: {
       course: true,
       semester: true,
-      disciplines: true,
+      // disciplines: true,
     },
   });
 }

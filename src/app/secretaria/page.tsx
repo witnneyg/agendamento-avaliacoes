@@ -46,17 +46,17 @@ export default function AdminPage() {
               <TabsTrigger value="overview" className="cursor-pointer">
                 Visão Geral
               </TabsTrigger>
-              <TabsTrigger value="teachers" className="cursor-pointer">
-                Professores
-              </TabsTrigger>
               <TabsTrigger value="courses" className="cursor-pointer">
                 Cursos
+              </TabsTrigger>
+              <TabsTrigger value="classes" className="cursor-pointer">
+                Turmas
               </TabsTrigger>
               <TabsTrigger value="disciplines" className="cursor-pointer">
                 Disciplinas
               </TabsTrigger>
-              <TabsTrigger value="classes" className="cursor-pointer">
-                Turmas
+              <TabsTrigger value="teachers" className="cursor-pointer">
+                Professores
               </TabsTrigger>
               {/* <TabsTrigger value="appointments">Agendamentos</TabsTrigger> */}
               {/* <TabsTrigger value="settings" className="cursor-pointer">
@@ -214,7 +214,6 @@ export default function AdminPage() {
             <TabsContent value="teachers">
               <TeachersTab />
             </TabsContent>
-
             <TabsContent value="courses">
               <CoursesTab />
             </TabsContent>

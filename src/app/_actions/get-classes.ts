@@ -8,7 +8,7 @@ export async function getClasses() {
     include: {
       course: true,
       semester: true,
-      disciplines: true,
+      // disciplines: true,
     },
     orderBy: { createdAt: "desc" },
   });

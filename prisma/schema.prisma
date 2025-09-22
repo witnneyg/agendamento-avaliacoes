@@ -70,7 +70,7 @@ model Class {
   semesterId  String
   semester    Semester     @relation(fields: [semesterId], references: [id])
 
-  disciplines Discipline[] 
+  // disciplines Discipline[] 
   schedulings Scheduling[] 
 
   createdAt DateTime @default(now())
@@ -84,8 +84,8 @@ model Discipline {
   semesterId  String
   semester    Semester   @relation(fields: [semesterId], references: [id])
 
-  classId     String?
-  class       Class?     @relation(fields: [classId], references: [id])
+  // classId     String?
+  // class       Class?     @relation(fields: [classId], references: [id])
 
   teachers    Teacher[]  @relation("DisciplineTeachers")
   courses     Course[]   @relation("CourseDisciplines")
