@@ -31,6 +31,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Select,
@@ -75,11 +76,11 @@ export function TeachersTab() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [teacherToDelete, setTeacherToDelete] = useState<string | null>(null);
-  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [editingTeacher, setEditingTeacher] =
+    useState<TeacherWithRelations | null>(null);
+  const [loadingDeleteId, setLoadingDeleteId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const {
     control,
@@ -90,21 +91,23 @@ export function TeachersTab() {
     formState: { errors },
   } = useForm<TeacherForm>({
     resolver: zodResolver(teacherSchema),
-    defaultValues: {
-      name: "",
-      courseId: "",
-      disciplineId: "",
-    },
+    defaultValues: { name: "", courseId: "", disciplineId: "" },
   });
 
   const selectedCourseId = watch("courseId");
 
   useEffect(() => {
     async function fetchData() {
-      const teachersData = await getTeachers();
-      setTeachers(teachersData as any);
-      const coursesData = await getCourses();
-      setCourses(coursesData);
+      setIsLoading(true);
+
+      try {
+        const teachersData = await getTeachers();
+        setTeachers(teachersData as any);
+        const coursesData = await getCourses();
+        setCourses(coursesData);
+      } finally {
+        setIsLoading(false);
+      }
     }
     fetchData();
   }, []);
@@ -119,7 +122,7 @@ export function TeachersTab() {
       setDisciplines(disciplinesData);
     }
     fetchDisciplines();
-  }, [selectedCourseId, setValue]);
+  }, [selectedCourseId]);
 
   const onSubmit = async (data: TeacherForm) => {
     if (isSubmitting) return;
@@ -131,15 +134,10 @@ export function TeachersTab() {
           prev.map((t) => (t.id === editingTeacher.id ? { ...t, ...data } : t))
         );
       } else {
-        await createTeacher({
-          name: data.name,
-          courseId: data.courseId,
-          disciplineId: data.disciplineId,
-        });
+        await createTeacher(data);
         const updatedTeachers = await getTeachers();
         setTeachers(updatedTeachers as any);
       }
-
       reset();
       setEditingTeacher(null);
       setIsDialogOpen(false);
@@ -159,26 +157,13 @@ export function TeachersTab() {
   };
 
   const handleDelete = async (teacherId: string) => {
-    if (isDeleting) return;
-
-    setIsDeleting(true);
+    setLoadingDeleteId(teacherId);
     try {
       await deleteTeacher(teacherId);
-      setTeacherToDelete(teacherId);
-      setDeleteConfirmOpen(true);
+      setTeachers((prev) => prev.filter((t) => t.id !== teacherId));
     } finally {
-      setIsDeleting(false);
+      setLoadingDeleteId(null);
     }
-  };
-
-  const confirmDelete = () => {
-    if (teacherToDelete) {
-      setTeachers((prev) =>
-        prev.filter((teacher) => teacher.id !== teacherToDelete)
-      );
-      setTeacherToDelete(null);
-    }
-    setDeleteConfirmOpen(false);
   };
 
   return (
@@ -194,7 +179,7 @@ export function TeachersTab() {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="mr-2 h-4 w-4 cursor-pointer" />
+              <Plus className="mr-2 h-4 w-4" />
               Adicionar Professor
             </Button>
           </DialogTrigger>
@@ -206,16 +191,13 @@ export function TeachersTab() {
                   : "Adicionar Novo Professor"}
               </DialogTitle>
             </DialogHeader>
-
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome Completo</Label>
                 <Controller
                   name="name"
                   control={control}
-                  render={({ field }) => (
-                    <Input {...field} placeholder="Dr. João Silva" />
-                  )}
+                  render={({ field }) => <Input {...field} />}
                 />
                 {errors.name && (
                   <p className="text-sm text-red-500">{errors.name.message}</p>
@@ -223,22 +205,19 @@ export function TeachersTab() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="course">Curso</Label>
+                <Label htmlFor="courseId">Curso</Label>
                 <Controller
                   name="courseId"
                   control={control}
                   render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={(value) => field.onChange(value)}
-                    >
+                    <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o curso" />
                       </SelectTrigger>
                       <SelectContent>
-                        {courses.map((course) => (
-                          <SelectItem key={course.id} value={course.id}>
-                            {course.name}
+                        {courses.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -253,14 +232,14 @@ export function TeachersTab() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="discipline">Disciplina</Label>
+                <Label htmlFor="disciplineId">Disciplina</Label>
                 <Controller
                   name="disciplineId"
                   control={control}
                   render={({ field }) => (
                     <Select
                       value={field.value}
-                      onValueChange={(value) => field.onChange(value)}
+                      onValueChange={field.onChange}
                       disabled={disciplines.length === 0}
                     >
                       <SelectTrigger>
@@ -298,8 +277,10 @@ export function TeachersTab() {
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       {editingTeacher ? "Atualizando..." : "Adicionando..."}
                     </>
+                  ) : editingTeacher ? (
+                    "Atualizar Professor"
                   ) : (
-                    `${editingTeacher ? "Atualizar" : "Adicionar"} Professor`
+                    "Adicionar Professor"
                   )}
                 </Button>
               </DialogFooter>
@@ -308,6 +289,7 @@ export function TeachersTab() {
         </Dialog>
       </div>
 
+      {/* Tabela de Professores */}
       <Card>
         <CardHeader>
           <CardTitle>Todos os Professores</CardTitle>
@@ -316,89 +298,112 @@ export function TeachersTab() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Curso</TableHead>
-                <TableHead>Disciplina</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {teachers.map((teacher) => (
-                <TableRow key={teacher.id}>
-                  <TableCell>{teacher.name}</TableCell>
-                  <TableCell>
-                    {teacher.courses.map((c) => c.name).join(", ") ||
-                      "Nenhum curso"}
-                  </TableCell>
-                  <TableCell>
-                    {teacher.disciplines.map((d) => d.name).join(", ") ||
-                      "Nenhuma disciplina"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        teacher.status === "ACTIVE" ? "default" : "secondary"
-                      }
-                    >
-                      {translateTeacherStatus(teacher.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(teacher)}
-                        disabled={isSubmitting || isDeleting}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(teacher.id)}
-                        className="text-red-500 hover:text-red-600"
-                        disabled={isSubmitting || isDeleting}
-                      >
-                        {isDeleting ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span className="ml-2">Carregando professores...</span>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Curso</TableHead>
+                  <TableHead>Disciplina</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {teachers.map((teacher) => (
+                  <TableRow key={teacher.id}>
+                    <TableCell>{teacher.name}</TableCell>
+                    <TableCell>
+                      {teacher.courses.map((c) => c.name).join(", ") ||
+                        "Nenhum curso"}
+                    </TableCell>
+                    <TableCell>
+                      {teacher.disciplines.map((d) => d.name).join(", ") ||
+                        "Nenhuma disciplina"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          teacher.status === "ACTIVE" ? "default" : "secondary"
+                        }
+                      >
+                        {translateTeacherStatus(teacher.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(teacher)}
+                          disabled={
+                            isSubmitting || loadingDeleteId === teacher.id
+                          }
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-500 hover:text-red-600"
+                              disabled={
+                                isSubmitting || loadingDeleteId === teacher.id
+                              }
+                            >
+                              {loadingDeleteId === teacher.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </AlertDialogTrigger>
+
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Confirmar Exclusão
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja excluir este professor?
+                                Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-red-500 hover:bg-red-600"
+                                onClick={() => handleDelete(teacher.id)}
+                                disabled={loadingDeleteId === teacher.id}
+                              >
+                                {loadingDeleteId === teacher.id ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Excluindo...
+                                  </>
+                                ) : (
+                                  "Excluir"
+                                )}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
-
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este professor? Esta ação não pode
-              ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

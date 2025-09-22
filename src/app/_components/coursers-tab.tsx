@@ -76,6 +76,7 @@ export function CoursesTab() {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const {
     register,
@@ -94,8 +95,13 @@ export function CoursesTab() {
 
   useEffect(() => {
     const fetch = async () => {
-      const data = await getCourses();
-      setCourses(data);
+      setIsLoading(true);
+      try {
+        const data = await getCourses();
+        setCourses(data);
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetch();
   }, []);
@@ -302,66 +308,73 @@ export function CoursesTab() {
         </Dialog>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {courses.map((course) => (
-          <Card key={course.id}>
-            <CardHeader>
-              <CardTitle>{course.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {course.periods && (
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <div className="flex gap-1 flex-wrap">
-                      {(course as any).periods.map((period: Period) => (
-                        <Badge
-                          key={period}
-                          variant="outline"
-                          className="text-xs"
-                        >
-                          {periodLabels[period]}
-                        </Badge>
-                      ))}
+      {isLoading ? (
+        <div className="flex justify-center items-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+          Carregando cursos...
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {courses.map((course) => (
+            <Card key={course.id}>
+              <CardHeader>
+                <CardTitle>{course.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {course.periods && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex gap-1 flex-wrap">
+                        {(course as any).periods.map((period: Period) => (
+                          <Badge
+                            key={period}
+                            variant="outline"
+                            className="text-xs"
+                          >
+                            {periodLabels[period]}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
+                  )}
+                  {course.semesterDuration && (
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <Badge variant="outline" className="text-xs">
+                        {(course as any).semesterDuration} períodos
+                      </Badge>
+                    </div>
+                  )}
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(course)}
+                      disabled={isSubmitting || isDeleting}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(course.id)}
+                      className="text-red-500"
+                      disabled={isSubmitting || isDeleting}
+                    >
+                      {isDeleting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
                   </div>
-                )}
-                {course.semesterDuration && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <Badge variant="outline" className="text-xs">
-                      {(course as any).semesterDuration} períodos
-                    </Badge>
-                  </div>
-                )}
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEdit(course)}
-                    disabled={isSubmitting || isDeleting}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(course.id)}
-                    className="text-red-500"
-                    disabled={isSubmitting || isDeleting}
-                  >
-                    {isDeleting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
-                  </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>

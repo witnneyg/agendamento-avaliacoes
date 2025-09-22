@@ -57,6 +57,7 @@ import { getCourses } from "@/app/_actions/get-courses";
 import { createDiscipline } from "@/app/_actions/create-discipline";
 import { getClassBySemesterId } from "@/app/_actions/get-class-by-semester-id";
 import { getSemesterByCourse } from "@/app/_actions/get-semester-by-course-selected";
+import { deleteDiscipline } from "../_actions/delete-discipline";
 
 const disciplineSchema = z.object({
   name: z.string().min(1, "O nome da disciplina é obrigatório"),
@@ -192,8 +193,7 @@ export default function DisciplinesTab() {
 
     setIsDeleting(true);
     try {
-      // Here you would call the delete API
-      // await deleteDiscipline(disciplinaParaDeletar.id);
+      await deleteDiscipline(disciplinaParaDeletar.id);
 
       setDisciplinas((prev) =>
         prev.filter((d) => d.id !== disciplinaParaDeletar.id)
@@ -393,7 +393,7 @@ export default function DisciplinesTab() {
                   <TableHead>Título</TableHead>
                   <TableHead>Curso</TableHead>
                   <TableHead>Período</TableHead>
-                  <TableHead>Turma</TableHead>
+                  <TableHead></TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -407,6 +407,7 @@ export default function DisciplinesTab() {
                       {disciplina.courses.map((item) => item.name)}
                     </TableCell>
                     <TableCell>{disciplina.semester.name}</TableCell>
+                    <TableCell></TableCell>
                     {/* <TableCell>{disciplina.class?.name}</TableCell> */}
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -428,7 +429,11 @@ export default function DisciplinesTab() {
                               className="text-red-500 hover:text-red-600 hover:bg-red-50 cursor-pointer"
                               disabled={isSubmitting || isDeleting}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              {isDeleting ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>

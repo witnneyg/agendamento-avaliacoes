@@ -86,6 +86,7 @@ export function ClassesTab() {
     useState<ClassesWithRelations | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const {
     control,
@@ -108,10 +109,15 @@ export function ClassesTab() {
 
   useEffect(() => {
     async function fetchData() {
-      const coursesData = await getCourses();
-      setCourses(coursesData);
-      const classesData = await getClasses();
-      setClasses(classesData);
+      setIsLoading(true);
+      try {
+        const coursesData = await getCourses();
+        setCourses(coursesData);
+        const classesData = await getClasses();
+        setClasses(classesData);
+      } finally {
+        setIsLoading(false);
+      }
     }
     fetchData();
   }, []);
@@ -125,7 +131,6 @@ export function ClassesTab() {
 
     async function fetchSemesters() {
       const semestersData = await getSemesterByCourse(selectedCourseId);
-      console.log({ semestersData });
       setSemesters(semestersData);
       setValue("semesterId", "");
     }
@@ -334,88 +339,95 @@ export function ClassesTab() {
           <CardDescription>{classes.length} turmas cadastradas</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Turma</TableHead>
-                <TableHead>Curso</TableHead>
-                <TableHead>Período</TableHead>
-                <TableHead></TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {classes.map((cls) => (
-                <TableRow key={cls.id}>
-                  <TableCell>{cls.name}</TableCell>
-                  <TableCell>{cls.course.name}</TableCell>
-                  <TableCell>{cls.semester.name}</TableCell>
-                  <TableCell></TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex gap-2 justify-end">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(cls)}
-                        disabled={isSubmitting || isDeleting}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span className="ml-2">Carregando turmas...</span>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Turma</TableHead>
+                  <TableHead>Curso</TableHead>
+                  <TableHead>Período</TableHead>
+                  <TableHead></TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {classes.map((cls) => (
+                  <TableRow key={cls.id}>
+                    <TableCell>{cls.name}</TableCell>
+                    <TableCell>{cls.course.name}</TableCell>
+                    <TableCell>{cls.semester.name}</TableCell>
+                    <TableCell></TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(cls)}
+                          disabled={isSubmitting || isDeleting}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
 
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-red-500 hover:text-red-600"
-                            onClick={() => handleDeleteClick(cls)}
-                            disabled={isSubmitting || isDeleting}
-                          >
-                            {isDeleting ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </AlertDialogTrigger>
-
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Confirmar Exclusão
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Tem certeza que deseja excluir esta turma? Esta
-                              ação não pode ser desfeita.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel onClick={handleCancelDelete}>
-                              Cancelar
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={handleConfirmDelete}
-                              className="bg-red-500 hover:bg-red-600"
-                              disabled={isDeleting}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-500 hover:text-red-600"
+                              onClick={() => handleDeleteClick(cls)}
+                              disabled={isSubmitting || isDeleting}
                             >
                               {isDeleting ? (
-                                <>
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  Excluindo...
-                                </>
+                                <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
-                                "Excluir"
+                                <Trash2 className="h-4 w-4" />
                               )}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                            </Button>
+                          </AlertDialogTrigger>
+
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Confirmar Exclusão
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja excluir esta turma? Esta
+                                ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={handleCancelDelete}>
+                                Cancelar
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={handleConfirmDelete}
+                                className="bg-red-500 hover:bg-red-600"
+                                disabled={isDeleting}
+                              >
+                                {isDeleting ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Excluindo...
+                                  </>
+                                ) : (
+                                  "Excluir"
+                                )}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
