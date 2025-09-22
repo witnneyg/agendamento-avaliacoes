@@ -25,7 +25,6 @@ export function MagicLinkForm() {
         callbackUrl: "/",
       });
     } catch (error) {
-      console.error("Google sign in error:", error);
       setError("Erro ao fazer login com Google. Tente novamente.");
       setIsGoogleLoading(false);
     }

@@ -99,12 +99,10 @@ export function Scheduling() {
       const data = await getUser();
 
       setUser(data);
-      console.log({ user });
     }
 
     fetch();
   }, []);
-  console.log({ user });
 
   const handleCreateScheduling = async (details: BookingDetails) => {
     setBookingDetails(details);

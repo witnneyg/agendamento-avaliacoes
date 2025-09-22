@@ -15,8 +15,6 @@ export async function getUser() {
     where: { email: session.user.email },
   });
 
-  console.log(user);
-
   if (!user) {
     throw new Error("Usuário não encontrado");
   }

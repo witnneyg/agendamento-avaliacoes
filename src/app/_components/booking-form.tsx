@@ -173,7 +173,6 @@ export function BookingForm({
 
       return getStartHour(a) - getStartHour(b);
     });
-    console.log({ data });
     await sendSchedulingEmail({
       to: data.email,
       name: teacher!.name,
