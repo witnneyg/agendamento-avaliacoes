@@ -49,7 +49,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
 
 import { getCourses } from "@/app/_actions/get-courses";
 import { getSemesterByCourse } from "@/app/_actions/get-semester-by-course-selected";
@@ -59,7 +59,7 @@ import { getClasses } from "@/app/_actions/get-classes";
 import { deleteClass } from "@/app/_actions/delete-classes";
 
 import type { Course, Prisma, Semester } from "@prisma/client";
-import { DisciplineWithRelations } from "./disciplines-tab";
+import type { DisciplineWithRelations } from "./disciplines-tab";
 
 export type ClassesWithRelations = Prisma.ClassGetPayload<{
   include: { course: true; semester: true };
@@ -69,7 +69,6 @@ const classSchema = z.object({
   name: z.string().min(1, "Nome da turma é obrigatório"),
   courseId: z.string().min(1, "Selecione um curso"),
   semesterId: z.string().min(1, "Selecione um período"),
-  // disciplineId: z.string().min(1, "Selecione uma disciplina"),
 });
 
 type ClassForm = z.infer<typeof classSchema>;
@@ -85,6 +84,8 @@ export function ClassesTab() {
   );
   const [classToDelete, setClassToDelete] =
     useState<ClassesWithRelations | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const {
     control,
@@ -99,7 +100,6 @@ export function ClassesTab() {
       name: "",
       courseId: "",
       semesterId: "",
-      // disciplineId: "",
     },
   });
 
@@ -120,7 +120,6 @@ export function ClassesTab() {
     if (!selectedCourseId) {
       setSemesters([]);
       setValue("semesterId", "");
-      // setValue("disciplineId", "");
       return;
     }
 
@@ -129,7 +128,6 @@ export function ClassesTab() {
       console.log({ semestersData });
       setSemesters(semestersData);
       setValue("semesterId", "");
-      // setValue("disciplineId", "");
     }
 
     fetchSemesters();
@@ -138,7 +136,6 @@ export function ClassesTab() {
   useEffect(() => {
     if (!selectedSemesterId) {
       setDisciplines([]);
-      // setValue("disciplineId", "");
       return;
     }
 
@@ -146,36 +143,39 @@ export function ClassesTab() {
       const disciplinesData =
         await getDisciplinesBySemester(selectedSemesterId);
       setDisciplines(disciplinesData as any);
-      // setValue("disciplineId", "");
     }
 
     fetchDisciplines();
   }, [selectedSemesterId, setValue]);
 
   const onSubmit = async (data: ClassForm) => {
-    if (editingClass) {
-      setClasses((prev) =>
-        prev.map((cls) =>
-          cls.id === editingClass.id
-            ? {
-                ...cls,
-                name: data.name,
-                course: courses.find((c) => c.id === data.courseId)!,
-                semester: semesters.find((s) => s.id === data.semesterId)!,
-                // disciplines: disciplines.filter(
-                //   (d) => d.id === data.disciplineId
-                // ),
-              }
-            : cls
-        )
-      );
-    } else {
-      const newClass = await createClasses(data);
-      setClasses((prev) => [...prev, newClass]);
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      if (editingClass) {
+        setClasses((prev) =>
+          prev.map((cls) =>
+            cls.id === editingClass.id
+              ? {
+                  ...cls,
+                  name: data.name,
+                  course: courses.find((c) => c.id === data.courseId)!,
+                  semester: semesters.find((s) => s.id === data.semesterId)!,
+                }
+              : cls
+          )
+        );
+      } else {
+        const newClass = await createClasses(data);
+        setClasses((prev) => [...prev, newClass]);
+      }
+      reset();
+      setEditingClass(null);
+      setIsDialogOpen(false);
+    } finally {
+      setIsSubmitting(false);
     }
-    reset();
-    setEditingClass(null);
-    setIsDialogOpen(false);
   };
 
   const handleEdit = (cls: ClassesWithRelations) => {
@@ -184,7 +184,6 @@ export function ClassesTab() {
       name: cls.name,
       courseId: cls.course.id,
       semesterId: cls.semester.id,
-      // disciplineId: cls.disciplines[0]?.id || "",
     });
     setIsDialogOpen(true);
   };
@@ -194,10 +193,15 @@ export function ClassesTab() {
   };
 
   const handleConfirmDelete = async () => {
-    if (classToDelete) {
-      await deleteClass(classToDelete.id);
-      setClasses((prev) => prev.filter((cls) => cls.id !== classToDelete.id));
-      setClassToDelete(null);
+    if (classToDelete && !isDeleting) {
+      setIsDeleting(true);
+      try {
+        await deleteClass(classToDelete.id);
+        setClasses((prev) => prev.filter((cls) => cls.id !== classToDelete.id));
+        setClassToDelete(null);
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -299,47 +303,24 @@ export function ClassesTab() {
                 )}
               </div>
 
-              {/* <div className="space-y-2">
-                <Label htmlFor="disciplineId">Disciplina</Label>
-                <Controller
-                  name="disciplineId"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={disciplines.length === 0}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma disciplina" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {disciplines.map((d) => (
-                          <SelectItem key={d.id} value={d.id}>
-                            {d.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.disciplineId && (
-                  <p className="text-sm text-red-500">
-                    {errors.disciplineId.message}
-                  </p>
-                )}
-              </div> */}
-
               <DialogFooter>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setIsDialogOpen(false)}
+                  disabled={isSubmitting}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit">
-                  {editingClass ? "Atualizar" : "Criar"} Turma
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {editingClass ? "Atualizando..." : "Criando..."}
+                    </>
+                  ) : (
+                    `${editingClass ? "Atualizar" : "Criar"} Turma`
+                  )}
                 </Button>
               </DialogFooter>
             </form>
@@ -369,15 +350,14 @@ export function ClassesTab() {
                   <TableCell>{cls.name}</TableCell>
                   <TableCell>{cls.course.name}</TableCell>
                   <TableCell>{cls.semester.name}</TableCell>
-                  <TableCell>
-                    {/* {cls.disciplines.map((d) => d.name).join(", ")} */}
-                  </TableCell>
+                  <TableCell></TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => handleEdit(cls)}
+                        disabled={isSubmitting || isDeleting}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -389,8 +369,13 @@ export function ClassesTab() {
                             size="icon"
                             className="text-red-500 hover:text-red-600"
                             onClick={() => handleDeleteClick(cls)}
+                            disabled={isSubmitting || isDeleting}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {isDeleting ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
                           </Button>
                         </AlertDialogTrigger>
 
@@ -411,8 +396,16 @@ export function ClassesTab() {
                             <AlertDialogAction
                               onClick={handleConfirmDelete}
                               className="bg-red-500 hover:bg-red-600"
+                              disabled={isDeleting}
                             >
-                              Excluir
+                              {isDeleting ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Excluindo...
+                                </>
+                              ) : (
+                                "Excluir"
+                              )}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>

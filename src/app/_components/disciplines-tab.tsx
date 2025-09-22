@@ -1,6 +1,4 @@
 "use client";
-
-import type React from "react";
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
@@ -51,7 +49,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
 import type { Class, Course, Prisma, Semester } from "@prisma/client";
 
 import { getDisciplines } from "@/app/_actions/get-disciplines";
@@ -88,6 +86,10 @@ export default function DisciplinesTab() {
   const [disciplinaParaDeletar, setDisciplinaParaDeletar] =
     useState<DisciplineWithRelations | null>(null);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
   const {
     control,
     handleSubmit,
@@ -110,11 +112,16 @@ export default function DisciplinesTab() {
 
   useEffect(() => {
     async function fetchData() {
-      const disciplinesData = await getDisciplines();
-      setDisciplinas(disciplinesData as any);
+      setIsLoading(true);
+      try {
+        const disciplinesData = await getDisciplines();
+        setDisciplinas(disciplinesData as any);
 
-      const coursesData = await getCourses();
-      setCourses(coursesData);
+        const coursesData = await getCourses();
+        setCourses(coursesData);
+      } finally {
+        setIsLoading(false);
+      }
     }
 
     fetchData();
@@ -151,11 +158,18 @@ export default function DisciplinesTab() {
   }, [selectedSemesterId, setValue]);
 
   const onSubmit = async (data: DisciplineFormData) => {
-    const newDiscipline = await createDiscipline(data);
-    setDisciplinas((prev) => [...prev, newDiscipline]);
-    reset();
-    setDisciplinaEditando(null);
-    setIsDialogOpen(false);
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      const newDiscipline = await createDiscipline(data);
+      setDisciplinas((prev) => [...prev, newDiscipline]);
+      reset();
+      setDisciplinaEditando(null);
+      setIsDialogOpen(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEdit = (disciplina: DisciplineWithRelations) => {
@@ -173,12 +187,20 @@ export default function DisciplinesTab() {
     setDisciplinaParaDeletar(disciplina);
   };
 
-  const handleConfirmDelete = () => {
-    if (disciplinaParaDeletar) {
+  const handleConfirmDelete = async () => {
+    if (!disciplinaParaDeletar || isDeleting) return;
+
+    setIsDeleting(true);
+    try {
+      // Here you would call the delete API
+      // await deleteDiscipline(disciplinaParaDeletar.id);
+
       setDisciplinas((prev) =>
         prev.filter((d) => d.id !== disciplinaParaDeletar.id)
       );
       setDisciplinaParaDeletar(null);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -322,13 +344,28 @@ export default function DisciplinesTab() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="cursor-pointer"
+                  className="cursor-pointer bg-transparent"
                   onClick={() => setIsDialogOpen(false)}
+                  disabled={isSubmitting}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" className="cursor-pointer">
-                  {disciplinaEditando ? "Atualizar" : "Adicionar"} Disciplina
+                <Button
+                  type="submit"
+                  className="cursor-pointer"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {disciplinaEditando ? "Atualizando..." : "Criando..."}
+                    </>
+                  ) : (
+                    <>
+                      {disciplinaEditando ? "Atualizar" : "Adicionar"}{" "}
+                      Disciplina
+                    </>
+                  )}
                 </Button>
               </DialogFooter>
             </form>
@@ -344,80 +381,98 @@ export default function DisciplinesTab() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Título</TableHead>
-                <TableHead>Curso</TableHead>
-                <TableHead>Período</TableHead>
-                <TableHead>Turma</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {disciplinas.map((disciplina) => (
-                <TableRow key={disciplina.id}>
-                  <TableCell className="font-medium">
-                    {disciplina.name}
-                  </TableCell>
-                  <TableCell>
-                    {disciplina.courses.map((item) => item.name)}
-                  </TableCell>
-                  <TableCell>{disciplina.semester.name}</TableCell>
-                  {/* <TableCell>{disciplina.class?.name}</TableCell> */}
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="cursor-pointer"
-                        onClick={() => handleEdit(disciplina)}
-                      >
-                        <Edit className="h-4 w-4 " />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteClick(disciplina)}
-                            className="text-red-500 hover:text-red-600 hover:bg-red-50 cursor-pointer"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Confirmar Exclusão
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Tem certeza que deseja excluir esta disciplina?
-                              Esta ação não pode ser desfeita.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel
-                              onClick={handleCancelDelete}
-                              className="cursor-pointer"
-                            >
-                              Cancelar
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={handleConfirmDelete}
-                              className="bg-red-500 hover:bg-red-600 cursor-pointer"
-                            >
-                              Excluir
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span className="ml-2">Carregando disciplinas...</span>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Título</TableHead>
+                  <TableHead>Curso</TableHead>
+                  <TableHead>Período</TableHead>
+                  <TableHead>Turma</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {disciplinas.map((disciplina) => (
+                  <TableRow key={disciplina.id}>
+                    <TableCell className="font-medium">
+                      {disciplina.name}
+                    </TableCell>
+                    <TableCell>
+                      {disciplina.courses.map((item) => item.name)}
+                    </TableCell>
+                    <TableCell>{disciplina.semester.name}</TableCell>
+                    {/* <TableCell>{disciplina.class?.name}</TableCell> */}
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="cursor-pointer"
+                          onClick={() => handleEdit(disciplina)}
+                          disabled={isSubmitting || isDeleting}
+                        >
+                          <Edit className="h-4 w-4 " />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteClick(disciplina)}
+                              className="text-red-500 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                              disabled={isSubmitting || isDeleting}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Confirmar Exclusão
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja excluir esta disciplina?
+                                Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel
+                                onClick={handleCancelDelete}
+                                className="cursor-pointer"
+                                disabled={isDeleting}
+                              >
+                                Cancelar
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={handleConfirmDelete}
+                                className="bg-red-500 hover:bg-red-600 cursor-pointer"
+                                disabled={isDeleting}
+                              >
+                                {isDeleting ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Excluindo...
+                                  </>
+                                ) : (
+                                  "Excluir"
+                                )}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,6 +1,4 @@
 "use client";
-
-import type React from "react";
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
@@ -50,7 +48,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
 
 import { getTeachers } from "@/app/_actions/get-teacher";
 import { getCourses } from "@/app/_actions/get-courses";
@@ -80,6 +78,8 @@ export function TeachersTab() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [teacherToDelete, setTeacherToDelete] = useState<string | null>(null);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const {
     control,
@@ -122,23 +122,30 @@ export function TeachersTab() {
   }, [selectedCourseId, setValue]);
 
   const onSubmit = async (data: TeacherForm) => {
-    if (editingTeacher) {
-      setTeachers((prev) =>
-        prev.map((t) => (t.id === editingTeacher.id ? { ...t, ...data } : t))
-      );
-    } else {
-      await createTeacher({
-        name: data.name,
-        courseId: data.courseId,
-        disciplineId: data.disciplineId,
-      });
-      const updatedTeachers = await getTeachers();
-      setTeachers(updatedTeachers as any);
-    }
+    if (isSubmitting) return;
 
-    reset();
-    setEditingTeacher(null);
-    setIsDialogOpen(false);
+    setIsSubmitting(true);
+    try {
+      if (editingTeacher) {
+        setTeachers((prev) =>
+          prev.map((t) => (t.id === editingTeacher.id ? { ...t, ...data } : t))
+        );
+      } else {
+        await createTeacher({
+          name: data.name,
+          courseId: data.courseId,
+          disciplineId: data.disciplineId,
+        });
+        const updatedTeachers = await getTeachers();
+        setTeachers(updatedTeachers as any);
+      }
+
+      reset();
+      setEditingTeacher(null);
+      setIsDialogOpen(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEdit = (teacher: TeacherWithRelations) => {
@@ -152,9 +159,16 @@ export function TeachersTab() {
   };
 
   const handleDelete = async (teacherId: string) => {
-    await deleteTeacher(teacherId);
-    setTeacherToDelete(teacherId);
-    setDeleteConfirmOpen(true);
+    if (isDeleting) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteTeacher(teacherId);
+      setTeacherToDelete(teacherId);
+      setDeleteConfirmOpen(true);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const confirmDelete = () => {
@@ -180,7 +194,7 @@ export function TeachersTab() {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 h-4 w-4 cursor-pointer" />
               Adicionar Professor
             </Button>
           </DialogTrigger>
@@ -274,11 +288,19 @@ export function TeachersTab() {
                   type="button"
                   variant="outline"
                   onClick={() => setIsDialogOpen(false)}
+                  disabled={isSubmitting}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit">
-                  {editingTeacher ? "Atualizar" : "Adicionar"} Professor
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {editingTeacher ? "Atualizando..." : "Adicionando..."}
+                    </>
+                  ) : (
+                    `${editingTeacher ? "Atualizar" : "Adicionar"} Professor`
+                  )}
                 </Button>
               </DialogFooter>
             </form>
@@ -331,6 +353,7 @@ export function TeachersTab() {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleEdit(teacher)}
+                        disabled={isSubmitting || isDeleting}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -339,8 +362,13 @@ export function TeachersTab() {
                         size="icon"
                         onClick={() => handleDelete(teacher.id)}
                         className="text-red-500 hover:text-red-600"
+                        disabled={isSubmitting || isDeleting}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        {isDeleting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   </TableCell>

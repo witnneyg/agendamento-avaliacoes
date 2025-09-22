@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createCourse } from "@/app/_actions/create-course";
 import { getCourses } from "@/app/_actions/get-courses";
 import { deleteCourse } from "@/app/_actions/delete-course";
-import { Course } from "@prisma/client";
+import type { Course } from "@prisma/client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,7 +43,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { Plus, Edit, Trash2, Clock, Calendar } from "lucide-react";
+import { Plus, Edit, Trash2, Clock, Calendar, Loader2 } from "lucide-react";
 
 type Period = "MORNING" | "AFTERNOON" | "EVENING";
 
@@ -74,6 +74,8 @@ export function CoursesTab() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState<string | null>(null);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const {
     register,
@@ -99,22 +101,27 @@ export function CoursesTab() {
   }, []);
 
   const onSubmit = async (data: CourseFormData) => {
-    console.log({ data });
+    if (isSubmitting) return;
 
-    if (editingCourse) {
-      setCourses((prev) =>
-        prev.map((course) =>
-          course.id === editingCourse.id ? { ...course, ...data } : course
-        )
-      );
-    } else {
-      const newCourse = await createCourse(data);
-      setCourses((prev) => [...prev, newCourse]);
+    setIsSubmitting(true);
+    try {
+      if (editingCourse) {
+        setCourses((prev) =>
+          prev.map((course) =>
+            course.id === editingCourse.id ? { ...course, ...data } : course
+          )
+        );
+      } else {
+        const newCourse = await createCourse(data);
+        setCourses((prev) => [...prev, newCourse]);
+      }
+
+      reset();
+      setEditingCourse(null);
+      setIsDialogOpen(false);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    reset();
-    setEditingCourse(null);
-    setIsDialogOpen(false);
   };
 
   const handleEdit = (course: Course) => {
@@ -128,9 +135,16 @@ export function CoursesTab() {
   };
 
   const handleDelete = async (courseId: string) => {
-    await deleteCourse(courseId);
-    setCourseToDelete(courseId);
-    setDeleteConfirmOpen(true);
+    if (isDeleting) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteCourse(courseId);
+      setCourseToDelete(courseId);
+      setDeleteConfirmOpen(true);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const confirmDelete = () => {
@@ -264,11 +278,23 @@ export function CoursesTab() {
                   variant="outline"
                   className="cursor-pointer bg-transparent"
                   onClick={() => setIsDialogOpen(false)}
+                  disabled={isSubmitting}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" className="cursor-pointer">
-                  {editingCourse ? "Atualizar" : "Adicionar"} Curso
+                <Button
+                  type="submit"
+                  className="cursor-pointer"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {editingCourse ? "Atualizando..." : "Adicionando..."}
+                    </>
+                  ) : (
+                    `${editingCourse ? "Atualizar" : "Adicionar"} Curso`
+                  )}
                 </Button>
               </DialogFooter>
             </form>
@@ -313,6 +339,7 @@ export function CoursesTab() {
                     variant="ghost"
                     size="icon"
                     onClick={() => handleEdit(course)}
+                    disabled={isSubmitting || isDeleting}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -321,8 +348,13 @@ export function CoursesTab() {
                     size="icon"
                     onClick={() => handleDelete(course.id)}
                     className="text-red-500"
+                    disabled={isSubmitting || isDeleting}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    {isDeleting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
               </div>
@@ -344,8 +376,16 @@ export function CoursesTab() {
             <AlertDialogAction
               onClick={confirmDelete}
               className="bg-red-500 hover:bg-red-600"
+              disabled={isDeleting}
             >
-              Excluir
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                "Excluir"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
