@@ -4,6 +4,7 @@ import EmailProvider from "next-auth/providers/email";
 import { db } from "./prisma";
 import { resend } from "@/app/api/email/config";
 import GoogleProvider from "next-auth/providers/google";
+import { signIn } from "next-auth/react";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
@@ -43,6 +44,21 @@ export const authOptions: NextAuthOptions = {
         session.user.id = user.id;
       }
       return session;
+    },
+
+    async signIn({ user, account, profile }) {
+      if (account?.provider === "google") {
+        const email = profile?.email;
+        if (
+          email &&
+          (email.endsWith("@unicerrado.edu.br") ||
+            email.endsWith("@alunos.unicerrado.edu.br"))
+        ) {
+          return true;
+        }
+        return false;
+      }
+      return true;
     },
   },
 };

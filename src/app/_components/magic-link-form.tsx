@@ -1,9 +1,9 @@
 "use client";
 
 import type React from "react";
-
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,42 +18,38 @@ export function MagicLinkForm() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState("");
 
+  // Função de login com Google
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
-      await signIn("google", {
-        callbackUrl: "/",
-      });
-    } catch (error) {
+      await signIn("google", { callbackUrl: "/" });
+    } catch (err) {
+      console.error("Google sign in error:", err);
       setError("Erro ao fazer login com Google. Tente novamente.");
       setIsGoogleLoading(false);
     }
   };
 
+  // Função de envio de magic link
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
     try {
-      // Simulate API call for magic link
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // In a real app, you would call your magic link API here
-      // const response = await fetch('/api/auth/magic-link', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email })
-      // })
+      // Aqui você chama a API real de magic link
+      await signIn("email", { email, redirect: false, callbackUrl: "/" });
 
       setIsSuccess(true);
     } catch (err) {
+      console.error(err);
       setError("Erro ao enviar o link. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Tela de sucesso
   if (isSuccess) {
     return (
       <div className="space-y-4">
@@ -74,7 +70,7 @@ export function MagicLinkForm() {
           </div>
         </div>
 
-        {/* Google Sign In Button - ainda disponível após enviar magic link */}
+        {/* Google Sign In Button ainda disponível */}
         <Button
           variant="outline"
           className="w-full h-12 text-base bg-white hover:bg-gray-50 border-gray-300"
@@ -109,9 +105,10 @@ export function MagicLinkForm() {
     );
   }
 
+  // Tela de formulário
   return (
     <div className="space-y-4">
-      {/* Google Sign In Button - no topo */}
+      {/* Botão Google no topo */}
       <Button
         variant="outline"
         className="w-full h-12 text-base bg-white hover:bg-gray-50 border-gray-300"
@@ -152,7 +149,7 @@ export function MagicLinkForm() {
         </div>
       </div>
 
-      {/* Magic Link Form */}
+      {/* Formulário Magic Link */}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
