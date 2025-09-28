@@ -117,7 +117,7 @@ export const AppointmentItem = ({
             <div className="flex gap-2 items-center">
               <p className="font-medium">Período:</p>
               {appointment.course.periods
-                .slice() // cria uma cópia pra não mutar o original
+                .slice()
                 .sort((a, b) => periodOrder.indexOf(a) - periodOrder.indexOf(b))
                 .map((p) => getPeriodLabel(p))
                 .join(", ")}
@@ -161,7 +161,6 @@ export const AppointmentItem = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Modal de edição */}
       <EditSchedulingModal
         appointment={appointment}
         isOpen={isEditOpen}

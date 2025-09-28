@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { format, set, parse } from "date-fns";
+import { format, parse } from "date-fns";
 import {
   Card,
   CardContent,
@@ -9,7 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Course, CourseSelector } from "./course-selector";
-import { TimeSlotPicker } from "./time-slot-picker";
 import { BookingForm } from "./booking-form";
 import { BookingConfirmation } from "./booking-confirmation";
 import { DisciplineSelector } from "./discipline-selector";
@@ -21,8 +20,6 @@ import { CalendarDate } from "./calendar-date";
 import { createScheduling } from "../_actions/create-schedule";
 import { TimePeriod, TimePeriodSelector } from "./time-period.selector";
 import { timePeriods } from "../mocks";
-import { getLoggedUserId } from "../_actions/get-logged-user";
-import { getServerSession } from "next-auth";
 import { getUser } from "../_actions/getUser";
 import { Class, Discipline, User } from "@prisma/client";
 import { ClassSelector } from "./class-selector";

@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Router } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { Course } from "./course-selector";
 import { Semester } from "./semester-selector";
 import { ptBR } from "date-fns/locale";

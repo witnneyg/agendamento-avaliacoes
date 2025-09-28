@@ -3,7 +3,6 @@
 import type React from "react";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +17,6 @@ export function MagicLinkForm() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  // Função de login com Google
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
@@ -30,14 +28,12 @@ export function MagicLinkForm() {
     }
   };
 
-  // Função de envio de magic link
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
     try {
-      // Aqui você chama a API real de magic link
       await signIn("email", { email, redirect: false, callbackUrl: "/" });
 
       setIsSuccess(true);
@@ -49,7 +45,6 @@ export function MagicLinkForm() {
     }
   };
 
-  // Tela de sucesso
   if (isSuccess) {
     return (
       <div className="space-y-4">
@@ -70,7 +65,6 @@ export function MagicLinkForm() {
           </div>
         </div>
 
-        {/* Google Sign In Button ainda disponível */}
         <Button
           variant="outline"
           className="w-full h-12 text-base bg-white hover:bg-gray-50 border-gray-300"
@@ -105,10 +99,8 @@ export function MagicLinkForm() {
     );
   }
 
-  // Tela de formulário
   return (
     <div className="space-y-4">
-      {/* Botão Google no topo */}
       <Button
         variant="outline"
         className="w-full h-12 text-base bg-white hover:bg-gray-50 border-gray-300"

@@ -181,7 +181,7 @@ export function TeachersTab() {
           onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) {
-              reset({ name: "", courseId: "", disciplineId: "" }); // limpa os inputs
+              reset({ name: "", courseId: "", disciplineId: "" });
               setEditingTeacher(null);
             }
           }}
@@ -298,7 +298,6 @@ export function TeachersTab() {
         </Dialog>
       </div>
 
-      {/* Tabela de Professores */}
       <Card>
         <CardHeader>
           <CardTitle>Todos os Professores</CardTitle>
