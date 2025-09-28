@@ -34,6 +34,7 @@ export async function createScheduling(data: Appointment) {
       courseId: data.courseId,
       semesterId: data.semesterId,
       disciplineId: data.disciplineId,
+      classId: data.classId,
     },
   });
 }

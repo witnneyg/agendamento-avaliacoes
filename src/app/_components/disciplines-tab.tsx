@@ -50,7 +50,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
-import type { Class, Course, Prisma, Semester } from "@prisma/client";
+import type { Class, Course, Period, Prisma, Semester } from "@prisma/client";
 
 import { getDisciplines } from "@/app/_actions/get-disciplines";
 import { getCourses } from "@/app/_actions/get-courses";
@@ -64,9 +64,9 @@ const disciplineSchema = z.object({
   name: z.string().min(1, "O nome da disciplina é obrigatório"),
   courseId: z.string().min(1, "O curso é obrigatório"),
   semesterId: z.string().min(1, "O período é obrigatório"),
-  dayPeriod: z.enum(["MORNING", "AFTERNOON", "EVENING"], {
-    errorMap: () => ({ message: "O período do dia é obrigatório" }),
-  }),
+  dayPeriods: z
+    .array(z.enum(["MORNING", "AFTERNOON", "EVENING"]))
+    .min(1, "Selecione pelo menos um turno"),
 });
 
 type DisciplineFormData = z.infer<typeof disciplineSchema>;
@@ -78,6 +78,14 @@ export type DisciplineWithRelations = Prisma.DisciplineGetPayload<{
   };
 }>;
 
+const periodOptions: { value: Period; label: string }[] = [
+  { value: "MORNING", label: "Manhã" },
+  { value: "AFTERNOON", label: "Tarde" },
+  { value: "EVENING", label: "Noite" },
+];
+
+const periodOrder: Period[] = ["MORNING", "AFTERNOON", "EVENING"];
+
 export default function DisciplinesTab() {
   const [disciplinas, setDisciplinas] = useState<DisciplineWithRelations[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -88,8 +96,6 @@ export default function DisciplinesTab() {
     useState<DisciplineWithRelations | null>(null);
   const [disciplinaParaDeletar, setDisciplinaParaDeletar] =
     useState<DisciplineWithRelations | null>(null);
-
-  console.log({ disciplinas });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -108,7 +114,7 @@ export default function DisciplinesTab() {
       name: "",
       courseId: "",
       semesterId: "",
-      dayPeriod: "MORNING",
+      dayPeriods: [],
     },
   });
 
@@ -120,7 +126,6 @@ export default function DisciplinesTab() {
       setIsLoading(true);
       try {
         const disciplinesData = await getDisciplines();
-        console.log({ disciplinesData });
         setDisciplinas(disciplinesData as any);
 
         const coursesData = await getCourses();
@@ -163,17 +168,25 @@ export default function DisciplinesTab() {
 
     setIsSubmitting(true);
     try {
+      // Ordena os turnos antes de enviar para o banco
+      const sortedData = {
+        ...data,
+        dayPeriods: data.dayPeriods.sort(
+          (a, b) => periodOrder.indexOf(a) - periodOrder.indexOf(b)
+        ),
+      };
+
       if (editingDiscpline) {
         const updated = await updateDiscipline({
           id: editingDiscpline.id,
-          ...data,
+          ...sortedData,
         });
 
         setDisciplinas((prev) =>
           prev.map((d) => (d.id === updated.id ? updated : d))
         );
       } else {
-        const newDiscipline = await createDiscipline(data);
+        const newDiscipline = await createDiscipline(sortedData);
         setDisciplinas((prev) => [...prev, newDiscipline]);
       }
 
@@ -190,7 +203,7 @@ export default function DisciplinesTab() {
       name: disciplina.name ?? "",
       courseId: disciplina.courses[0].id ?? "",
       semesterId: disciplina.semesterId,
-      dayPeriod: disciplina.dayPeriod ?? "",
+      dayPeriods: disciplina.dayPeriods ?? [],
     });
     setEditingDiscispline(disciplina);
     setIsDialogOpen(true);
@@ -238,7 +251,7 @@ export default function DisciplinesTab() {
                 name: "",
                 courseId: "",
                 semesterId: "",
-                dayPeriod: "MORNING",
+                dayPeriods: [],
               });
               setEditingDiscispline(null);
             }
@@ -262,7 +275,6 @@ export default function DisciplinesTab() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {/* Nome */}
               <div className="space-y-2">
                 <Label htmlFor="title">Nome da Disciplina</Label>
                 <Controller
@@ -277,7 +289,6 @@ export default function DisciplinesTab() {
                 )}
               </div>
 
-              {/* Curso */}
               <div className="space-y-2">
                 <Label htmlFor="courseId">Curso</Label>
                 <Controller
@@ -308,7 +319,6 @@ export default function DisciplinesTab() {
                 )}
               </div>
 
-              {/* Período */}
               <div className="space-y-2">
                 <Label htmlFor="semesterId">Período</Label>
                 <Controller
@@ -339,31 +349,45 @@ export default function DisciplinesTab() {
                 )}
               </div>
 
-              {/* Período do Dia */}
               <div className="space-y-2">
-                <Label htmlFor="dayPeriod">Período do Dia</Label>
+                <Label>Turnos da Disciplina</Label>
                 <Controller
-                  name="dayPeriod"
+                  name="dayPeriods"
                   control={control}
                   render={({ field }) => (
-                    <Select
-                      value={field.value || undefined}
-                      onValueChange={field.onChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o período" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="MORNING">Manhã</SelectItem>
-                        <SelectItem value="AFTERNOON">Tarde</SelectItem>
-                        <SelectItem value="EVENING">Noite</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex flex-col gap-2">
+                      {periodOptions.map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center gap-2"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={field.value?.includes(option.value)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                field.onChange([
+                                  ...(field.value || []),
+                                  option.value,
+                                ]);
+                              } else {
+                                field.onChange(
+                                  (field.value || []).filter(
+                                    (v: Period) => v !== option.value
+                                  )
+                                );
+                              }
+                            }}
+                          />
+                          {option.label}
+                        </label>
+                      ))}
+                    </div>
                   )}
                 />
-                {errors.dayPeriod && (
+                {errors.dayPeriods && (
                   <p className="text-sm text-red-500">
-                    {errors.dayPeriod.message}
+                    {errors.dayPeriods.message}
                   </p>
                 )}
               </div>
@@ -420,7 +444,7 @@ export default function DisciplinesTab() {
                   <TableHead>Título</TableHead>
                   <TableHead>Curso</TableHead>
                   <TableHead>Período</TableHead>
-                  <TableHead>Período do Dia</TableHead>
+                  <TableHead>Turnos</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -435,11 +459,15 @@ export default function DisciplinesTab() {
                     </TableCell>
                     <TableCell>{disciplina.semester.name}</TableCell>
                     <TableCell>
-                      {disciplina.dayPeriod === "MORNING"
-                        ? "Manhã"
-                        : disciplina.dayPeriod === "AFTERNOON"
-                          ? "Tarde"
-                          : "Noite"}
+                      {disciplina.dayPeriods
+                        .map((p) =>
+                          p === "MORNING"
+                            ? "Manhã"
+                            : p === "AFTERNOON"
+                              ? "Tarde"
+                              : "Noite"
+                        )
+                        .join(", ")}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

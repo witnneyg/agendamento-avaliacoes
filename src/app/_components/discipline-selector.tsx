@@ -5,25 +5,26 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getDisciplinesBySemester } from "../_actions/get-disciplines-by-semester";
-
-export interface Discipline {
-  id: string;
-  name: string;
-}
+import { TimePeriod } from "./time-period.selector";
+import { Discipline } from "@prisma/client";
 
 interface DisciplineSelectorProps {
   semesterId: string;
+  timePeriod: TimePeriod;
   onSelectDiscipline: (discipline: Discipline) => void;
   onBack: () => void;
 }
 
 export function DisciplineSelector({
   semesterId,
+  timePeriod,
   onSelectDiscipline,
   onBack,
 }: DisciplineSelectorProps) {
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const selectedPeriod: "MORNING" | "AFTERNOON" | "EVENING" =
+    timePeriod.id.toUpperCase() as "MORNING" | "AFTERNOON" | "EVENING";
 
   useEffect(() => {
     async function fetch() {
@@ -39,6 +40,8 @@ export function DisciplineSelector({
     fetch();
   }, [semesterId]);
 
+  console.log({ timePeriod });
+  console.log({ disciplines });
   return (
     <div className="space-y-4">
       <Button variant="ghost" size="sm" onClick={onBack} className="mb-2">
@@ -53,22 +56,24 @@ export function DisciplineSelector({
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {disciplines.map((discipline) => (
-            <Card
-              key={discipline.id}
-              className="cursor-pointer transition-all hover:bg-primary/5"
-              onClick={() => onSelectDiscipline(discipline)}
-            >
-              <CardContent className="p-6 h-full">
-                <div className="flex flex-col space-y-2 h-full justify-between">
-                  <h3 className="font-medium text-lg">{discipline.name}</h3>
-                  <Button className="mt-2 w-full cursor-pointer">
-                    Selecionar
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {disciplines
+            .filter((d) => d.dayPeriods.includes(selectedPeriod))
+            .map((discipline) => (
+              <Card
+                key={discipline.id}
+                className="cursor-pointer transition-all hover:bg-primary/5"
+                onClick={() => onSelectDiscipline(discipline)}
+              >
+                <CardContent className="p-6 h-full">
+                  <div className="flex flex-col space-y-2 h-full justify-between">
+                    <h3 className="font-medium text-lg">{discipline.name}</h3>
+                    <Button className="mt-2 w-full cursor-pointer">
+                      Selecionar
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
         </div>
       )}
     </div>

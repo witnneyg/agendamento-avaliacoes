@@ -9,7 +9,10 @@ export async function getScheduling() {
       semester: true,
       discipline: true,
       user: true,
+      class: true,
     },
   });
+
+  console.log({ schedulings });
   return schedulings;
 }

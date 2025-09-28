@@ -5,10 +5,9 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Router } from "lucide-react";
 import { Course } from "./course-selector";
 import { Semester } from "./semester-selector";
-import { Discipline } from "./discipline-selector";
 import { ptBR } from "date-fns/locale";
 import { useRouter } from "next/navigation";
-import { Class } from "@prisma/client";
+import { Class, Discipline } from "@prisma/client";
 
 interface BookingConfirmationProps {
   course: Course;

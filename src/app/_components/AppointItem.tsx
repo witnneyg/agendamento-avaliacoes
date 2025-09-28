@@ -19,15 +19,16 @@ import { getDepartmentColor } from "@/utils/getDepartamentColor";
 const getPeriodLabel = (period: string) => {
   switch (period) {
     case "MORNING":
-      return "manhä";
+      return "Manhã";
     case "AFTERNOON":
-      return "tarde";
+      return "Tarde";
     case "EVENING":
-      return "noite";
+      return "Noite";
     default:
       return period;
   }
 };
+const periodOrder = ["MORNING", "AFTERNOON", "EVENING"];
 
 export const AppointmentItem = ({
   appointment,
@@ -41,7 +42,7 @@ export const AppointmentItem = ({
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   const handleSave = (updatedAppointment: Partial<SchedulingWithRelations>) => {
-    // Aqui você pode fazer um update no backend via ação ou API
+    // Atualiza no backend
     console.log("Salvando agendamento editado:", updatedAppointment);
     setIsEditOpen(false);
   };
@@ -112,13 +113,27 @@ export const AppointmentItem = ({
               <p className="font-medium">Curso:</p>
               {appointment.course.name}
             </div>
+
+            <div className="flex gap-2 items-center">
+              <p className="font-medium">Período:</p>
+              {appointment.course.periods
+                .slice() // cria uma cópia pra não mutar o original
+                .sort((a, b) => periodOrder.indexOf(a) - periodOrder.indexOf(b))
+                .map((p) => getPeriodLabel(p))
+                .join(", ")}
+            </div>
+            <div className="flex gap-2 items-center">
+              <p className="font-medium">Turma:</p>
+              {appointment.class?.name ?? "N/A"}
+            </div>
+
             <div className="flex gap-2 items-center">
               <p className="font-medium">Professor:</p>
               {appointment.name}
             </div>
+
             <div className="flex gap-2 items-center">
               <p className="font-medium">Horário:</p>
-
               {new Intl.DateTimeFormat("pt-BR", {
                 weekday: "long",
                 day: "2-digit",
@@ -137,19 +152,10 @@ export const AppointmentItem = ({
                 hour12: false,
               }).format(new Date(appointment.endTime))}
             </div>
-            <div className="flex gap-2 items-center">
-              {appointment.course.periods.map((p) => (
-                <span key={p} className="flex gap-1 items-center">
-                  <p className="font-medium">Período:</p>
 
-                  {getPeriodLabel(p)}
-                </span>
-              ))}
-            </div>
             <div className="flex gap-2 items-center">
               <p className="font-medium">Anotações:</p>
-
-              {appointment.notes ? appointment.notes : "Sem anotações"}
+              {appointment.notes ?? "Sem anotações"}
             </div>
           </div>
         </AlertDialogContent>

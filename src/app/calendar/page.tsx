@@ -33,6 +33,7 @@ import type {
   Semester,
   Discipline,
   User,
+  Class,
 } from "@prisma/client";
 import { getUser } from "../_actions/getUser";
 import { AppointmentItem } from "../_components/AppointItem";
@@ -42,6 +43,7 @@ export type SchedulingWithRelations = Scheduling & {
   course: Course;
   semester: Semester;
   discipline: Discipline;
+  class: Class;
 };
 
 export type UserWithoutEmailVerified = Omit<User, "emailVerified">;
@@ -111,8 +113,7 @@ export default function CalendarPage() {
     async function fetch() {
       const coursesData = await getCourses();
       const schedulingData = await getScheduling();
-
-      setSchedulingCourses(schedulingData);
+      setSchedulingCourses(schedulingData as any);
       setAcademicCourses(coursesData);
     }
 
@@ -302,7 +303,6 @@ export default function CalendarPage() {
                                     userSession={user}
                                   />
 
-                                  {/* +X badge in bottom right corner */}
                                   {remainingCount > 0 && (
                                     <Dialog>
                                       <DialogTrigger asChild>

@@ -7,6 +7,7 @@ export interface Appointment {
   userId: string;
   semesterId: string;
   disciplineId: string;
+  classId: string;
   date: Date;
   endTime: Date;
   startTime: Date;
