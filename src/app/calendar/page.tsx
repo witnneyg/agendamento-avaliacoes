@@ -15,14 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+
 import {
   Dialog,
   DialogContent,
@@ -37,7 +30,15 @@ import { ptBR } from "date-fns/locale";
 import { getCourses } from "../_actions/get-courses";
 import { getScheduling } from "../_actions/get-scheduling";
 import { deleteSchedule } from "../_actions/delete-schedule";
-import type { Scheduling, Course, Semester, Discipline } from "@prisma/client";
+import type {
+  Scheduling,
+  Course,
+  Semester,
+  Discipline,
+  User,
+} from "@prisma/client";
+import { getUser } from "../_actions/getUser";
+import { AppointmentItem } from "../_components/AppointItem";
 
 export type SchedulingWithRelations = Scheduling & {
   course: Course;
@@ -45,15 +46,7 @@ export type SchedulingWithRelations = Scheduling & {
   discipline: Discipline;
 };
 
-const mockSession = {
-  user: {
-    id: "user1",
-    name: "Usuário Demo",
-    email: "demo@example.com",
-  },
-};
-
-const getDepartmentColor = (departmentId: string) => {
+export const getDepartmentColor = (departmentId: string) => {
   const colors: Record<string, string> = {
     "Gestão da Tecnologia da Informação":
       "bg-teal-500 border-teal-600 text-teal-100",
@@ -75,139 +68,11 @@ const getDepartmentColor = (departmentId: string) => {
   return colors[departmentId] || "bg-gray-500 border-gray-500 text-gray-800";
 };
 
-const getPeriodLabel = (period: string) => {
-  switch (period) {
-    case "MORNING":
-      return "manhä";
-    case "AFTERNOON":
-      return "tarde";
-    case "EVENING":
-      return "noite";
-    default:
-      return period;
-  }
-};
+export type UserWithoutEmailVerified = Omit<User, "emailVerified">;
 
 const timeSlots = Array.from({ length: 17 }, (_, i) => i + 7);
 
-const AppointmentItem = ({
-  appointment,
-  onDelete,
-  session,
-}: {
-  appointment: SchedulingWithRelations;
-  onDelete: (id: string) => void;
-  session: any;
-}) => (
-  <AlertDialog>
-    <AlertDialogTrigger asChild>
-      <div
-        className={cn(
-          "w-full p-2 rounded border-l-4 overflow-hidden cursor-pointer mb-1",
-          getDepartmentColor(appointment.course.name)
-        )}
-      >
-        <div className="overflow-hidden">
-          <div className="flex gap-2 font-medium text-xs truncate">
-            {appointment.discipline.name}{" "}
-            <div className="text-xs truncate">
-              {new Intl.DateTimeFormat("pt-BR", {
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: false,
-              }).format(new Date(appointment.startTime))}
-              {" – "}
-              {new Intl.DateTimeFormat("pt-BR", {
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: false,
-              }).format(new Date(appointment.endTime))}
-            </div>
-          </div>
-          <div className="text-xs truncate">{appointment.name}</div>
-        </div>
-      </div>
-    </AlertDialogTrigger>
-
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <div className="flex gap-4 justify-end">
-          <Edit className="h-4 w-4 cursor-pointer" />
-          {appointment.userId === session?.user?.id && (
-            <Trash2
-              className="h-4 w-4 cursor-pointer"
-              onClick={() => onDelete(appointment.id)}
-            />
-          )}
-          <AlertDialogCancel className="h-4 w-4 cursor-pointer border-none">
-            <X />
-          </AlertDialogCancel>
-        </div>
-        <AlertDialogTitle className="flex gap-2 items-center mt-2">
-          <div
-            className={cn(
-              "flex gap-2 w-3 h-3 rounded-xs flex-shrink-0",
-              getDepartmentColor(appointment.course.name)
-            )}
-          />
-          <p className="font-medium">Disciplina:</p>
-
-          {appointment.discipline.name}
-        </AlertDialogTitle>
-      </AlertDialogHeader>
-
-      <div className="space-y-3 text-sm pt-2">
-        <div className="flex gap-2 items-center">
-          <p className="font-medium">Curso:</p>
-          {appointment.course.name}
-        </div>
-        <div className="flex gap-2 items-center">
-          <p className="font-medium">Professor:</p>
-          {appointment.name}
-        </div>
-        <div className="flex gap-2 items-center">
-          <p className="font-medium">Horário:</p>
-
-          {new Intl.DateTimeFormat("pt-BR", {
-            weekday: "long",
-            day: "2-digit",
-            month: "long",
-          }).format(new Date(appointment.startTime))}
-          {" ⋅ "}
-          {new Intl.DateTimeFormat("pt-BR", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          }).format(new Date(appointment.startTime))}
-          {" – "}
-          {new Intl.DateTimeFormat("pt-BR", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          }).format(new Date(appointment.endTime))}
-        </div>
-        <div className="flex gap-2 items-center">
-          {appointment.course.periods.map((p) => (
-            <span key={p} className="flex gap-1 items-center">
-              <p className="font-medium">Período:</p>
-
-              {getPeriodLabel(p)}
-            </span>
-          ))}
-        </div>
-        <div className="flex gap-2 items-center">
-          <p className="font-medium">Anotações:</p>
-
-          {appointment.notes ? appointment.notes : "Sem anotações"}
-        </div>
-      </div>
-    </AlertDialogContent>
-  </AlertDialog>
-);
-
 export default function CalendarPage() {
-  const session = mockSession;
-
   const [academicCourses, setAcademicCourses] = useState<Course[]>([]);
   const [schedulingCourses, setSchedulingCourses] = useState<
     SchedulingWithRelations[]
@@ -218,7 +83,7 @@ export default function CalendarPage() {
   >(
     academicCourses.reduce((acc, course) => ({ ...acc, [course.id]: true }), {})
   );
-
+  const [user, setUser] = useState<UserWithoutEmailVerified | null>(null);
   const [view, setView] = useState<"week" | "day">("week");
   const router = useRouter();
   const daysToShow = view === "week" ? 7 : 1;
@@ -255,6 +120,16 @@ export default function CalendarPage() {
   const handleNewAppointment = () => {
     router.push("/");
   };
+
+  useEffect(() => {
+    async function fetchUser() {
+      const session = await getUser();
+      console.log({ session });
+      setUser(session);
+    }
+
+    fetchUser();
+  }, []);
 
   useEffect(() => {
     async function fetch() {
@@ -448,7 +323,7 @@ export default function CalendarPage() {
                                   <AppointmentItem
                                     appointment={firstAppointment}
                                     onDelete={handleDeleteSchedule}
-                                    session={session}
+                                    userSession={user}
                                   />
 
                                   {/* +X badge in bottom right corner */}
@@ -479,7 +354,7 @@ export default function CalendarPage() {
                                                 key={appointment.id}
                                                 appointment={appointment}
                                                 onDelete={handleDeleteSchedule}
-                                                session={session}
+                                                userSession={user}
                                               />
                                             )
                                           )}

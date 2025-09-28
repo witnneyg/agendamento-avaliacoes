@@ -90,6 +90,8 @@ model Discipline {
   teachers    Teacher[]  @relation("DisciplineTeachers")
   courses     Course[]   @relation("CourseDisciplines")
 
+ dayPeriod Period @default(MORNING)
+
   status Status @default(ACTIVE)
 
   schedulings Scheduling[]

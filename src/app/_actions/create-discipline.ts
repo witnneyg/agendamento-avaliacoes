@@ -1,12 +1,13 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { Status } from "@prisma/client";
+import { Period, Status } from "@prisma/client";
 
 interface CreateTeacherInput {
   name: string;
   courseId: string;
   semesterId: string;
+  dayPeriod: Period;
   // classId: string;
 }
 
@@ -14,6 +15,7 @@ export async function createDiscipline({
   name,
   courseId,
   semesterId,
+  dayPeriod,
   // classId,
 }: CreateTeacherInput) {
   return db.discipline.create({
@@ -26,6 +28,7 @@ export async function createDiscipline({
       semester: {
         connect: { id: semesterId },
       },
+      dayPeriod: dayPeriod,
       // class: {
       //   connect: { id: classId },
       // },

@@ -6,7 +6,7 @@ import { ChevronLeft } from "lucide-react";
 interface CalendarDateProps {
   date: Date | undefined;
   onSelectDate: (date: Date | undefined) => void;
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 export function CalendarDate({

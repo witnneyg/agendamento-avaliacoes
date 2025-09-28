@@ -60,6 +60,7 @@ import { deleteClass } from "@/app/_actions/delete-classes";
 
 import type { Course, Prisma, Semester } from "@prisma/client";
 import type { DisciplineWithRelations } from "./disciplines-tab";
+import { updateClass } from "../_actions/update-classes";
 
 export type ClassesWithRelations = Prisma.ClassGetPayload<{
   include: { course: true; semester: true };
@@ -159,22 +160,19 @@ export function ClassesTab() {
     setIsSubmitting(true);
     try {
       if (editingClass) {
+        const updated = await updateClass({
+          id: editingClass.id,
+          ...data,
+        });
+
         setClasses((prev) =>
-          prev.map((cls) =>
-            cls.id === editingClass.id
-              ? {
-                  ...cls,
-                  name: data.name,
-                  course: courses.find((c) => c.id === data.courseId)!,
-                  semester: semesters.find((s) => s.id === data.semesterId)!,
-                }
-              : cls
-          )
+          prev.map((cls) => (cls.id === updated.id ? updated : cls))
         );
       } else {
         const newClass = await createClasses(data);
         setClasses((prev) => [...prev, newClass]);
       }
+
       reset();
       setEditingClass(null);
       setIsDialogOpen(false);
@@ -224,7 +222,16 @@ export function ClassesTab() {
           </p>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog
+          open={isDialogOpen}
+          onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) {
+              reset({ name: "", courseId: "", semesterId: "" });
+              setEditingClass(null);
+            }
+          }}
+        >
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />

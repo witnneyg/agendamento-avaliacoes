@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/select";
 
 import { Plus, Edit, Trash2, Clock, Calendar, Loader2 } from "lucide-react";
+import { updateCourse } from "../_actions/update-course";
 
 type Period = "MORNING" | "AFTERNOON" | "EVENING";
 
@@ -112,9 +113,14 @@ export function CoursesTab() {
     setIsSubmitting(true);
     try {
       if (editingCourse) {
+        const updatedCourse = await updateCourse({
+          id: editingCourse.id,
+          ...data,
+        });
+
         setCourses((prev) =>
           prev.map((course) =>
-            course.id === editingCourse.id ? { ...course, ...data } : course
+            course.id === updatedCourse.id ? updatedCourse : course
           )
         );
       } else {
@@ -172,7 +178,16 @@ export function CoursesTab() {
             Gerencie cursos acadêmicos e departamentos
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog
+          open={isDialogOpen}
+          onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) {
+              reset({ name: "", periods: [], semesterDuration: 0 });
+              setEditingCourse(null);
+            }
+          }}
+        >
           <DialogTrigger asChild>
             <Button className="cursor-pointer">
               <Plus className="mr-2 h-4 w-4" />

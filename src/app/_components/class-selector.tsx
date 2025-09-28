@@ -4,41 +4,38 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getSemesterByCourse } from "../_actions/get-semester-by-course-selected";
+import { getClassesByCourse } from "../_actions/get-class-by-course-id";
+import { Class } from "@prisma/client";
+import { getClassBySemesterId } from "../_actions/get-class-by-semester-id";
 
-export interface Semester {
-  id: string;
-  name: string;
-  description: string;
-}
-
-interface SemesterSelectorProps {
-  courseId: string;
-  onSelectSemester: (semester: Semester) => void;
+interface ClassSelectorProps {
+  semesterId: string;
+  onSelectClass: (cls: Class) => void;
   onBack: () => void;
 }
 
-export function SemesterSelector({
-  courseId,
-  onSelectSemester,
+export function ClassSelector({
+  semesterId,
+  onSelectClass,
   onBack,
-}: SemesterSelectorProps) {
-  const [semesterByCourse, setSemesterByCourse] = useState<Semester[]>([]);
+}: ClassSelectorProps) {
+  const [classes, setClasses] = useState<Class[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function fetch() {
+    async function fetchClasses() {
       setIsLoading(true);
       try {
-        const data = await getSemesterByCourse(courseId);
-        setSemesterByCourse(data);
+        const data = await getClassBySemesterId(semesterId);
+        console.log({ data });
+        setClasses(data as any);
       } finally {
         setIsLoading(false);
       }
     }
 
-    fetch();
-  }, [courseId]);
+    fetchClasses();
+  }, [semesterId]);
 
   return (
     <div className="space-y-4">
@@ -50,21 +47,19 @@ export function SemesterSelector({
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <span className="ml-2">Carregando semestres...</span>
+          <span className="ml-2">Carregando turmas...</span>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {semesterByCourse.map((semester) => (
+          {classes.map((cls) => (
             <Card
-              key={semester.id}
+              key={cls.id}
               className="cursor-pointer transition-all hover:bg-primary/5"
-              onClick={() => onSelectSemester(semester)}
+              onClick={() => onSelectClass(cls)}
             >
-              <CardContent className="p-6">
-                <div className="flex flex-col space-y-2">
-                  <div className="flex gap-2 items-center">
-                    <h3 className="font-medium text-lg">{semester.name}</h3>
-                  </div>
+              <CardContent className="p-6 h-full">
+                <div className="flex flex-col space-y-2 h-full justify-between">
+                  <h3 className="font-medium text-lg">{cls.name}</h3>
                   <Button className="mt-2 w-full cursor-pointer">
                     Selecionar
                   </Button>

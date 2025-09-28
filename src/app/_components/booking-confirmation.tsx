@@ -8,9 +8,11 @@ import { Semester } from "./semester-selector";
 import { Discipline } from "./discipline-selector";
 import { ptBR } from "date-fns/locale";
 import { useRouter } from "next/navigation";
+import { Class } from "@prisma/client";
 
 interface BookingConfirmationProps {
   course: Course;
+  classes: Class;
   semester: Semester;
   date: Date;
   details: {
@@ -26,6 +28,7 @@ interface BookingConfirmationProps {
 export function BookingConfirmation({
   course,
   semester,
+  classes,
   date,
   details,
   discipline,
@@ -53,6 +56,10 @@ export function BookingConfirmation({
         <div className="flex justify-between">
           <span className="font-medium">Curso:</span>
           <span>{course.name}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="font-medium">Turma:</span>
+          <span>{classes.name}</span>
         </div>
         <div className="flex justify-between">
           <span className="font-medium">Semestre:</span>

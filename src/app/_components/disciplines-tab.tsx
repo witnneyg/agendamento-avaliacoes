@@ -58,12 +58,15 @@ import { createDiscipline } from "@/app/_actions/create-discipline";
 import { getClassBySemesterId } from "@/app/_actions/get-class-by-semester-id";
 import { getSemesterByCourse } from "@/app/_actions/get-semester-by-course-selected";
 import { deleteDiscipline } from "../_actions/delete-discipline";
+import { updateDiscipline } from "../_actions/update-discipline";
 
 const disciplineSchema = z.object({
   name: z.string().min(1, "O nome da disciplina é obrigatório"),
   courseId: z.string().min(1, "O curso é obrigatório"),
   semesterId: z.string().min(1, "O período é obrigatório"),
-  // classId: z.string().min(1, "A turma é obrigatória"),
+  dayPeriod: z.enum(["MORNING", "AFTERNOON", "EVENING"], {
+    errorMap: () => ({ message: "O período do dia é obrigatório" }),
+  }),
 });
 
 type DisciplineFormData = z.infer<typeof disciplineSchema>;
@@ -72,7 +75,6 @@ export type DisciplineWithRelations = Prisma.DisciplineGetPayload<{
   include: {
     courses: true;
     semester: true;
-    // class: true;
   };
 }>;
 
@@ -82,10 +84,12 @@ export default function DisciplinesTab() {
   const [classes, setClasses] = useState<Class[]>([]);
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [disciplinaEditando, setDisciplinaEditando] =
+  const [editingDiscpline, setEditingDiscispline] =
     useState<DisciplineWithRelations | null>(null);
   const [disciplinaParaDeletar, setDisciplinaParaDeletar] =
     useState<DisciplineWithRelations | null>(null);
+
+  console.log({ disciplinas });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -104,7 +108,7 @@ export default function DisciplinesTab() {
       name: "",
       courseId: "",
       semesterId: "",
-      // classId: "",
+      dayPeriod: "MORNING",
     },
   });
 
@@ -116,6 +120,7 @@ export default function DisciplinesTab() {
       setIsLoading(true);
       try {
         const disciplinesData = await getDisciplines();
+        console.log({ disciplinesData });
         setDisciplinas(disciplinesData as any);
 
         const coursesData = await getCourses();
@@ -124,7 +129,6 @@ export default function DisciplinesTab() {
         setIsLoading(false);
       }
     }
-
     fetchData();
   }, []);
 
@@ -133,13 +137,11 @@ export default function DisciplinesTab() {
       if (!selectedCourseId) {
         setSemesters([]);
         setValue("semesterId", "");
-        // setValue("classId", "");
         return;
       }
       const semestersData = await getSemesterByCourse(selectedCourseId);
       setSemesters(semestersData);
       setValue("semesterId", "");
-      // setValue("classId", "");
     }
     fetchSemesters();
   }, [selectedCourseId, setValue]);
@@ -148,12 +150,10 @@ export default function DisciplinesTab() {
     async function fetchClasses() {
       if (!selectedSemesterId) {
         setClasses([]);
-        // setValue("classId", "");
         return;
       }
       const classesData = await getClassBySemesterId(selectedSemesterId);
       setClasses(classesData);
-      // setValue("classId", "");
     }
     fetchClasses();
   }, [selectedSemesterId, setValue]);
@@ -163,10 +163,22 @@ export default function DisciplinesTab() {
 
     setIsSubmitting(true);
     try {
-      const newDiscipline = await createDiscipline(data);
-      setDisciplinas((prev) => [...prev, newDiscipline]);
+      if (editingDiscpline) {
+        const updated = await updateDiscipline({
+          id: editingDiscpline.id,
+          ...data,
+        });
+
+        setDisciplinas((prev) =>
+          prev.map((d) => (d.id === updated.id ? updated : d))
+        );
+      } else {
+        const newDiscipline = await createDiscipline(data);
+        setDisciplinas((prev) => [...prev, newDiscipline]);
+      }
+
       reset();
-      setDisciplinaEditando(null);
+      setEditingDiscispline(null);
       setIsDialogOpen(false);
     } finally {
       setIsSubmitting(false);
@@ -176,11 +188,11 @@ export default function DisciplinesTab() {
   const handleEdit = (disciplina: DisciplineWithRelations) => {
     reset({
       name: disciplina.name ?? "",
-      courseId: disciplina.id,
+      courseId: disciplina.courses[0].id ?? "",
       semesterId: disciplina.semesterId,
-      // classId: disciplina.classId ?? "",
+      dayPeriod: disciplina.dayPeriod ?? "",
     });
-    setDisciplinaEditando(disciplina);
+    setEditingDiscispline(disciplina);
     setIsDialogOpen(true);
   };
 
@@ -217,7 +229,21 @@ export default function DisciplinesTab() {
             Gerencie as disciplinas e matérias dos cursos
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog
+          open={isDialogOpen}
+          onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) {
+              reset({
+                name: "",
+                courseId: "",
+                semesterId: "",
+                dayPeriod: "MORNING",
+              });
+              setEditingDiscispline(null);
+            }
+          }}
+        >
           <DialogTrigger asChild>
             <Button className="cursor-pointer">
               <Plus className="mr-2 h-4 w-4" />
@@ -227,15 +253,16 @@ export default function DisciplinesTab() {
           <DialogContent className="max-w-md [&>button]:cursor-pointer">
             <DialogHeader>
               <DialogTitle>
-                {disciplinaEditando ? "Editar Disciplina" : "Nova Disciplina"}
+                {editingDiscpline ? "Editar Disciplina" : "Nova Disciplina"}
               </DialogTitle>
               <DialogDescription>
-                {disciplinaEditando
+                {editingDiscpline
                   ? "Atualize as informações da disciplina"
                   : "Adicione uma nova disciplina ao sistema"}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              {/* Nome */}
               <div className="space-y-2">
                 <Label htmlFor="title">Nome da Disciplina</Label>
                 <Controller
@@ -250,6 +277,7 @@ export default function DisciplinesTab() {
                 )}
               </div>
 
+              {/* Curso */}
               <div className="space-y-2">
                 <Label htmlFor="courseId">Curso</Label>
                 <Controller
@@ -280,6 +308,7 @@ export default function DisciplinesTab() {
                 )}
               </div>
 
+              {/* Período */}
               <div className="space-y-2">
                 <Label htmlFor="semesterId">Período</Label>
                 <Controller
@@ -310,10 +339,11 @@ export default function DisciplinesTab() {
                 )}
               </div>
 
-              {/* <div className="space-y-2">
-                <Label htmlFor="classId">Turma</Label>
+              {/* Período do Dia */}
+              <div className="space-y-2">
+                <Label htmlFor="dayPeriod">Período do Dia</Label>
                 <Controller
-                  name="classId"
+                  name="dayPeriod"
                   control={control}
                   render={({ field }) => (
                     <Select
@@ -321,24 +351,22 @@ export default function DisciplinesTab() {
                       onValueChange={field.onChange}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma turma" />
+                        <SelectValue placeholder="Selecione o período" />
                       </SelectTrigger>
                       <SelectContent>
-                        {classes.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="MORNING">Manhã</SelectItem>
+                        <SelectItem value="AFTERNOON">Tarde</SelectItem>
+                        <SelectItem value="EVENING">Noite</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
                 />
-                {errors.classId && (
+                {errors.dayPeriod && (
                   <p className="text-sm text-red-500">
-                    {errors.classId.message}
+                    {errors.dayPeriod.message}
                   </p>
                 )}
-              </div> */}
+              </div>
 
               <DialogFooter>
                 <Button
@@ -358,12 +386,11 @@ export default function DisciplinesTab() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {disciplinaEditando ? "Atualizando..." : "Criando..."}
+                      {editingDiscpline ? "Atualizando..." : "Criando..."}
                     </>
                   ) : (
                     <>
-                      {disciplinaEditando ? "Atualizar" : "Adicionar"}{" "}
-                      Disciplina
+                      {editingDiscpline ? "Atualizar" : "Adicionar"} Disciplina
                     </>
                   )}
                 </Button>
@@ -393,7 +420,7 @@ export default function DisciplinesTab() {
                   <TableHead>Título</TableHead>
                   <TableHead>Curso</TableHead>
                   <TableHead>Período</TableHead>
-                  <TableHead></TableHead>
+                  <TableHead>Período do Dia</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -407,8 +434,13 @@ export default function DisciplinesTab() {
                       {disciplina.courses.map((item) => item.name)}
                     </TableCell>
                     <TableCell>{disciplina.semester.name}</TableCell>
-                    <TableCell></TableCell>
-                    {/* <TableCell>{disciplina.class?.name}</TableCell> */}
+                    <TableCell>
+                      {disciplina.dayPeriod === "MORNING"
+                        ? "Manhã"
+                        : disciplina.dayPeriod === "AFTERNOON"
+                          ? "Tarde"
+                          : "Noite"}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button

@@ -24,14 +24,18 @@ import { timePeriods } from "../mocks";
 import { getLoggedUserId } from "../_actions/get-logged-user";
 import { getServerSession } from "next-auth";
 import { getUser } from "../_actions/getUser";
-import { User } from "@prisma/client";
+import { Class, User } from "@prisma/client";
+import { ClassSelector } from "./class-selector";
+
+// o fluxo seria esse certo ? CURSO - PERIODO - TURMA - DISCIPLINA - DIA - HORARIO - AGENDA
 
 type Step =
   | "course"
-  | "discipline"
-  | "semester"
-  | "date"
+  | "period"
+  | "class"
   | "timePeriod"
+  | "discipline"
+  | "date"
   | "time"
   | "details"
   | "confirmation";
@@ -50,6 +54,9 @@ export function Scheduling() {
   const [selectedCourse, setSelectedCourse] = useState<Course | undefined>(
     undefined
   );
+  const [selectedClass, setSelectedClass] = useState<Class | undefined>(
+    undefined
+  );
   const [selectedSemester, setSelectedSemester] = useState<
     Semester | undefined
   >(undefined);
@@ -63,20 +70,30 @@ export function Scheduling() {
   const [selectedTimePeriod, setSelectedTimePeriod] = useState<
     TimePeriod | undefined
   >(undefined);
+  console.log(selectedTimePeriod);
+
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(
     null
   );
 
   const handleCourseSelect = (course: Course) => {
     setSelectedCourse(course);
-    setStep("semester");
+    setStep("period");
   };
-
   const handleSelectSemester = (semester: any) => {
     setSelectedSemester(semester);
-    setStep("discipline");
+    setStep("class");
   };
 
+  const handleSelecteClass = (classes: Class) => {
+    setSelectedClass(classes);
+    setStep("timePeriod");
+  };
+
+  const handleTimePeriodSelect = (timePeriod: TimePeriod) => {
+    setSelectedTimePeriod(timePeriod);
+    setStep("discipline");
+  };
   const handleDisciplineSelect = (discipline: Discipline) => {
     setSelectedDiscipline(discipline);
     setStep("date");
@@ -87,11 +104,6 @@ export function Scheduling() {
     if (date) {
       setStep("timePeriod");
     }
-  };
-
-  const handleTimePeriodSelect = (timePeriod: TimePeriod) => {
-    setSelectedTimePeriod(timePeriod);
-    setStep("details");
   };
 
   useEffect(() => {
@@ -164,12 +176,10 @@ export function Scheduling() {
   return (
     <Card className="w-full max-w-3xl">
       <CardHeader>
-        <h1>{user?.name}</h1>
-        <h1>{user?.email}</h1>
-        <h1>{user?.id}</h1>
         <CardTitle>
           {step === "course" && "Selecione um curso"}
-          {step === "semester" && "Selecione seu periodo"}
+          {step === "period" && "Selecione seu periodo"}
+          {step === "class" && "Selecione sua turma"}
           {step === "discipline" && "Selecione uma disciplina"}
           {step === "date" && "Selecione uma data"}
           {step === "timePeriod" && "Selecione um período"}
@@ -179,7 +189,8 @@ export function Scheduling() {
         <CardDescription>
           {step === "course" &&
             "Selecione o curso com o qual deseja agendar uma avaliação"}
-          {step === "semester" && "Selecione o periodo da sua turma"}
+          {step === "period" && "Selecione o periodo da sua turma"}
+          {step === "class" && "Selecione sua turma do agendamento"}
           {step === "discipline" &&
             selectedCourse &&
             `Selecione uma disciplina específica em ${selectedCourse.name}`}
@@ -197,18 +208,33 @@ export function Scheduling() {
         {step === "course" && (
           <CourseSelector onSelectCourse={handleCourseSelect} />
         )}
-        {step === "semester" && selectedCourse && (
+        {step === "period" && selectedCourse && (
           <SemesterSelector
             courseId={selectedCourse.id}
             onSelectSemester={handleSelectSemester}
             onBack={() => setStep("course")}
           />
         )}
+        {step === "class" && selectedSemester && (
+          <ClassSelector
+            semesterId={selectedSemester.id}
+            onSelectClass={handleSelecteClass}
+            onBack={() => setStep("period")}
+          />
+        )}
+        {step === "timePeriod" && selectedCourse && (
+          <TimePeriodSelector
+            coursePeriod={selectedCourse?.periods}
+            timePeriods={timePeriods}
+            onSelectTimePeriod={handleTimePeriodSelect}
+            onBack={() => setStep("date")}
+          />
+        )}
         {step === "discipline" && selectedCourse && selectedSemester && (
           <DisciplineSelector
             semesterId={selectedSemester.id}
             onSelectDiscipline={handleDisciplineSelect}
-            onBack={() => setStep("semester")}
+            onBack={() => setStep("class")}
           />
         )}
         {step === "date" && (
@@ -218,20 +244,10 @@ export function Scheduling() {
             onBack={() => setStep("discipline")}
           />
         )}
-
-        {step === "timePeriod" && selectedCourse && (
-          <TimePeriodSelector
-            coursePeriod={selectedCourse?.periods}
-            timePeriods={timePeriods}
-            onSelectTimePeriod={handleTimePeriodSelect}
-            onBack={() => setStep("date")}
-          />
-        )}
-
         {step === "details" &&
-          selectedDate &&
           selectedCourse &&
           selectedSemester &&
+          selectedDate &&
           selectedTimePeriod && (
             <BookingForm
               onSubmit={handleCreateScheduling}
@@ -245,11 +261,13 @@ export function Scheduling() {
         {step === "confirmation" &&
           bookingDetails &&
           selectedDate &&
+          selectedClass &&
           selectedCourse &&
           selectedSemester &&
           selectedDiscipline && (
             <BookingConfirmation
               course={selectedCourse}
+              classes={selectedClass}
               semester={selectedSemester}
               discipline={selectedDiscipline}
               date={selectedDate}
