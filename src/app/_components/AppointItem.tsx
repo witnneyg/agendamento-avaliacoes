@@ -8,13 +8,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  getDepartmentColor,
   SchedulingWithRelations,
   UserWithoutEmailVerified,
 } from "../calendar/page";
 import { cn } from "@/lib/utils";
 import { Edit, Trash2, X } from "lucide-react";
 import { EditSchedulingModal } from "./edit-scheduling.modal";
+import { getDepartmentColor } from "@/utils/getDepartamentColor";
 
 const getPeriodLabel = (period: string) => {
   switch (period) {

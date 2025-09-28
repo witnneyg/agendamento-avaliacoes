@@ -6,9 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Trash2,
-  Edit,
-  X,
   CalendarXIcon as Calendar1Icon,
 } from "lucide-react";
 
