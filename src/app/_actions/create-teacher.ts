@@ -5,24 +5,24 @@ import { Status } from "@prisma/client";
 
 interface CreateTeacherInput {
   name: string;
-  courseId: string;
-  disciplineId: string;
+  courseIds: string[];
+  disciplineIds: string[];
 }
 
 export async function createTeacher({
   name,
-  courseId,
-  disciplineId,
+  courseIds,
+  disciplineIds,
 }: CreateTeacherInput) {
-  await db.teacher.create({
+  return await db.teacher.create({
     data: {
       name,
       status: Status.ACTIVE,
       courses: {
-        connect: { id: courseId },
+        connect: courseIds.map((id) => ({ id })),
       },
       disciplines: {
-        connect: { id: disciplineId },
+        connect: disciplineIds.map((id) => ({ id })),
       },
     },
     include: {

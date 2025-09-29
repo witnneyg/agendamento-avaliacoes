@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,48 +8,90 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { SchedulingWithRelations } from "../calendar/page";
-import { CalendarDate } from "./calendar-date";
 import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
+import { format } from "date-fns";
+import { SchedulingWithRelations } from "../calendar/page";
+import { generateTimeSlotsAndCheckAvailability } from "./booking-form";
 
 interface EditAppointmentModalProps {
   appointment: SchedulingWithRelations;
+  scheduledTimes: SchedulingWithRelations[];
+  timePeriodId: string;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (updatedAppointment: Partial<SchedulingWithRelations>) => void;
+  onSave: (updatedAppointments: Partial<SchedulingWithRelations>[]) => void;
 }
 
 export const EditSchedulingModal = ({
   appointment,
+  scheduledTimes,
+  timePeriodId,
   isOpen,
   onClose,
   onSave,
 }: EditAppointmentModalProps) => {
   const [formData, setFormData] = useState({
     name: appointment.name,
-    notes: appointment.notes || "",
-    startTime: new Date(appointment.startTime).toISOString().slice(0, 16),
-    endTime: new Date(appointment.endTime).toISOString().slice(0, 16),
+    time: [
+      format(new Date(appointment.startTime), "HH:mm") +
+        " - " +
+        format(new Date(appointment.endTime), "HH:mm"),
+    ],
   });
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
-  const handleSave = () => {
-    onSave({
-      ...appointment,
-      name: formData.name,
-      notes: formData.notes,
-      startTime: new Date(formData.startTime),
-      endTime: new Date(formData.endTime),
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    new Date(appointment.startTime)
+  );
+
+  const [timeSlots, setTimeSlots] = useState<
+    { time: string; available: boolean }[]
+  >([]);
+
+  useEffect(() => {
+    if (selectedDate) {
+      const slots = generateTimeSlotsAndCheckAvailability(
+        selectedDate,
+        scheduledTimes,
+        timePeriodId
+      );
+      setTimeSlots(slots);
+    }
+  }, [selectedDate, scheduledTimes, timePeriodId]);
+
+  const handleTimeSelect = (time: string) => {
+    setFormData((prev) => {
+      if (prev.time.includes(time)) {
+        return { ...prev, time: prev.time.filter((t) => t !== time) };
+      } else {
+        return { ...prev, time: [...prev.time, time] };
+      }
     });
-    onClose();
   };
 
-  const handleDateSelect = (date: Date | undefined) => {
-    setSelectedDate(date);
+  const handleSave = () => {
+    const updatedAppointments = formData.time.map((slot) => {
+      const [startStr, endStr] = slot.split(" - ");
+      const startTime = new Date(selectedDate);
+      const endTime = new Date(selectedDate);
+
+      const [startHour, startMinute] = startStr.split(":").map(Number);
+      const [endHour, endMinute] = endStr.split(":").map(Number);
+
+      startTime.setHours(startHour, startMinute);
+      endTime.setHours(endHour, endMinute);
+
+      return {
+        ...appointment,
+        startTime,
+        endTime,
+        date: selectedDate,
+      };
+    });
+
+    onSave(updatedAppointments);
+    onClose();
   };
 
   return (
@@ -58,51 +100,47 @@ export const EditSchedulingModal = ({
         <DialogHeader>
           <DialogTitle>Editar Agendamento</DialogTitle>
         </DialogHeader>
+
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Professor
-            </Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              className="col-span-3"
-            />
-          </div>
-          <Label htmlFor="name" className="text-right">
-            Calendário
-          </Label>
-          <div className="flex flex-col items-center justify-center">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDateSelect}
-              disabled={(date) =>
-                date < new Date() || date.getDay() === 0 || date.getDay() === 6
-              }
-              locale={ptBR}
-              className="rounded-md border mt-2"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="notes" className="text-right">
-              Anotações
-            </Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) =>
-                setFormData({ ...formData, notes: e.target.value })
-              }
-              className="col-span-3"
-              rows={3}
-            />
+          <Label>Selecione a data</Label>
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={(day) => day && setSelectedDate(day)}
+            disabled={(date) =>
+              date < new Date() || date.getDay() === 0 || date.getDay() === 6
+            }
+            locale={ptBR}
+            className="rounded-md border mt-2"
+          />
+        </div>
+
+        <div className="grid gap-2 mt-4">
+          <Label>Horários</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {timeSlots.map((slot) => (
+              <Button
+                key={slot.time}
+                type="button"
+                variant={
+                  formData.time.includes(slot.time) ? "default" : "outline"
+                }
+                disabled={!slot.available}
+                className={
+                  slot.available
+                    ? "cursor-pointer"
+                    : "opacity-50 cursor-not-allowed"
+                }
+                onClick={() => slot.available && handleTimeSelect(slot.time)}
+              >
+                {slot.time}
+                {!slot.available && " (Indisponível)"}
+              </Button>
+            ))}
           </div>
         </div>
-        <div className="flex justify-end gap-2">
+
+        <div className="flex justify-end gap-2 mt-4">
           <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>

@@ -13,9 +13,7 @@ export interface Appointment {
   startTime: Date;
   details: {
     name: string;
-    email: string;
-    phone: string;
-    notes: string;
+    time: string;
   };
 }
 

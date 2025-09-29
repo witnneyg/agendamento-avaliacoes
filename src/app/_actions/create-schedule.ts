@@ -18,15 +18,23 @@ export async function createScheduling(data: Appointment) {
     },
   });
 
+  //   where: {
+  //   semesterId: data.semesterId,
+  //   classId: data.classId,
+  //   disciplineId: data.disciplineId,
+  //   AND: [
+  //     { startTime: { lt: data.endTime } },
+  //     { endTime: { gt: data.startTime } },
+  //   ],
+  // }
+
   if (hasConflict) {
     throw new Error("Este horário já está agendado.");
   }
 
-  await db.scheduling.create({
+  const a = await db.scheduling.create({
     data: {
       name: data.details.name,
-      phone: data.details.phone,
-      notes: data.details.notes,
       date: data.date,
       startTime: data.startTime,
       endTime: data.endTime,

@@ -100,7 +100,7 @@ export default function DisciplinesTab() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
+  console.log({ courses });
   const {
     control,
     handleSubmit,
@@ -168,7 +168,6 @@ export default function DisciplinesTab() {
 
     setIsSubmitting(true);
     try {
-      // Ordena os turnos antes de enviar para o banco
       const sortedData = {
         ...data,
         dayPeriods: data.dayPeriods.sort(
@@ -354,36 +353,53 @@ export default function DisciplinesTab() {
                 <Controller
                   name="dayPeriods"
                   control={control}
-                  render={({ field }) => (
-                    <div className="flex flex-col gap-2">
-                      {periodOptions.map((option) => (
-                        <label
-                          key={option.value}
-                          className="flex items-center gap-2"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={field.value?.includes(option.value)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                field.onChange([
-                                  ...(field.value || []),
-                                  option.value,
-                                ]);
-                              } else {
-                                field.onChange(
-                                  (field.value || []).filter(
-                                    (v: Period) => v !== option.value
-                                  )
-                                );
-                              }
-                            }}
-                          />
-                          {option.label}
-                        </label>
-                      ))}
-                    </div>
-                  )}
+                  render={({ field }) => {
+                    const selectedCourse = courses.find(
+                      (c) => c.id === selectedCourseId
+                    );
+                    const availablePeriods = selectedCourse?.periods ?? [];
+
+                    return (
+                      <div className="flex flex-col gap-2">
+                        {periodOptions.map((option) => {
+                          const isDisabled = !availablePeriods.includes(
+                            option.value
+                          );
+
+                          return (
+                            <label
+                              key={option.value}
+                              className={`
+                                  flex items-center gap-2
+                                  ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+                                `}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={field.value?.includes(option.value)}
+                                disabled={isDisabled}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    field.onChange([
+                                      ...(field.value || []),
+                                      option.value,
+                                    ]);
+                                  } else {
+                                    field.onChange(
+                                      (field.value || []).filter(
+                                        (v) => v !== option.value
+                                      )
+                                    );
+                                  }
+                                }}
+                              />
+                              {option.label}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    );
+                  }}
                 />
                 {errors.dayPeriods && (
                   <p className="text-sm text-red-500">

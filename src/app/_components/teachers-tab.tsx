@@ -34,13 +34,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -49,6 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
 
 import { getTeachers } from "@/app/_actions/get-teacher";
@@ -56,8 +50,9 @@ import { getCourses } from "@/app/_actions/get-courses";
 import { getDisciplinesByCourseId } from "@/app/_actions/get-discipline-by-course-id";
 import { createTeacher } from "@/app/_actions/create-teacher";
 import { deleteTeacher } from "@/app/_actions/delete-teacher";
-import type { Course, Discipline, Prisma, Teacher } from "@prisma/client";
+import type { Course, Discipline, Prisma } from "@prisma/client";
 import { translateTeacherStatus } from "@/utils/translate-teacher-status";
+import { updateTeacher } from "../_actions/update-teacher";
 
 type TeacherWithRelations = Prisma.TeacherGetPayload<{
   include: { courses: true; disciplines: true };
@@ -65,8 +60,10 @@ type TeacherWithRelations = Prisma.TeacherGetPayload<{
 
 const teacherSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
-  courseId: z.string().min(1, "Selecione um curso"),
-  disciplineId: z.string().min(1, "Selecione uma disciplina"),
+  courseIds: z.array(z.string()).min(1, "Selecione pelo menos um curso"),
+  disciplineIds: z
+    .array(z.string())
+    .min(1, "Selecione pelo menos uma disciplina"),
 });
 
 type TeacherForm = z.infer<typeof teacherSchema>;
@@ -74,7 +71,9 @@ type TeacherForm = z.infer<typeof teacherSchema>;
 export function TeachersTab() {
   const [teachers, setTeachers] = useState<TeacherWithRelations[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [disciplines, setDisciplines] = useState<Discipline[]>([]);
+  const [availableDisciplines, setAvailableDisciplines] = useState<
+    Discipline[]
+  >([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] =
     useState<TeacherWithRelations | null>(null);
@@ -91,10 +90,10 @@ export function TeachersTab() {
     formState: { errors },
   } = useForm<TeacherForm>({
     resolver: zodResolver(teacherSchema),
-    defaultValues: { name: "", courseId: "", disciplineId: "" },
+    defaultValues: { name: "", courseIds: [], disciplineIds: [] },
   });
 
-  const selectedCourseId = watch("courseId");
+  const selectedCourseIds = watch("courseIds");
 
   useEffect(() => {
     async function fetchData() {
@@ -114,15 +113,27 @@ export function TeachersTab() {
 
   useEffect(() => {
     async function fetchDisciplines() {
-      if (!selectedCourseId) {
-        setDisciplines([]);
+      if (!selectedCourseIds || selectedCourseIds.length === 0) {
+        setAvailableDisciplines([]);
+        setValue("disciplineIds", []);
         return;
       }
-      const disciplinesData = await getDisciplinesByCourseId(selectedCourseId);
-      setDisciplines(disciplinesData);
+
+      const disciplinesData = await Promise.all(
+        selectedCourseIds.map(getDisciplinesByCourseId)
+      );
+      const allDisciplines = disciplinesData.flat();
+
+      setAvailableDisciplines(allDisciplines);
+
+      const validDisciplineIds = watch("disciplineIds").filter((id) =>
+        allDisciplines.some((d) => d.id === id)
+      );
+      setValue("disciplineIds", validDisciplineIds);
     }
+
     fetchDisciplines();
-  }, [selectedCourseId]);
+  }, [selectedCourseIds, setValue, watch]);
 
   const onSubmit = async (data: TeacherForm) => {
     if (isSubmitting) return;
@@ -130,14 +141,19 @@ export function TeachersTab() {
     setIsSubmitting(true);
     try {
       if (editingTeacher) {
+        // update no banco
+        const updated = await updateTeacher({ id: editingTeacher.id, ...data });
+
+        // atualiza no estado local
         setTeachers((prev) =>
-          prev.map((t) => (t.id === editingTeacher.id ? { ...t, ...data } : t))
+          prev.map((t) => (t.id === updated.id ? updated : t))
         );
       } else {
         await createTeacher(data);
         const updatedTeachers = await getTeachers();
         setTeachers(updatedTeachers as any);
       }
+
       reset();
       setEditingTeacher(null);
       setIsDialogOpen(false);
@@ -150,8 +166,8 @@ export function TeachersTab() {
     setEditingTeacher(teacher);
     reset({
       name: teacher.name,
-      courseId: teacher.courses[0]?.id || "",
-      disciplineId: teacher.disciplines[0]?.id || "",
+      courseIds: teacher.courses.map((c) => c.id),
+      disciplineIds: teacher.disciplines.map((d) => d.id),
     });
     setIsDialogOpen(true);
   };
@@ -163,6 +179,30 @@ export function TeachersTab() {
       setTeachers((prev) => prev.filter((t) => t.id !== teacherId));
     } finally {
       setLoadingDeleteId(null);
+    }
+  };
+
+  const handleCourseToggle = (courseId: string, checked: boolean) => {
+    const currentCourseIds = watch("courseIds");
+    if (checked) {
+      setValue("courseIds", [...currentCourseIds, courseId]);
+    } else {
+      setValue(
+        "courseIds",
+        currentCourseIds.filter((id) => id !== courseId)
+      );
+    }
+  };
+
+  const handleDisciplineToggle = (disciplineId: string, checked: boolean) => {
+    const currentDisciplineIds = watch("disciplineIds");
+    if (checked) {
+      setValue("disciplineIds", [...currentDisciplineIds, disciplineId]);
+    } else {
+      setValue(
+        "disciplineIds",
+        currentDisciplineIds.filter((id) => id !== disciplineId)
+      );
     }
   };
 
@@ -181,7 +221,7 @@ export function TeachersTab() {
           onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) {
-              reset({ name: "", courseId: "", disciplineId: "" });
+              reset({ name: "", courseIds: [], disciplineIds: [] });
               setEditingTeacher(null);
             }
           }}
@@ -192,7 +232,7 @@ export function TeachersTab() {
               Adicionar Professor
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingTeacher
@@ -200,7 +240,7 @@ export function TeachersTab() {
                   : "Adicionar Novo Professor"}
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome Completo</Label>
                 <Controller
@@ -213,60 +253,79 @@ export function TeachersTab() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="courseId">Curso</Label>
-                <Controller
-                  name="courseId"
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o curso" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {courses.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.courseId && (
+              <div className="space-y-3">
+                <Label>Cursos</Label>
+                <div className="border rounded-lg p-4 space-y-3 max-h-48 overflow-y-auto">
+                  {courses.map((course) => (
+                    <div
+                      key={course.id}
+                      className="flex items-center space-x-2"
+                    >
+                      <Checkbox
+                        id={`course-${course.id}`}
+                        checked={
+                          selectedCourseIds?.includes(course.id) || false
+                        }
+                        onCheckedChange={(checked) =>
+                          handleCourseToggle(course.id, checked as boolean)
+                        }
+                      />
+                      <Label
+                        htmlFor={`course-${course.id}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {course.name}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                {errors.courseIds && (
                   <p className="text-sm text-red-500">
-                    {errors.courseId.message}
+                    {errors.courseIds.message}
                   </p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="disciplineId">Disciplina</Label>
-                <Controller
-                  name="disciplineId"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={disciplines.length === 0}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a disciplina" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {disciplines.map((d) => (
-                          <SelectItem key={d.id} value={d.id}>
-                            {d.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+              <div className="space-y-3">
+                <Label>Disciplinas</Label>
+                <div className="border rounded-lg p-4 space-y-3 max-h-48 overflow-y-auto">
+                  {availableDisciplines.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Selecione pelo menos um curso para ver as disciplinas
+                      disponíveis
+                    </p>
+                  ) : (
+                    availableDisciplines.map((discipline) => (
+                      <div
+                        key={discipline.id}
+                        className="flex items-center space-x-2"
+                      >
+                        <Checkbox
+                          id={`discipline-${discipline.id}`}
+                          checked={
+                            watch("disciplineIds")?.includes(discipline.id) ||
+                            false
+                          }
+                          onCheckedChange={(checked) =>
+                            handleDisciplineToggle(
+                              discipline.id,
+                              checked as boolean
+                            )
+                          }
+                        />
+                        <Label
+                          htmlFor={`discipline-${discipline.id}`}
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          {discipline.name}
+                        </Label>
+                      </div>
+                    ))
                   )}
-                />
-                {errors.disciplineId && (
+                </div>
+                {errors.disciplineIds && (
                   <p className="text-sm text-red-500">
-                    {errors.disciplineId.message}
+                    {errors.disciplineIds.message}
                   </p>
                 )}
               </div>
@@ -316,8 +375,8 @@ export function TeachersTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
-                  <TableHead>Curso</TableHead>
-                  <TableHead>Disciplina</TableHead>
+                  <TableHead>Cursos</TableHead>
+                  <TableHead>Disciplinas</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -327,12 +386,42 @@ export function TeachersTab() {
                   <TableRow key={teacher.id}>
                     <TableCell>{teacher.name}</TableCell>
                     <TableCell>
-                      {teacher.courses.map((c) => c.name).join(", ") ||
-                        "Nenhum curso"}
+                      <div className="flex flex-wrap gap-1">
+                        {teacher.courses.length > 0 ? (
+                          teacher.courses.map((course) => (
+                            <Badge
+                              key={course.id}
+                              variant="outline"
+                              className="text-xs"
+                            >
+                              {course.name}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-muted-foreground">
+                            Nenhum curso
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      {teacher.disciplines.map((d) => d.name).join(", ") ||
-                        "Nenhuma disciplina"}
+                      <div className="flex flex-wrap gap-1">
+                        {teacher.disciplines.length > 0 ? (
+                          teacher.disciplines.map((discipline) => (
+                            <Badge
+                              key={discipline.id}
+                              variant="outline"
+                              className="text-xs"
+                            >
+                              {discipline.name}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-muted-foreground">
+                            Nenhuma disciplina
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge

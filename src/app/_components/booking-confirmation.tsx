@@ -8,6 +8,8 @@ import { Semester } from "./semester-selector";
 import { ptBR } from "date-fns/locale";
 import { useRouter } from "next/navigation";
 import { Class, Discipline } from "@prisma/client";
+import { getUser } from "../_actions/getUser";
+import { useEffect, useState } from "react";
 
 interface BookingConfirmationProps {
   course: Course;
@@ -16,9 +18,6 @@ interface BookingConfirmationProps {
   date: Date;
   details: {
     name: string;
-    email: string;
-    phone: string;
-    notes: string;
     time: string;
   };
   discipline: Discipline;
@@ -33,11 +32,20 @@ export function BookingConfirmation({
   discipline,
   onScheduleAnother,
 }: BookingConfirmationProps) {
+  const [user, setUser] = useState<string | null>(null);
   const router = useRouter();
 
   function handleViewCalendar() {
     router.push("calendar");
   }
+
+  useEffect(() => {
+    async function fetchData() {
+      const { email } = await getUser();
+
+      setUser(email);
+    }
+  }, []);
 
   return (
     <div className="flex flex-col items-center space-y-6 py-4">
@@ -47,7 +55,7 @@ export function BookingConfirmation({
           Seu agendamento está confirmado!
         </h3>
         <p className="text-muted-foreground mt-2">
-          enviamos um e-mail de confirmação para {details.email}
+          enviamos um e-mail de confirmação para {}
         </p>
       </div>
 
@@ -80,16 +88,6 @@ export function BookingConfirmation({
           <span className="font-medium">Nome:</span>
           <span>{details.name}</span>
         </div>
-        <div className="flex justify-between">
-          <span className="font-medium">Telefone:</span>
-          <span>{details.phone}</span>
-        </div>
-        {details.notes && (
-          <div className="pt-2 border-t">
-            <span className="font-medium">Anotações:</span>
-            <p className="mt-1 text-sm">{details.notes}</p>
-          </div>
-        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">

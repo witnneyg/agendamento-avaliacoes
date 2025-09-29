@@ -12,7 +12,6 @@ import { Course, CourseSelector } from "./course-selector";
 import { BookingForm } from "./booking-form";
 import { BookingConfirmation } from "./booking-confirmation";
 import { DisciplineSelector } from "./discipline-selector";
-
 import { ptBR } from "date-fns/locale";
 import { Semester, SemesterSelector } from "./semester-selector";
 import { useAppointments } from "../context/appointment";
@@ -36,9 +35,6 @@ type Step =
 
 type BookingDetails = {
   name: string;
-  email: string;
-  phone: string;
-  notes: string;
   time: string;
 };
 
@@ -148,13 +144,9 @@ export function Scheduling() {
           endTime,
           details: {
             name: details.name,
-            email: details.email,
-            phone: details.phone,
-            notes: details.notes,
             time: details.time,
           },
         };
-
         await createScheduling(data);
       }
       setStep("confirmation");

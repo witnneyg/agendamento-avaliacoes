@@ -1,20 +1,26 @@
+"use client";
+
 import { useState } from "react";
 import {
   AlertDialog,
+  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
+import { cn } from "@/lib/utils";
+import { Edit, Trash2, X, Loader2 } from "lucide-react";
+import { getDepartmentColor } from "@/utils/getDepartamentColor";
 import {
   SchedulingWithRelations,
   UserWithoutEmailVerified,
 } from "../calendar/page";
-import { cn } from "@/lib/utils";
-import { Edit, Trash2, X } from "lucide-react";
 import { EditSchedulingModal } from "./edit-scheduling.modal";
-import { getDepartmentColor } from "@/utils/getDepartamentColor";
 
 const getPeriodLabel = (period: string) => {
   switch (period) {
@@ -40,11 +46,39 @@ export const AppointmentItem = ({
   userSession: UserWithoutEmailVerified | null;
 }) => {
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleSave = (updatedAppointment: Partial<SchedulingWithRelations>) => {
-    // Atualiza no backend
-    console.log("Salvando agendamento editado:", updatedAppointment);
+  // Server action ou lógica de salvar múltiplos horários
+  const handleSave = async (
+    updatedAppointments: Partial<SchedulingWithRelations>[]
+  ) => {
+    // Aqui você chamaria sua server action, ex:
+    // await saveAppointments(updatedAppointments);
+    updatedAppointments.forEach((a) =>
+      console.log("Salvando agendamento editado:", a)
+    );
     setIsEditOpen(false);
+  };
+
+  const handleDeleteClick = () => {
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleCancelDelete = () => {
+    setIsDeleteDialogOpen(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await onDelete(appointment.id);
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error("Erro ao excluir agendamento:", error);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -89,7 +123,7 @@ export const AppointmentItem = ({
               {appointment.userId === userSession?.id && (
                 <Trash2
                   className="h-4 w-4 cursor-pointer"
-                  onClick={() => onDelete(appointment.id)}
+                  onClick={handleDeleteClick}
                 />
               )}
               <AlertDialogCancel className="h-4 w-4 cursor-pointer border-none">
@@ -152,12 +186,45 @@ export const AppointmentItem = ({
                 hour12: false,
               }).format(new Date(appointment.endTime))}
             </div>
-
-            <div className="flex gap-2 items-center">
-              <p className="font-medium">Anotações:</p>
-              {appointment.notes ?? "Sem anotações"}
-            </div>
           </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este agendamento? Esta ação não
+              pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={handleCancelDelete}
+              className="cursor-pointer"
+              disabled={isDeleting}
+            >
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-red-500 hover:bg-red-600 cursor-pointer"
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                "Excluir"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
@@ -166,6 +233,8 @@ export const AppointmentItem = ({
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}
         onSave={handleSave}
+        scheduledTimes={[]}
+        timePeriodId={appointment.course.periods[0].toLowerCase()}
       />
     </>
   );

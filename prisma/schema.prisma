@@ -102,11 +102,9 @@ model Discipline {
 model Scheduling {
   id        String   @id @default(uuid())
   name      String
-  phone     String
   date      DateTime
   startTime DateTime
   endTime   DateTime
-  notes     String?
 
   userId String
   user   User   @relation(fields: [userId], references: [id])

@@ -34,13 +34,7 @@ interface Teacher {
 }
 
 interface BookingFormProps {
-  onSubmit: (details: {
-    name: string;
-    email: string;
-    phone: string;
-    notes: string;
-    time: string;
-  }) => void;
+  onSubmit: (details: { name: string; email: string; time: string }) => void;
   onBack: () => void;
   courseId: string;
   semesterId: string;
@@ -54,35 +48,11 @@ const bookingSchema = z.object({
     .uuid("O nome do professor deve ser obrigatório")
     .nonempty("O nome é obrigatório"),
   time: z.array(z.string()).nonempty("Selecione pelo menos um horário"),
-  email: z
-    .string()
-    .email("Email inválido")
-    .nonempty("O email deve ser obrigatório")
-    .refine(
-      (email) =>
-        email.endsWith("@unicerrado.edu.br") ||
-        email.endsWith("@alunos.unicerrado.edu.br"),
-      {
-        message: "O email deve ser do domínio unicerrado",
-      }
-    ),
-  phone: z
-    .string()
-    .min(10, "O telefone deve ter no mínimo 10 dígitos")
-    .max(15, "O telefone deve ter no máximo 15 dígitos")
-    .regex(
-      /^\+?\d{10,15}$/,
-      "Telefone deve conter apenas números, com ou sem DDI"
-    ),
-  notes: z
-    .string()
-    .max(500, "Notas devem ter no máximo 500 caracteres")
-    .optional(),
 });
 
 type BookingSchema = z.infer<typeof bookingSchema>;
 
-const generateTimeSlotsAndCheckAvailability = (
+export const generateTimeSlotsAndCheckAvailability = (
   date: Date,
   scheduledTimes: Scheduling[] = [],
   timePeriodId: string
@@ -179,7 +149,6 @@ export function BookingForm({
       date,
       time: sortedTimes.join(", "),
     });
-
     onSubmit({
       ...data,
       name: teacher!.name,
@@ -201,6 +170,9 @@ export function BookingForm({
     schedulingTimes,
     timePeriodId
   );
+
+  console.log({ schedulingTimes }, "auwheuawheawuewa schedulingtimes");
+  console.log({ timePeriodId }, "timeperiodid auwheuaw");
 
   useEffect(() => {
     async function fetch() {
@@ -241,7 +213,7 @@ export function BookingForm({
             };
 
             return (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+              <div className="grid grid-cols-2 gap-3 mb-4">
                 {timeSlots.map((slot, index) => (
                   <Button
                     type="button"
@@ -298,44 +270,6 @@ export function BookingForm({
           {errors.teacherId && (
             <p className="text-red-500 text-sm">{errors.teacherId.message}</p>
           )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="Email@example.com"
-            {...register("email")}
-            className={errors.email ? "border-red-500" : ""}
-          />
-          {errors.email && (
-            <p className="text-red-500 text-sm">{errors.email.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="phone">Telefone</Label>
-          <Input
-            id="phone"
-            type="tel"
-            placeholder="(99) 9999-9999"
-            {...register("phone")}
-            className={errors.phone ? "border-red-500" : ""}
-          />
-          {errors.phone && (
-            <p className="text-red-500 text-sm">{errors.phone.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="notes">Notas adicional (Opcional)</Label>
-          <Textarea
-            id="notes"
-            placeholder="Quaisquer pedidos ou informações especiais que devamos saber"
-            {...register("notes")}
-            rows={3}
-          />
         </div>
 
         <Button type="submit" className="w-full cursor-pointer">
