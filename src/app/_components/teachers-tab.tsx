@@ -43,7 +43,16 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Loader2,
+  Search,
+  X,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 
 import { getTeachers } from "@/app/_actions/get-teacher";
 import { getCourses } from "@/app/_actions/get-courses";
@@ -57,6 +66,8 @@ import { updateTeacher } from "../_actions/update-teacher";
 type TeacherWithRelations = Prisma.TeacherGetPayload<{
   include: { courses: true; disciplines: true };
 }>;
+
+type DisciplineWithCourse = Discipline & { courseName: string };
 
 const teacherSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -72,7 +83,7 @@ export function TeachersTab() {
   const [teachers, setTeachers] = useState<TeacherWithRelations[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [availableDisciplines, setAvailableDisciplines] = useState<
-    Discipline[]
+    DisciplineWithCourse[]
   >([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] =
@@ -80,6 +91,10 @@ export function TeachersTab() {
   const [loadingDeleteId, setLoadingDeleteId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [expandedCourses, setExpandedCourses] = useState<Set<string>>(
+    new Set()
+  );
 
   const {
     control,
@@ -94,6 +109,24 @@ export function TeachersTab() {
   });
 
   const selectedCourseIds = watch("courseIds");
+  const selectedDisciplineIds = watch("disciplineIds");
+
+  // Filtrar cursos baseado no termo de busca
+  const filteredCourses = courses.filter((course) =>
+    course.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Agrupar disciplinas por curso
+  const disciplinesByCourse = availableDisciplines.reduce(
+    (acc, discipline) => {
+      if (!acc[discipline.courseName]) {
+        acc[discipline.courseName] = [];
+      }
+      acc[discipline.courseName].push(discipline);
+      return acc;
+    },
+    {} as Record<string, DisciplineWithCourse[]>
+  );
 
   useEffect(() => {
     async function fetchData() {
@@ -120,20 +153,48 @@ export function TeachersTab() {
       }
 
       const disciplinesData = await Promise.all(
-        selectedCourseIds.map(getDisciplinesByCourseId)
+        selectedCourseIds.map(async (courseId) => {
+          const disciplines = await getDisciplinesByCourseId(courseId);
+          const course = courses.find((c) => c.id === courseId);
+          return disciplines.map((discipline) => ({
+            ...discipline,
+            courseName: course?.name || "Curso não encontrado",
+          }));
+        })
       );
-      const allDisciplines = disciplinesData.flat();
 
+      const allDisciplines = disciplinesData.flat();
       setAvailableDisciplines(allDisciplines);
 
-      const validDisciplineIds = watch("disciplineIds").filter((id) =>
+      // Auto-expandir cursos quando selecionados
+      const newExpanded = new Set(expandedCourses);
+      selectedCourseIds.forEach((courseId) => {
+        const course = courses.find((c) => c.id === courseId);
+        if (course) {
+          newExpanded.add(course.name);
+        }
+      });
+      setExpandedCourses(newExpanded);
+
+      // Manter apenas disciplinas válidas selecionadas
+      const validDisciplineIds = selectedDisciplineIds.filter((id) =>
         allDisciplines.some((d) => d.id === id)
       );
       setValue("disciplineIds", validDisciplineIds);
     }
 
     fetchDisciplines();
-  }, [selectedCourseIds, setValue, watch]);
+  }, [selectedCourseIds, setValue, watch, courses]);
+
+  const toggleCourseExpansion = (courseName: string) => {
+    const newExpanded = new Set(expandedCourses);
+    if (newExpanded.has(courseName)) {
+      newExpanded.delete(courseName);
+    } else {
+      newExpanded.add(courseName);
+    }
+    setExpandedCourses(newExpanded);
+  };
 
   const onSubmit = async (data: TeacherForm) => {
     if (isSubmitting) return;
@@ -141,10 +202,7 @@ export function TeachersTab() {
     setIsSubmitting(true);
     try {
       if (editingTeacher) {
-        // update no banco
         const updated = await updateTeacher({ id: editingTeacher.id, ...data });
-
-        // atualiza no estado local
         setTeachers((prev) =>
           prev.map((t) => (t.id === updated.id ? updated : t))
         );
@@ -157,6 +215,8 @@ export function TeachersTab() {
       reset();
       setEditingTeacher(null);
       setIsDialogOpen(false);
+      setSearchTerm("");
+      setExpandedCourses(new Set());
     } finally {
       setIsSubmitting(false);
     }
@@ -170,6 +230,10 @@ export function TeachersTab() {
       disciplineIds: teacher.disciplines.map((d) => d.id),
     });
     setIsDialogOpen(true);
+
+    // Expandir todos os cursos ao editar
+    const coursesToExpand = new Set(teacher.courses.map((c) => c.name));
+    setExpandedCourses(coursesToExpand);
   };
 
   const handleDelete = async (teacherId: string) => {
@@ -182,15 +246,16 @@ export function TeachersTab() {
     }
   };
 
-  const handleCourseToggle = (courseId: string, checked: boolean) => {
+  const handleCourseSelect = (courseId: string) => {
     const currentCourseIds = watch("courseIds");
-    if (checked) {
-      setValue("courseIds", [...currentCourseIds, courseId]);
-    } else {
+
+    if (currentCourseIds.includes(courseId)) {
       setValue(
         "courseIds",
         currentCourseIds.filter((id) => id !== courseId)
       );
+    } else {
+      setValue("courseIds", [...currentCourseIds, courseId]);
     }
   };
 
@@ -203,6 +268,34 @@ export function TeachersTab() {
         "disciplineIds",
         currentDisciplineIds.filter((id) => id !== disciplineId)
       );
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchTerm("");
+  };
+
+  const selectAllDisciplinesInCourse = (courseName: string) => {
+    const courseDisciplines = disciplinesByCourse[courseName] || [];
+    const currentDisciplineIds = watch("disciplineIds");
+
+    const allSelected = courseDisciplines.every((d) =>
+      currentDisciplineIds.includes(d.id)
+    );
+
+    if (allSelected) {
+      // Desmarcar todas
+      const newDisciplineIds = currentDisciplineIds.filter(
+        (id) => !courseDisciplines.some((d) => d.id === id)
+      );
+      setValue("disciplineIds", newDisciplineIds);
+    } else {
+      // Marcar todas
+      const courseDisciplineIds = courseDisciplines.map((d) => d.id);
+      const newDisciplineIds = [
+        ...new Set([...currentDisciplineIds, ...courseDisciplineIds]),
+      ];
+      setValue("disciplineIds", newDisciplineIds);
     }
   };
 
@@ -223,6 +316,8 @@ export function TeachersTab() {
             if (!open) {
               reset({ name: "", courseIds: [], disciplineIds: [] });
               setEditingTeacher(null);
+              setSearchTerm("");
+              setExpandedCourses(new Set());
             }
           }}
         >
@@ -255,29 +350,78 @@ export function TeachersTab() {
 
               <div className="space-y-3">
                 <Label>Cursos</Label>
+
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Buscar cursos..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-10"
+                  />
+                  {searchTerm && (
+                    <X
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 cursor-pointer"
+                      onClick={clearSearch}
+                    />
+                  )}
+                </div>
+
+                {selectedCourseIds.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {selectedCourseIds.map((courseId) => {
+                      const course = courses.find((c) => c.id === courseId);
+                      return course ? (
+                        <Badge
+                          key={courseId}
+                          variant="secondary"
+                          className="flex items-center gap-1"
+                        >
+                          {course.name}
+                          <X
+                            className="h-3 w-3 cursor-pointer"
+                            onClick={() => handleCourseSelect(courseId)}
+                          />
+                        </Badge>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+
                 <div className="border rounded-lg p-4 space-y-3 max-h-48 overflow-y-auto">
-                  {courses.map((course) => (
-                    <div
-                      key={course.id}
-                      className="flex items-center space-x-2"
-                    >
-                      <Checkbox
-                        id={`course-${course.id}`}
-                        checked={
-                          selectedCourseIds?.includes(course.id) || false
-                        }
-                        onCheckedChange={(checked) =>
-                          handleCourseToggle(course.id, checked as boolean)
-                        }
-                      />
-                      <Label
-                        htmlFor={`course-${course.id}`}
-                        className="text-sm font-normal cursor-pointer"
-                      >
-                        {course.name}
-                      </Label>
-                    </div>
-                  ))}
+                  {filteredCourses.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      {searchTerm
+                        ? "Nenhum curso encontrado"
+                        : "Nenhum curso disponível"}
+                    </p>
+                  ) : (
+                    filteredCourses.map((course) => {
+                      const isSelected = selectedCourseIds.includes(course.id);
+                      return (
+                        <div
+                          key={course.id}
+                          className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                            isSelected
+                              ? "bg-primary/10 border-primary"
+                              : "hover:bg-muted/50"
+                          }`}
+                          onClick={() => handleCourseSelect(course.id)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">
+                              {course.name}
+                            </span>
+                            {isSelected && (
+                              <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                                <div className="w-2 h-2 bg-white rounded-full" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
                 {errors.courseIds && (
                   <p className="text-sm text-red-500">
@@ -288,39 +432,89 @@ export function TeachersTab() {
 
               <div className="space-y-3">
                 <Label>Disciplinas</Label>
-                <div className="border rounded-lg p-4 space-y-3 max-h-48 overflow-y-auto">
+                <div className="border rounded-lg p-4 space-y-4 max-h-96 overflow-y-auto">
                   {availableDisciplines.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground text-center py-4">
                       Selecione pelo menos um curso para ver as disciplinas
                       disponíveis
                     </p>
                   ) : (
-                    availableDisciplines.map((discipline) => (
-                      <div
-                        key={discipline.id}
-                        className="flex items-center space-x-2"
-                      >
-                        <Checkbox
-                          id={`discipline-${discipline.id}`}
-                          checked={
-                            watch("disciplineIds")?.includes(discipline.id) ||
-                            false
-                          }
-                          onCheckedChange={(checked) =>
-                            handleDisciplineToggle(
-                              discipline.id,
-                              checked as boolean
-                            )
-                          }
-                        />
-                        <Label
-                          htmlFor={`discipline-${discipline.id}`}
-                          className="text-sm font-normal cursor-pointer"
-                        >
-                          {discipline.name}
-                        </Label>
-                      </div>
-                    ))
+                    Object.entries(disciplinesByCourse).map(
+                      ([courseName, disciplines]) => {
+                        const isExpanded = expandedCourses.has(courseName);
+                        const courseDisciplineIds = disciplines.map(
+                          (d) => d.id
+                        );
+                        const allSelected = courseDisciplineIds.every((id) =>
+                          selectedDisciplineIds.includes(id)
+                        );
+                        const someSelected = courseDisciplineIds.some((id) =>
+                          selectedDisciplineIds.includes(id)
+                        );
+
+                        return (
+                          <div key={courseName} className="space-y-2">
+                            {/* Cabeçalho do curso */}
+                            <div
+                              className="flex items-center justify-between p-2 bg-muted/30 rounded-lg cursor-pointer"
+                              onClick={() => toggleCourseExpansion(courseName)}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Checkbox
+                                  checked={allSelected}
+                                  onCheckedChange={() =>
+                                    selectAllDisciplinesInCourse(courseName)
+                                  }
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                                <span className="font-medium text-sm">
+                                  {courseName}
+                                </span>
+                                <Badge variant="outline" className="text-xs">
+                                  {disciplines.length} disciplinas
+                                </Badge>
+                              </div>
+                              {isExpanded ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </div>
+
+                            {/* Lista de disciplinas (expandida) */}
+                            {isExpanded && (
+                              <div className="ml-6 space-y-2 border-l-2 border-muted pl-4">
+                                {disciplines.map((discipline) => (
+                                  <div
+                                    key={discipline.id}
+                                    className="flex items-center space-x-2 py-1"
+                                  >
+                                    <Checkbox
+                                      id={`discipline-${discipline.id}`}
+                                      checked={selectedDisciplineIds.includes(
+                                        discipline.id
+                                      )}
+                                      onCheckedChange={(checked) =>
+                                        handleDisciplineToggle(
+                                          discipline.id,
+                                          checked as boolean
+                                        )
+                                      }
+                                    />
+                                    <Label
+                                      htmlFor={`discipline-${discipline.id}`}
+                                      className="text-sm font-normal cursor-pointer flex-1"
+                                    >
+                                      {discipline.name}
+                                    </Label>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                    )
                   )}
                 </div>
                 {errors.disciplineIds && (
