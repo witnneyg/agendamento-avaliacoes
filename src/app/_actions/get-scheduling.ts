@@ -13,6 +13,5 @@ export async function getScheduling() {
     },
   });
 
-  console.log({ schedulings });
   return schedulings;
 }

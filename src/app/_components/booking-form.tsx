@@ -19,10 +19,12 @@ import {
 import { useEffect, useState } from "react";
 import { getTeacherByCourse } from "../_actions/get-teacher-by-disciplines";
 import { format, isSameDay } from "date-fns";
-import { Scheduling } from "@prisma/client";
+import { Scheduling, Period } from "@prisma/client";
 import { getSchedulingBySemester } from "../_actions/get-scheduling-by-semesterId";
 import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
+import { getDisciplineById } from "../_actions/get-discipline-by-id";
+import { getTranslatedPeriods } from "../_helpers/getOrderedPeriods";
 
 interface Teacher {
   name: string;
@@ -36,7 +38,8 @@ interface BookingFormProps {
   onBack: () => void;
   courseId: string;
   semesterId: string;
-  timePeriodId: string;
+  disciplineId: string;
+  classId: string;
 }
 
 const bookingSchema = z.object({
@@ -53,10 +56,8 @@ type BookingSchema = z.infer<typeof bookingSchema>;
 export const generateTimeSlotsAndCheckAvailability = (
   date: Date | undefined,
   scheduledTimes: Scheduling[] = [],
-  timePeriodId: string
+  dayPeriods: Period[]
 ) => {
-  let slots: string[] = [];
-
   const morningSlots = [
     "07:30 - 08:20",
     "08:20 - 09:10",
@@ -81,47 +82,60 @@ export const generateTimeSlotsAndCheckAvailability = (
     "21:50 - 22:40",
   ];
 
-  if (timePeriodId === "morning") {
-    slots = morningSlots;
-  } else if (timePeriodId === "afternoon") {
-    slots = afternoonSlots;
-  } else if (timePeriodId === "evening") {
-    slots = eveningSlots;
-  } else {
-    slots = [...morningSlots, ...afternoonSlots, ...eveningSlots];
-  }
+  const periodSlots = {
+    [Period.MORNING]: morningSlots,
+    [Period.AFTERNOON]: afternoonSlots,
+    [Period.EVENING]: eveningSlots,
+  };
 
   if (!date) {
-    return slots.map((slot) => ({ time: slot, available: false }));
+    return Object.entries(periodSlots)
+      .filter(([period]) => dayPeriods.includes(period as Period))
+      .map(([period, slots]) => ({
+        period: period as Period,
+        slots: slots.map((slot) => ({ time: slot, available: false })),
+      }));
   }
 
-  const result = slots.map((slot) => {
-    const [startStr, endStr] = slot.split(" - ");
+  const result = Object.entries(periodSlots)
+    .filter(([period]) => dayPeriods.includes(period as Period))
+    .map(([period, slots]) => {
+      const availableSlots = slots.map((slot) => {
+        const [startStr, endStr] = slot.split(" - ");
 
-    const isTaken = scheduledTimes.some((scheduling) => {
-      try {
-        const schedulingDate = new Date(scheduling.date);
-        const schedulingStartTime = format(
-          new Date(scheduling.startTime),
-          "HH:mm"
-        );
-        const schedulingEndTime = format(new Date(scheduling.endTime), "HH:mm");
+        const isTaken = scheduledTimes.some((scheduling) => {
+          try {
+            const schedulingDate = new Date(scheduling.date);
+            const schedulingStartTime = format(
+              new Date(scheduling.startTime),
+              "HH:mm"
+            );
+            const schedulingEndTime = format(
+              new Date(scheduling.endTime),
+              "HH:mm"
+            );
 
-        const isSameDate = isSameDay(schedulingDate, date);
-        const isSameStartTime = schedulingStartTime === startStr;
-        const isSameEndTime = schedulingEndTime === endStr;
+            const isSameDate = isSameDay(schedulingDate, date);
+            const isSameStartTime = schedulingStartTime === startStr;
+            const isSameEndTime = schedulingEndTime === endStr;
 
-        return isSameDate && isSameStartTime && isSameEndTime;
-      } catch (error) {
-        return false;
-      }
+            return isSameDate && isSameStartTime && isSameEndTime;
+          } catch (error) {
+            return false;
+          }
+        });
+
+        return {
+          time: slot,
+          available: !isTaken,
+        };
+      });
+
+      return {
+        period: period as Period,
+        slots: availableSlots,
+      };
     });
-
-    return {
-      time: slot,
-      available: !isTaken,
-    };
-  });
 
   return result;
 };
@@ -131,11 +145,15 @@ export function BookingForm({
   onBack,
   courseId,
   semesterId,
-  timePeriodId,
+  disciplineId,
+  classId,
 }: BookingFormProps) {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [schedulingTimes, setSchedulingTimes] = useState<Scheduling[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [disciplineData, setDisciplineData] = useState<{
+    dayPeriods: Period[];
+  } | null>(null);
 
   const {
     handleSubmit,
@@ -153,6 +171,21 @@ export function BookingForm({
   });
 
   const watchedDate = watch("date");
+
+  useEffect(() => {
+    async function fetchDisciplineData() {
+      try {
+        const data = await getDisciplineById(disciplineId);
+        setDisciplineData(data);
+      } catch (error) {
+        console.error("Erro ao carregar dados da disciplina:", error);
+      }
+    }
+
+    if (disciplineId) {
+      fetchDisciplineData();
+    }
+  }, [disciplineId]);
 
   async function handleSubmitForm(data: BookingSchema) {
     if (!data.date) {
@@ -228,7 +261,7 @@ export function BookingForm({
   const timeSlots = generateTimeSlotsAndCheckAvailability(
     selectedDate,
     schedulingTimes,
-    timePeriodId
+    disciplineData?.dayPeriods || []
   );
 
   return (
@@ -240,7 +273,7 @@ export function BookingForm({
         className="self-start mb-2"
       >
         <ChevronLeft className="mr-2 h-4 w-4" />
-        Voltar ao período
+        Voltar para disciplinas
       </Button>
 
       <div className="flex flex-col space-y-4">
@@ -266,76 +299,108 @@ export function BookingForm({
 
       <div className="mt-6">
         <Label className="text-lg font-semibold">Horários Disponíveis</Label>
-        <p className="text-sm text-muted-foreground mb-4">
-          {selectedDate
-            ? `Selecione os horários para ${selectedDate.toLocaleDateString("pt-BR")}`
-            : "Selecione uma data para ver os horários disponíveis"}
-        </p>
 
-        <form onSubmit={handleSubmit(handleSubmitForm)} className="space-y-4">
-          <Controller
-            control={control}
-            name="time"
-            render={({ field }) => {
-              const selectedTimes = field.value || [];
+        {!selectedDate ? (
+          <div className="text-center py-8 border rounded-lg bg-muted/20 mt-4">
+            <p className="text-muted-foreground mb-2">
+              ⏰ Selecione uma data para ver os horários disponíveis
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Escolha uma data no calendário acima para visualizar os horários
+            </p>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground mb-4">
+              {`Selecione os horários para ${selectedDate.toLocaleDateString("pt-BR")}`}
+            </p>
 
-              const toggleTime = (slotTime: string) => {
-                if (selectedTimes.includes(slotTime)) {
-                  field.onChange(
-                    selectedTimes.filter((t: string) => t !== slotTime)
+            {disciplineData && (
+              <div className="mb-4">
+                <p className="text-sm text-muted-foreground">
+                  Períodos disponíveis:{" "}
+                  {getTranslatedPeriods(disciplineData.dayPeriods)}
+                </p>
+              </div>
+            )}
+
+            <form
+              onSubmit={handleSubmit(handleSubmitForm)}
+              className="space-y-4"
+            >
+              <Controller
+                control={control}
+                name="time"
+                render={({ field }) => {
+                  const selectedTimes = field.value || [];
+
+                  const toggleTime = (slotTime: string) => {
+                    if (selectedTimes.includes(slotTime)) {
+                      field.onChange(
+                        selectedTimes.filter((t: string) => t !== slotTime)
+                      );
+                    } else {
+                      field.onChange([...selectedTimes, slotTime]);
+                    }
+                  };
+
+                  return (
+                    <div className="space-y-6">
+                      {timeSlots.map((periodGroup) => (
+                        <div key={periodGroup.period} className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-primary rounded-full"></div>
+                            <Label className="text-base font-semibold">
+                              {periodGroup.period === Period.MORNING && "Manhã"}
+                              {periodGroup.period === Period.AFTERNOON &&
+                                "Tarde"}
+                              {periodGroup.period === Period.EVENING && "Noite"}
+                            </Label>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            {periodGroup.slots.map((slot, index) => (
+                              <Button
+                                type="button"
+                                key={index}
+                                variant={
+                                  !slot.available
+                                    ? "ghost"
+                                    : selectedTimes.includes(slot.time)
+                                      ? "default"
+                                      : "outline"
+                                }
+                                className={
+                                  slot.available
+                                    ? "hover:bg-primary/10 cursor-pointer"
+                                    : "opacity-50 cursor-not-allowed"
+                                }
+                                disabled={!slot.available}
+                                onClick={() =>
+                                  slot.available && toggleTime(slot.time)
+                                }
+                              >
+                                {slot.time}
+                                {!slot.available && " (Indisponível)"}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+
+                      {timeSlots.length === 0 && (
+                        <p className="text-center text-muted-foreground py-4">
+                          Nenhum horário disponível para o período selecionado.
+                        </p>
+                      )}
+                    </div>
                   );
-                } else {
-                  field.onChange([...selectedTimes, slotTime]);
-                }
-              };
+                }}
+              />
+              {errors.time && (
+                <p className="text-red-500 text-sm">{errors.time.message}</p>
+              )}
 
-              return (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    {timeSlots.map((slot, index) => (
-                      <Button
-                        type="button"
-                        key={index}
-                        variant={
-                          !slot.available
-                            ? "ghost"
-                            : selectedTimes.includes(slot.time)
-                              ? "default"
-                              : "outline"
-                        }
-                        className={
-                          slot.available && selectedDate
-                            ? "hover:bg-primary/10 cursor-pointer"
-                            : "opacity-50 cursor-not-allowed"
-                        }
-                        disabled={!slot.available || !selectedDate}
-                        onClick={() =>
-                          slot.available &&
-                          selectedDate &&
-                          toggleTime(slot.time)
-                        }
-                      >
-                        {slot.time}
-                        {!slot.available && " (Indisponível)"}
-                      </Button>
-                    ))}
-                  </div>
-
-                  {timeSlots.length === 0 && (
-                    <p className="text-center text-muted-foreground py-4">
-                      Nenhum horário disponível para o período selecionado.
-                    </p>
-                  )}
-                </div>
-              );
-            }}
-          />
-          {errors.time && (
-            <p className="text-red-500 text-sm">{errors.time.message}</p>
-          )}
-
-          {selectedDate && (
-            <>
               <div className="space-y-2">
                 <Label htmlFor="teacher">Selecione o Professor</Label>
                 <Controller
@@ -373,9 +438,9 @@ export function BookingForm({
               >
                 Confirmar Agendamento
               </Button>
-            </>
-          )}
-        </form>
+            </form>
+          </>
+        )}
       </div>
     </>
   );

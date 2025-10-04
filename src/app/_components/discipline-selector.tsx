@@ -4,33 +4,29 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getDisciplinesBySemester } from "../_actions/get-disciplines-by-semester";
-import { TimePeriod } from "./time-period.selector";
+import { getDisciplinesByClass } from "../_actions/get-disciplines-by-class";
 import { Discipline } from "@prisma/client";
+import { getOrderedPeriods } from "../_helpers/getOrderedPeriods";
 
 interface DisciplineSelectorProps {
+  classId: string;
   semesterId: string;
-  timePeriod: TimePeriod;
   onSelectDiscipline: (discipline: Discipline) => void;
   onBack: () => void;
 }
 
 export function DisciplineSelector({
-  semesterId,
-  timePeriod,
+  classId,
   onSelectDiscipline,
   onBack,
 }: DisciplineSelectorProps) {
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const selectedPeriod: "MORNING" | "AFTERNOON" | "EVENING" =
-    timePeriod.id.toUpperCase() as "MORNING" | "AFTERNOON" | "EVENING";
-
   useEffect(() => {
     async function fetch() {
       setIsLoading(true);
       try {
-        const data = await getDisciplinesBySemester(semesterId);
+        const data = await getDisciplinesByClass(classId);
         setDisciplines(data);
       } finally {
         setIsLoading(false);
@@ -38,15 +34,12 @@ export function DisciplineSelector({
     }
 
     fetch();
-  }, [semesterId]);
-
-  console.log({ timePeriod });
-  console.log({ disciplines });
+  }, [classId]);
   return (
     <div className="space-y-4">
       <Button variant="ghost" size="sm" onClick={onBack} className="mb-2">
         <ChevronLeft className="mr-2 h-4 w-4" />
-        Voltar para períodos
+        Voltar para turmas
       </Button>
 
       {isLoading ? (
@@ -56,9 +49,8 @@ export function DisciplineSelector({
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {disciplines
-            .filter((d) => d.dayPeriods.includes(selectedPeriod))
-            .map((discipline) => (
+          {disciplines.length > 0 ? (
+            disciplines.map((discipline) => (
               <Card
                 key={discipline.id}
                 className="cursor-pointer transition-all hover:bg-primary/5"
@@ -67,13 +59,32 @@ export function DisciplineSelector({
                 <CardContent className="p-6 h-full">
                   <div className="flex flex-col space-y-2 h-full justify-between">
                     <h3 className="font-medium text-lg">{discipline.name}</h3>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {getOrderedPeriods(discipline.dayPeriods).map(
+                        (period) => (
+                          <span
+                            key={period.value}
+                            className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded"
+                          >
+                            {period.label}
+                          </span>
+                        )
+                      )}
+                    </div>
                     <Button className="mt-2 w-full cursor-pointer">
                       Selecionar
                     </Button>
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            ))
+          ) : (
+            <div className="col-span-2 text-center py-8">
+              <p className="text-muted-foreground">
+                Nenhuma disciplina disponível para esta turma.
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

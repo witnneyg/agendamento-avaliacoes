@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { format, parse } from "date-fns";
+import { parse } from "date-fns";
 import {
   Card,
   CardContent,
@@ -12,12 +12,10 @@ import { Course, CourseSelector } from "./course-selector";
 import { BookingForm } from "./booking-form";
 import { BookingConfirmation } from "./booking-confirmation";
 import { DisciplineSelector } from "./discipline-selector";
-import { ptBR } from "date-fns/locale";
 import { Semester, SemesterSelector } from "./semester-selector";
 import { useAppointments } from "../context/appointment";
 import { createScheduling } from "../_actions/create-schedule";
-import { TimePeriod, TimePeriodSelector } from "./time-period.selector";
-import { timePeriods } from "../mocks";
+import { TimePeriod } from "./time-period.selector";
 import { getUser } from "../_actions/getUser";
 import { Class, Discipline, User } from "@prisma/client";
 import { ClassSelector } from "./class-selector";
@@ -26,7 +24,6 @@ type Step =
   | "course"
   | "period"
   | "class"
-  | "timePeriod"
   | "discipline"
   | "details"
   | "confirmation";
@@ -34,7 +31,7 @@ type Step =
 type BookingDetails = {
   name: string;
   time: string;
-  date: Date; // Adicione a data aqui
+  date: Date;
 };
 
 export function Scheduling() {
@@ -75,11 +72,6 @@ export function Scheduling() {
 
   const handleSelecteClass = (classes: Class) => {
     setSelectedClass(classes);
-    setStep("timePeriod");
-  };
-
-  const handleTimePeriodSelect = (timePeriod: TimePeriod) => {
-    setSelectedTimePeriod(timePeriod);
     setStep("discipline");
   };
 
@@ -104,23 +96,14 @@ export function Scheduling() {
     for (const slot of slots) {
       const [startStr, endStr] = slot.split(" - ");
 
-      // Corrigir o parsing das datas - usar a data que vem do BookingForm
-      const startTime = parse(
-        startStr,
-        "HH:mm",
-        new Date(details.date) // Use a data do details
-      );
+      const startTime = parse(startStr, "HH:mm", new Date(details.date));
 
-      const endTime = parse(
-        endStr,
-        "HH:mm",
-        new Date(details.date) // Use a data do details
-      );
+      const endTime = parse(endStr, "HH:mm", new Date(details.date));
 
       if (
         selectedCourse &&
         selectedSemester &&
-        details.date && // Use details.date em vez de selectedDate
+        details.date &&
         selectedClass &&
         user &&
         selectedDiscipline
@@ -160,7 +143,6 @@ export function Scheduling() {
           {step === "period" && "Selecione seu periodo"}
           {step === "class" && "Selecione sua turma"}
           {step === "discipline" && "Selecione uma disciplina"}
-          {step === "timePeriod" && "Selecione um período"}
           {step === "details" && "Selecione data e horário"}
           {step === "confirmation" && "Agendamento confirmado"}
         </CardTitle>
@@ -194,34 +176,26 @@ export function Scheduling() {
             onBack={() => setStep("period")}
           />
         )}
-        {step === "timePeriod" && selectedCourse && (
-          <TimePeriodSelector
-            coursePeriod={selectedCourse?.periods}
-            timePeriods={timePeriods}
-            onSelectTimePeriod={handleTimePeriodSelect}
+
+        {step === "discipline" && selectedClass && selectedSemester && (
+          <DisciplineSelector
+            classId={selectedClass.id} // Nova prop
+            semesterId={selectedSemester.id}
+            onSelectDiscipline={handleDisciplineSelect}
             onBack={() => setStep("class")}
           />
         )}
-        {step === "discipline" &&
-          selectedCourse &&
-          selectedSemester &&
-          selectedTimePeriod && (
-            <DisciplineSelector
-              timePeriod={selectedTimePeriod}
-              semesterId={selectedSemester.id}
-              onSelectDiscipline={handleDisciplineSelect}
-              onBack={() => setStep("timePeriod")}
-            />
-          )}
         {step === "details" &&
           selectedCourse &&
           selectedSemester &&
-          selectedTimePeriod && (
+          selectedClass &&
+          selectedDiscipline && (
             <BookingForm
               onSubmit={handleCreateScheduling}
               courseId={selectedCourse.id}
               semesterId={selectedSemester.id}
-              timePeriodId={selectedTimePeriod.id}
+              classId={selectedClass.id}
+              disciplineId={selectedDiscipline.id}
               onBack={() => setStep("discipline")}
             />
           )}
