@@ -15,7 +15,6 @@ import { DisciplineSelector } from "./discipline-selector";
 import { ptBR } from "date-fns/locale";
 import { Semester, SemesterSelector } from "./semester-selector";
 import { useAppointments } from "../context/appointment";
-import { CalendarDate } from "./calendar-date";
 import { createScheduling } from "../_actions/create-schedule";
 import { TimePeriod, TimePeriodSelector } from "./time-period.selector";
 import { timePeriods } from "../mocks";
@@ -29,13 +28,13 @@ type Step =
   | "class"
   | "timePeriod"
   | "discipline"
-  | "date"
   | "details"
   | "confirmation";
 
 type BookingDetails = {
   name: string;
   time: string;
+  date: Date; // Adicione a data aqui
 };
 
 export function Scheduling() {
@@ -53,14 +52,12 @@ export function Scheduling() {
   const [selectedDiscipline, setSelectedDiscipline] = useState<
     Discipline | undefined
   >(undefined);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [user, setUser] = useState<Omit<User, "emailVerified"> | undefined>(
     undefined
   );
   const [selectedTimePeriod, setSelectedTimePeriod] = useState<
     TimePeriod | undefined
   >(undefined);
-  console.log(selectedTimePeriod);
 
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(
     null
@@ -70,6 +67,7 @@ export function Scheduling() {
     setSelectedCourse(course);
     setStep("period");
   };
+
   const handleSelectSemester = (semester: any) => {
     setSelectedSemester(semester);
     setStep("class");
@@ -84,25 +82,17 @@ export function Scheduling() {
     setSelectedTimePeriod(timePeriod);
     setStep("discipline");
   };
+
   const handleDisciplineSelect = (discipline: Discipline) => {
     setSelectedDiscipline(discipline);
-    setStep("date");
-  };
-
-  const handleDateSelect = (date: Date | undefined) => {
-    setSelectedDate(date);
-    if (date) {
-      setStep("details");
-    }
+    setStep("details");
   };
 
   useEffect(() => {
     async function fetch() {
       const data = await getUser();
-
       setUser(data);
     }
-
     fetch();
   }, []);
 
@@ -114,21 +104,23 @@ export function Scheduling() {
     for (const slot of slots) {
       const [startStr, endStr] = slot.split(" - ");
 
+      // Corrigir o parsing das datas - usar a data que vem do BookingForm
       const startTime = parse(
-        `${selectedDate!.toISOString().split("T")[0]} ${startStr}`,
-        "yyyy-MM-dd HH:mm",
-        new Date()
+        startStr,
+        "HH:mm",
+        new Date(details.date) // Use a data do details
       );
+
       const endTime = parse(
-        `${selectedDate!.toISOString().split("T")[0]} ${endStr}`,
-        "yyyy-MM-dd HH:mm",
-        new Date()
+        endStr,
+        "HH:mm",
+        new Date(details.date) // Use a data do details
       );
 
       if (
         selectedCourse &&
         selectedSemester &&
-        selectedDate &&
+        details.date && // Use details.date em vez de selectedDate
         selectedClass &&
         user &&
         selectedDiscipline
@@ -139,7 +131,7 @@ export function Scheduling() {
           disciplineId: selectedDiscipline.id,
           semesterId: selectedSemester.id,
           classId: selectedClass.id,
-          date: new Date(selectedDate),
+          date: new Date(details.date),
           startTime,
           endTime,
           details: {
@@ -149,15 +141,14 @@ export function Scheduling() {
         };
         await createScheduling(data);
       }
-      setStep("confirmation");
     }
+    setStep("confirmation");
   };
 
   const handleReset = () => {
     setStep("course");
     setSelectedCourse(undefined);
     setSelectedDiscipline(undefined);
-    setSelectedDate(undefined);
     setBookingDetails(null);
   };
 
@@ -169,9 +160,8 @@ export function Scheduling() {
           {step === "period" && "Selecione seu periodo"}
           {step === "class" && "Selecione sua turma"}
           {step === "discipline" && "Selecione uma disciplina"}
-          {step === "date" && "Selecione uma data"}
           {step === "timePeriod" && "Selecione um período"}
-          {step === "details" && "Seus detalhes"}
+          {step === "details" && "Selecione data e horário"}
           {step === "confirmation" && "Agendamento confirmado"}
         </CardTitle>
         <CardDescription>
@@ -182,13 +172,7 @@ export function Scheduling() {
           {step === "discipline" &&
             selectedCourse &&
             `Selecione uma disciplina específica em ${selectedCourse.name}`}
-          {step === "date" &&
-            selectedCourse &&
-            `Disciplina selecionada: ${selectedCourse.name}`}
-          {step === "details" &&
-            `Data selecionada: ${format(selectedDate!, "PPPP", {
-              locale: ptBR,
-            })} a ${bookingDetails?.time} horas`}
+          {step === "details" && `Complete os detalhes do seu agendamento`}
           {step === "confirmation" && "Seu agendamento foi agendado"}
         </CardDescription>
       </CardHeader>
@@ -229,30 +213,20 @@ export function Scheduling() {
               onBack={() => setStep("timePeriod")}
             />
           )}
-        {step === "date" && (
-          <CalendarDate
-            date={selectedDate}
-            onSelectDate={handleDateSelect}
-            onBack={() => setStep("discipline")}
-          />
-        )}
         {step === "details" &&
           selectedCourse &&
           selectedSemester &&
-          selectedDate &&
           selectedTimePeriod && (
             <BookingForm
               onSubmit={handleCreateScheduling}
               courseId={selectedCourse.id}
-              date={selectedDate}
-              timePeriodId={selectedTimePeriod.id}
               semesterId={selectedSemester.id}
-              onBack={() => setStep("date")}
+              timePeriodId={selectedTimePeriod.id}
+              onBack={() => setStep("discipline")}
             />
           )}
         {step === "confirmation" &&
           bookingDetails &&
-          selectedDate &&
           selectedClass &&
           selectedCourse &&
           selectedSemester &&
@@ -262,7 +236,7 @@ export function Scheduling() {
               classes={selectedClass}
               semester={selectedSemester}
               discipline={selectedDiscipline}
-              date={selectedDate}
+              date={bookingDetails.date} // Use a data do bookingDetails
               details={bookingDetails}
               onScheduleAnother={handleReset}
             />

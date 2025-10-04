@@ -2,9 +2,7 @@
 
 import type React from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { ChevronLeft } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -20,11 +18,11 @@ import {
 } from "@/components/ui/select";
 import { useEffect, useState } from "react";
 import { getTeacherByCourse } from "../_actions/get-teacher-by-disciplines";
-import { sendSchedulingEmail } from "../_actions/send-scheduling-email";
 import { format, isSameDay } from "date-fns";
 import { Scheduling } from "@prisma/client";
-import { getSchedulingById } from "../_actions/get-scheduling-by-id";
 import { getSchedulingBySemester } from "../_actions/get-scheduling-by-semesterId";
+import { Calendar } from "@/components/ui/calendar";
+import { ptBR } from "date-fns/locale";
 
 interface Teacher {
   name: string;
@@ -34,12 +32,11 @@ interface Teacher {
 }
 
 interface BookingFormProps {
-  onSubmit: (details: { name: string; email: string; time: string }) => void;
+  onSubmit: (details: { name: string; time: string; date: Date }) => void;
   onBack: () => void;
   courseId: string;
   semesterId: string;
   timePeriodId: string;
-  date: Date;
 }
 
 const bookingSchema = z.object({
@@ -48,12 +45,13 @@ const bookingSchema = z.object({
     .uuid("O nome do professor deve ser obrigatório")
     .nonempty("O nome é obrigatório"),
   time: z.array(z.string()).nonempty("Selecione pelo menos um horário"),
+  date: z.date({ required_error: "Selecione uma data" }),
 });
 
 type BookingSchema = z.infer<typeof bookingSchema>;
 
 export const generateTimeSlotsAndCheckAvailability = (
-  date: Date,
+  date: Date | undefined,
   scheduledTimes: Scheduling[] = [],
   timePeriodId: string
 ) => {
@@ -89,16 +87,34 @@ export const generateTimeSlotsAndCheckAvailability = (
     slots = afternoonSlots;
   } else if (timePeriodId === "evening") {
     slots = eveningSlots;
+  } else {
+    slots = [...morningSlots, ...afternoonSlots, ...eveningSlots];
   }
-  return slots.map((slot) => {
+
+  if (!date) {
+    return slots.map((slot) => ({ time: slot, available: false }));
+  }
+
+  const result = slots.map((slot) => {
     const [startStr, endStr] = slot.split(" - ");
 
-    const isTaken = scheduledTimes.some((s) => {
-      return (
-        isSameDay(new Date(s.date), date) &&
-        format(new Date(s.startTime), "HH:mm") === startStr &&
-        format(new Date(s.endTime), "HH:mm") === endStr
-      );
+    const isTaken = scheduledTimes.some((scheduling) => {
+      try {
+        const schedulingDate = new Date(scheduling.date);
+        const schedulingStartTime = format(
+          new Date(scheduling.startTime),
+          "HH:mm"
+        );
+        const schedulingEndTime = format(new Date(scheduling.endTime), "HH:mm");
+
+        const isSameDate = isSameDay(schedulingDate, date);
+        const isSameStartTime = schedulingStartTime === startStr;
+        const isSameEndTime = schedulingEndTime === endStr;
+
+        return isSameDate && isSameStartTime && isSameEndTime;
+      } catch (error) {
+        return false;
+      }
     });
 
     return {
@@ -106,6 +122,8 @@ export const generateTimeSlotsAndCheckAvailability = (
       available: !isTaken,
     };
   });
+
+  return result;
 };
 
 export function BookingForm({
@@ -114,16 +132,18 @@ export function BookingForm({
   courseId,
   semesterId,
   timePeriodId,
-  date,
 }: BookingFormProps) {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [schedulingTimes, setSchedulingTimes] = useState<Scheduling[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   const {
-    register,
     handleSubmit,
     control,
     formState: { errors },
+    setValue,
+    watch,
+    resetField,
   } = useForm<BookingSchema>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
@@ -132,8 +152,20 @@ export function BookingForm({
     },
   });
 
-  async function handleSubmitForm(data: any) {
+  const watchedDate = watch("date");
+
+  async function handleSubmitForm(data: BookingSchema) {
+    if (!data.date) {
+      alert("Por favor, selecione uma data");
+      return;
+    }
+
     const teacher = teachers.find((t) => t.id === data.teacherId);
+
+    if (!teacher) {
+      alert("Professor não encontrado");
+      return;
+    }
 
     const sortedTimes = data.time.sort((a: string, b: string) => {
       const getStartHour = (time: string) => {
@@ -143,45 +175,61 @@ export function BookingForm({
 
       return getStartHour(a) - getStartHour(b);
     });
-    await sendSchedulingEmail({
-      to: data.email,
-      name: teacher!.name,
-      date,
-      time: sortedTimes.join(", "),
-    });
+
     onSubmit({
       ...data,
-      name: teacher!.name,
+      name: teacher.name,
       time: sortedTimes.join(", "),
+      date: data.date,
     });
   }
 
   useEffect(() => {
-    async function fetch() {
-      const data = await getTeacherByCourse(courseId);
-      setTeachers(data);
+    async function fetchTeachers() {
+      try {
+        const data = await getTeacherByCourse(courseId);
+        setTeachers(data);
+      } catch (error) {
+        console.error("❌ Erro ao carregar professores:", error);
+      }
     }
 
-    fetch();
-  }, []);
+    fetchTeachers();
+  }, [courseId]);
+
+  useEffect(() => {
+    async function fetchSchedulingTimes() {
+      try {
+        const data = await getSchedulingBySemester(semesterId);
+        setSchedulingTimes(data);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    fetchSchedulingTimes();
+  }, [semesterId]);
+
+  useEffect(() => {
+    if (selectedDate) {
+      resetField("time");
+    }
+  }, [selectedDate, resetField]);
+
+  function handleSelectDate(date: Date | undefined) {
+    setSelectedDate(date);
+    if (date) {
+      setValue("date", date);
+    } else {
+      resetField("time");
+    }
+  }
 
   const timeSlots = generateTimeSlotsAndCheckAvailability(
-    date,
+    selectedDate,
     schedulingTimes,
     timePeriodId
   );
-
-  console.log({ schedulingTimes }, "auwheuawheawuewa schedulingtimes");
-  console.log({ timePeriodId }, "timeperiodid auwheuaw");
-
-  useEffect(() => {
-    async function fetch() {
-      const data = await getSchedulingBySemester(semesterId);
-      setSchedulingTimes(data);
-    }
-
-    fetch();
-  }, [semesterId]);
 
   return (
     <>
@@ -195,87 +243,140 @@ export function BookingForm({
         Voltar ao período
       </Button>
 
-      <form onSubmit={handleSubmit(handleSubmitForm)} className="space-y-4">
-        <Controller
-          control={control}
-          name="time"
-          render={({ field }) => {
-            const selectedTimes = field.value || [];
-
-            const toggleTime = (slotTime: string) => {
-              if (selectedTimes.includes(slotTime)) {
-                field.onChange(
-                  selectedTimes.filter((t: string) => t !== slotTime)
-                );
-              } else {
-                field.onChange([...selectedTimes, slotTime]);
-              }
-            };
-
-            return (
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                {timeSlots.map((slot, index) => (
-                  <Button
-                    type="button"
-                    key={index}
-                    variant={
-                      !slot.available
-                        ? "ghost"
-                        : selectedTimes.includes(slot.time)
-                          ? "default"
-                          : "outline"
-                    }
-                    className={
-                      slot.available
-                        ? "hover:bg-primary/10 cursor-pointer"
-                        : "opacity-50 cursor-not-allowed"
-                    }
-                    disabled={!slot.available}
-                    onClick={() => slot.available && toggleTime(slot.time)}
-                  >
-                    {slot.time}
-                    {!slot.available && " (Indisponível)"}
-                  </Button>
-                ))}
-              </div>
-            );
-          }}
-        />
-        {errors.time && (
-          <p className="text-red-500 text-sm">{errors.time.message}</p>
-        )}
-        <div className="space-y-2">
-          <Label htmlFor="name">Nome completo</Label>
-          <Controller
-            control={control}
-            name="teacherId"
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o nome" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Professor</SelectLabel>
-                    {teachers.map((teacher) => (
-                      <SelectItem key={teacher.id} value={teacher.id}>
-                        {teacher.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            )}
+      <div className="flex flex-col space-y-4">
+        <div className="flex justify-center">
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={handleSelectDate}
+            disabled={(date) =>
+              date < new Date() || date.getDay() === 0 || date.getDay() === 6
+            }
+            locale={ptBR}
+            className="rounded-md border"
           />
-          {errors.teacherId && (
-            <p className="text-red-500 text-sm">{errors.teacherId.message}</p>
-          )}
         </div>
 
-        <Button type="submit" className="w-full cursor-pointer">
-          Agendar
-        </Button>
-      </form>
+        {errors.date && (
+          <p className="text-red-500 text-sm text-center">
+            {errors.date.message}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-6">
+        <Label className="text-lg font-semibold">Horários Disponíveis</Label>
+        <p className="text-sm text-muted-foreground mb-4">
+          {selectedDate
+            ? `Selecione os horários para ${selectedDate.toLocaleDateString("pt-BR")}`
+            : "Selecione uma data para ver os horários disponíveis"}
+        </p>
+
+        <form onSubmit={handleSubmit(handleSubmitForm)} className="space-y-4">
+          <Controller
+            control={control}
+            name="time"
+            render={({ field }) => {
+              const selectedTimes = field.value || [];
+
+              const toggleTime = (slotTime: string) => {
+                if (selectedTimes.includes(slotTime)) {
+                  field.onChange(
+                    selectedTimes.filter((t: string) => t !== slotTime)
+                  );
+                } else {
+                  field.onChange([...selectedTimes, slotTime]);
+                }
+              };
+
+              return (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    {timeSlots.map((slot, index) => (
+                      <Button
+                        type="button"
+                        key={index}
+                        variant={
+                          !slot.available
+                            ? "ghost"
+                            : selectedTimes.includes(slot.time)
+                              ? "default"
+                              : "outline"
+                        }
+                        className={
+                          slot.available && selectedDate
+                            ? "hover:bg-primary/10 cursor-pointer"
+                            : "opacity-50 cursor-not-allowed"
+                        }
+                        disabled={!slot.available || !selectedDate}
+                        onClick={() =>
+                          slot.available &&
+                          selectedDate &&
+                          toggleTime(slot.time)
+                        }
+                      >
+                        {slot.time}
+                        {!slot.available && " (Indisponível)"}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {timeSlots.length === 0 && (
+                    <p className="text-center text-muted-foreground py-4">
+                      Nenhum horário disponível para o período selecionado.
+                    </p>
+                  )}
+                </div>
+              );
+            }}
+          />
+          {errors.time && (
+            <p className="text-red-500 text-sm">{errors.time.message}</p>
+          )}
+
+          {selectedDate && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="teacher">Selecione o Professor</Label>
+                <Controller
+                  control={control}
+                  name="teacherId"
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Escolha um professor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Professores</SelectLabel>
+                          {teachers.map((teacher) => (
+                            <SelectItem key={teacher.id} value={teacher.id}>
+                              {teacher.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.teacherId && (
+                  <p className="text-red-500 text-sm">
+                    {errors.teacherId.message}
+                  </p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full cursor-pointer"
+                disabled={!selectedDate}
+              >
+                Confirmar Agendamento
+              </Button>
+            </>
+          )}
+        </form>
+      </div>
     </>
   );
 }
