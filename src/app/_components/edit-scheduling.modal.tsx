@@ -12,13 +12,14 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
-import { SchedulingWithRelations } from "../calendar/page";
 import { generateTimeSlotsAndCheckAvailability } from "./booking-form";
+import { SchedulingWithRelations } from "../calendar/page";
+import { Period } from "@prisma/client";
 
 interface EditAppointmentModalProps {
   appointment: SchedulingWithRelations;
   scheduledTimes: SchedulingWithRelations[];
-  timePeriodId: string;
+  disciplineDayPeriods: Period[];
   isOpen: boolean;
   onClose: () => void;
   onSave: (updatedAppointments: Partial<SchedulingWithRelations>[]) => void;
@@ -27,7 +28,7 @@ interface EditAppointmentModalProps {
 export const EditSchedulingModal = ({
   appointment,
   scheduledTimes,
-  timePeriodId,
+  disciplineDayPeriods,
   isOpen,
   onClose,
   onSave,
@@ -46,7 +47,7 @@ export const EditSchedulingModal = ({
   );
 
   const [timeSlots, setTimeSlots] = useState<
-    { time: string; available: boolean }[]
+    { period: Period; slots: { time: string; available: boolean }[] }[]
   >([]);
 
   useEffect(() => {
@@ -54,11 +55,11 @@ export const EditSchedulingModal = ({
       const slots = generateTimeSlotsAndCheckAvailability(
         selectedDate,
         scheduledTimes,
-        timePeriodId
+        disciplineDayPeriods
       );
       setTimeSlots(slots);
     }
-  }, [selectedDate, scheduledTimes, timePeriodId]);
+  }, [selectedDate, scheduledTimes, disciplineDayPeriods]);
 
   const handleTimeSelect = (time: string) => {
     setFormData((prev) => {
@@ -116,28 +117,54 @@ export const EditSchedulingModal = ({
         </div>
 
         <div className="grid gap-2 mt-4">
-          <Label>Horários</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {timeSlots.map((slot) => (
-              <Button
-                key={slot.time}
-                type="button"
-                variant={
-                  formData.time.includes(slot.time) ? "default" : "outline"
-                }
-                disabled={!slot.available}
-                className={
-                  slot.available
-                    ? "cursor-pointer"
-                    : "opacity-50 cursor-not-allowed"
-                }
-                onClick={() => slot.available && handleTimeSelect(slot.time)}
-              >
-                {slot.time}
-                {!slot.available && " (Indisponível)"}
-              </Button>
-            ))}
-          </div>
+          <Label>Horários Disponíveis</Label>
+
+          {timeSlots.length === 0 ? (
+            <p className="text-center text-muted-foreground py-4">
+              Nenhum horário disponível para a data selecionada.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {timeSlots.map((periodGroup) => (
+                <div key={periodGroup.period} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
+                    <Label className="text-sm font-semibold">
+                      {periodGroup.period === Period.MORNING && "Manhã"}
+                      {periodGroup.period === Period.AFTERNOON && "Tarde"}
+                      {periodGroup.period === Period.EVENING && "Noite"}
+                    </Label>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {periodGroup.slots.map((slot) => (
+                      <Button
+                        key={slot.time}
+                        type="button"
+                        variant={
+                          formData.time.includes(slot.time)
+                            ? "default"
+                            : "outline"
+                        }
+                        disabled={!slot.available}
+                        className={
+                          slot.available
+                            ? "cursor-pointer"
+                            : "opacity-50 cursor-not-allowed"
+                        }
+                        onClick={() =>
+                          slot.available && handleTimeSelect(slot.time)
+                        }
+                      >
+                        {slot.time}
+                        {!slot.available && " (Indisponível)"}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-2 mt-4">

@@ -234,7 +234,7 @@ export const AppointmentItem = ({
         onClose={() => setIsEditOpen(false)}
         onSave={handleSave}
         scheduledTimes={[]}
-        timePeriodId={appointment.course.periods[0].toLowerCase()}
+        disciplineDayPeriods={appointment.discipline.dayPeriods}
       />
     </>
   );
