@@ -100,7 +100,7 @@ export default function DisciplinesTab() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  console.log({ courses });
+
   const {
     control,
     handleSubmit,
@@ -141,15 +141,13 @@ export default function DisciplinesTab() {
     async function fetchSemesters() {
       if (!selectedCourseId) {
         setSemesters([]);
-        setValue("semesterId", "");
         return;
       }
       const semestersData = await getSemesterByCourse(selectedCourseId);
       setSemesters(semestersData);
-      setValue("semesterId", "");
     }
     fetchSemesters();
-  }, [selectedCourseId, setValue]);
+  }, [selectedCourseId]);
 
   useEffect(() => {
     async function fetchClasses() {
@@ -161,7 +159,7 @@ export default function DisciplinesTab() {
       setClasses(classesData);
     }
     fetchClasses();
-  }, [selectedSemesterId, setValue]);
+  }, [selectedSemesterId]);
 
   const onSubmit = async (data: DisciplineFormData) => {
     if (isSubmitting) return;
@@ -192,18 +190,24 @@ export default function DisciplinesTab() {
       reset();
       setEditingDiscispline(null);
       setIsDialogOpen(false);
+    } catch (error) {
+      console.error("Erro ao salvar disciplina:", error);
+      alert("Erro ao salvar disciplina. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleEdit = (disciplina: DisciplineWithRelations) => {
+    const disciplinaCourse = disciplina.courses[0];
+
     reset({
       name: disciplina.name ?? "",
-      courseId: disciplina.courses[0].id ?? "",
+      courseId: disciplinaCourse?.id ?? "",
       semesterId: disciplina.semesterId,
       dayPeriods: disciplina.dayPeriods ?? [],
     });
+
     setEditingDiscispline(disciplina);
     setIsDialogOpen(true);
   };
@@ -223,6 +227,9 @@ export default function DisciplinesTab() {
         prev.filter((d) => d.id !== disciplinaParaDeletar.id)
       );
       setDisciplinaParaDeletar(null);
+    } catch (error) {
+      console.error("Erro ao deletar disciplina:", error);
+      alert("Erro ao deletar disciplina. Tente novamente.");
     } finally {
       setIsDeleting(false);
     }
@@ -365,6 +372,8 @@ export default function DisciplinesTab() {
                           const isDisabled = !availablePeriods.includes(
                             option.value
                           );
+                          const isChecked =
+                            field.value?.includes(option.value) || false;
 
                           return (
                             <label
@@ -376,7 +385,7 @@ export default function DisciplinesTab() {
                             >
                               <input
                                 type="checkbox"
-                                checked={field.value?.includes(option.value)}
+                                checked={isChecked}
                                 disabled={isDisabled}
                                 onChange={(e) => {
                                   if (e.target.checked) {
@@ -392,6 +401,7 @@ export default function DisciplinesTab() {
                                     );
                                   }
                                 }}
+                                className="w-4 h-4"
                               />
                               {option.label}
                             </label>
@@ -471,7 +481,7 @@ export default function DisciplinesTab() {
                       {disciplina.name}
                     </TableCell>
                     <TableCell>
-                      {disciplina.courses.map((item) => item.name)}
+                      {disciplina.courses.map((item) => item.name).join(", ")}
                     </TableCell>
                     <TableCell>{disciplina.semester.name}</TableCell>
                     <TableCell>

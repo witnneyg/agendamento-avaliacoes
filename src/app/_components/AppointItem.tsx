@@ -49,6 +49,9 @@ export const AppointmentItem = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Verifica se o usuário atual é o dono do agendamento
+  const isOwner = appointment.userId === userSession?.id;
+
   // Server action ou lógica de salvar múltiplos horários
   const handleSave = async (
     updatedAppointments: Partial<SchedulingWithRelations>[]
@@ -59,6 +62,10 @@ export const AppointmentItem = ({
       console.log("Salvando agendamento editado:", a)
     );
     setIsEditOpen(false);
+  };
+
+  const handleEditClick = () => {
+    setIsEditOpen(true);
   };
 
   const handleDeleteClick = () => {
@@ -116,17 +123,21 @@ export const AppointmentItem = ({
         <AlertDialogContent>
           <AlertDialogHeader>
             <div className="flex gap-4 justify-end">
-              <Edit
-                className="h-4 w-4 cursor-pointer"
-                onClick={() => setIsEditOpen(true)}
-              />
-              {appointment.userId === userSession?.id && (
+              {/* Ícone de edição - aparece apenas para o dono do agendamento */}
+              {isOwner && (
+                <Edit
+                  className="h-4 w-4 cursor-pointer hover:text-blue-500 transition-colors"
+                  onClick={handleEditClick}
+                />
+              )}
+              {/* Ícone de exclusão - aparece apenas para o dono do agendamento */}
+              {isOwner && (
                 <Trash2
-                  className="h-4 w-4 cursor-pointer"
+                  className="h-4 w-4 cursor-pointer hover:text-red-500 transition-colors"
                   onClick={handleDeleteClick}
                 />
               )}
-              <AlertDialogCancel className="h-4 w-4 cursor-pointer border-none">
+              <AlertDialogCancel className="h-4 w-4 cursor-pointer border-none hover:bg-gray-100 rounded transition-colors">
                 <X />
               </AlertDialogCancel>
             </div>
@@ -190,6 +201,7 @@ export const AppointmentItem = ({
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Dialog de confirmação de exclusão */}
       <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
@@ -228,6 +240,7 @@ export const AppointmentItem = ({
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Modal de edição */}
       <EditSchedulingModal
         appointment={appointment}
         isOpen={isEditOpen}

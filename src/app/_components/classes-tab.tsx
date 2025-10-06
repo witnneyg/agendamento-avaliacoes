@@ -123,21 +123,20 @@ export function ClassesTab() {
     fetchData();
   }, []);
 
+  // useEffect simplificado - sem setValue dentro
   useEffect(() => {
     if (!selectedCourseId) {
       setSemesters([]);
-      setValue("semesterId", "");
       return;
     }
 
     async function fetchSemesters() {
       const semestersData = await getSemesterByCourse(selectedCourseId);
       setSemesters(semestersData);
-      setValue("semesterId", "");
     }
 
     fetchSemesters();
-  }, [selectedCourseId, setValue]);
+  }, [selectedCourseId]); // Apenas selectedCourseId como dependência
 
   useEffect(() => {
     if (!selectedSemesterId) {
@@ -152,7 +151,7 @@ export function ClassesTab() {
     }
 
     fetchDisciplines();
-  }, [selectedSemesterId, setValue]);
+  }, [selectedSemesterId]);
 
   const onSubmit = async (data: ClassForm) => {
     if (isSubmitting) return;

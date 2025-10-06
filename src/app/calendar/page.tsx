@@ -2,12 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { format, startOfWeek, addDays, isSameDay } from "date-fns";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  CalendarXIcon as Calendar1Icon,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Filter } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -20,6 +15,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
 import { NavBar } from "../_components/navbar";
@@ -63,6 +65,7 @@ export default function CalendarPage() {
   );
   const [user, setUser] = useState<UserWithoutEmailVerified | null>(null);
   const [view, setView] = useState<"week" | "day">("week");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const router = useRouter();
   const daysToShow = view === "week" ? 7 : 1;
   const startDate =
@@ -128,68 +131,74 @@ export default function CalendarPage() {
     );
   };
 
+  const SidebarContent = () => (
+    <>
+      <div className="mb-6">
+        <Button
+          onClick={handleNewAppointment}
+          className="w-full flex items-center gap-2 cursor-pointer"
+        >
+          <Plus className="h-4 w-4" />
+          Novo Agendamento
+        </Button>
+      </div>
+
+      <div className="mb-6">
+        <Calendar
+          mode="single"
+          selected={currentDate}
+          onSelect={(date) => date && setCurrentDate(date)}
+          className="rounded-md border"
+          locale={ptBR}
+        />
+      </div>
+
+      <div>
+        <h3 className="font-medium mb-4">Cursos</h3>
+        <div className="space-y-2">
+          {academicCourses.map((course) => (
+            <div key={course.id} className="flex items-center space-x-2">
+              <Checkbox
+                id={course.id}
+                checked={visibleDepartments[course.id]}
+                onCheckedChange={() => toggleDepartment(course.id)}
+                className="cursor-pointer"
+              />
+              <div
+                className={cn(
+                  "w-3 h-3 rounded-full flex-shrink-0",
+                  getDepartmentColor(course.name)
+                )}
+              />
+              <label
+                htmlFor={course.id}
+                className="text-sm font-medium leading-none cursor-pointer"
+              >
+                {course.name}
+              </label>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <div className="min-h-screen flex flex-col">
       <NavBar />
       <div className="flex flex-1">
-        <aside className="w-72 border-r p-4 flex flex-col overflow-y-auto">
-          <div className="mb-6">
-            <Button
-              onClick={handleNewAppointment}
-              className="w-full flex items-center gap-2 cursor-pointer"
-            >
-              <Plus className="h-4 w-4" />
-              Novo Agendamento
-            </Button>
-          </div>
-
-          <div className="mb-6">
-            <Calendar
-              mode="single"
-              selected={currentDate}
-              onSelect={(date) => date && setCurrentDate(date)}
-              className="rounded-md border "
-              locale={ptBR}
-            />
-          </div>
-
-          <div>
-            <h3 className="font-medium mb-4">Cursos</h3>
-            <div className="space-y-2">
-              {academicCourses.map((course) => (
-                <div key={course.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={course.id}
-                    checked={visibleDepartments[course.id]}
-                    onCheckedChange={() => toggleDepartment(course.id)}
-                    className="cursor-pointer"
-                  />
-                  <div
-                    className={cn(
-                      "w-3 h-3 rounded-full flex-shrink-0",
-                      getDepartmentColor(course.name)
-                    )}
-                  />
-                  <label
-                    htmlFor={course.id}
-                    className="text-sm font-medium leading-none cursor-pointer"
-                  >
-                    {course.name}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
+        <aside className="hidden lg:block w-72 border-r p-4 flex-col overflow-y-auto">
+          <SidebarContent />
         </aside>
 
         <main className="flex-1 flex flex-col">
-          <div className="p-4 border-b flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="p-2 sm:p-4 border-b flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
               <Button
                 variant="outline"
                 size="icon"
                 onClick={navigatePrevious}
-                className="cursor-pointer bg-transparent"
+                className="cursor-pointer bg-transparent flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -197,28 +206,48 @@ export default function CalendarPage() {
                 variant="outline"
                 size="icon"
                 onClick={navigateNext}
-                className="cursor-pointer bg-transparent"
+                className="cursor-pointer bg-transparent flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <h2 className="text-xl font-semibold ml-2">
+              <h2 className="text-sm sm:text-xl font-semibold ml-1 sm:ml-2 truncate">
                 {view === "week"
-                  ? `${format(days[0], "MMMM d", { locale: ptBR })} - ${format(
+                  ? `${format(days[0], "MMM d", { locale: ptBR })} - ${format(
                       days[days.length - 1],
-                      "MMMM d, yyyy",
+                      "MMM d, yyyy",
                       {
                         locale: ptBR,
                       }
                     )}`
-                  : format(currentDate, "MMMM d, yyyy", { locale: ptBR })}
+                  : format(currentDate, "MMM d, yyyy", { locale: ptBR })}
               </h2>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-1 sm:gap-2 flex-shrink-0">
+              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="lg:hidden cursor-pointer h-8 w-8 sm:h-10 sm:w-10 bg-transparent"
+                  >
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-80 overflow-y-auto">
+                  <SheetHeader>
+                    <SheetTitle>Filtros</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-6">
+                    <SidebarContent />
+                  </div>
+                </SheetContent>
+              </Sheet>
+
               <Button
                 variant={view === "day" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setView("day")}
-                className="cursor-pointer"
+                className="cursor-pointer h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3"
               >
                 Dia
               </Button>
@@ -226,22 +255,22 @@ export default function CalendarPage() {
                 variant={view === "week" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setView("week")}
-                className="cursor-pointer"
+                className="cursor-pointer h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3 hidden sm:inline-flex"
               >
                 Semana
               </Button>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto h-full">
-            <div className="flex h-full">
-              <div className="w-16 flex-shrink-0 border-r">
-                <div className="h-12 border-b text-xs text-gray-500 flex items-center justify-center">
+          <div className="flex-1 overflow-auto h-full">
+            <div className="flex h-full min-w-[600px] lg:min-w-0">
+              <div className="w-12 sm:w-16 flex-shrink-0 border-r">
+                <div className="h-10 sm:h-12 border-b text-[10px] sm:text-xs text-gray-500 flex items-center justify-center">
                   GMT-03
                 </div>
                 {timeSlots.map((hour) => (
-                  <div key={hour} className="h-12 border-b relative">
-                    <span className="absolute -top-2 right-2 text-xs text-gray-500">
+                  <div key={hour} className="h-12 sm:h-12 border-b relative">
+                    <span className="absolute -top-2 right-1 sm:right-2 text-[10px] sm:text-xs text-gray-500">
                       {String(hour).padStart(2, "0")}:00
                     </span>
                   </div>
@@ -252,10 +281,10 @@ export default function CalendarPage() {
                 {days.map((day, dayIndex) => (
                   <div
                     key={dayIndex}
-                    className="flex-1 min-w-[120px] border-r "
+                    className="flex-1 min-w-[80px] sm:min-w-[120px] border-r"
                   >
-                    <div className="h-12 border-b flex flex-col items-center justify-center">
-                      <div className="text-xs text-gray-500">
+                    <div className="h-10 sm:h-12 border-b flex flex-col items-center justify-center">
+                      <div className="text-[10px] sm:text-xs text-gray-500">
                         {format(day, "EEE", { locale: ptBR })
                           .charAt(0)
                           .toUpperCase() +
@@ -263,7 +292,7 @@ export default function CalendarPage() {
                       </div>
                       <div
                         className={cn(
-                          "flex items-center justify-center w-8 h-8 rounded-full mt-1",
+                          "flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full mt-1 text-xs sm:text-sm",
                           isSameDay(day, new Date())
                             ? "bg-primary text-primary-foreground"
                             : ""
@@ -292,11 +321,10 @@ export default function CalendarPage() {
                           return (
                             <div
                               key={hour}
-                              className="h-12 border-b relative flex"
+                              className="h-12 sm:h-12 border-b relative flex"
                             >
-                              {/* First appointment */}
-                              <div className="absolute left-0 right-0 mx-1 top-0 h-full ">
-                                <div className="relative h-full flex ">
+                              <div className="absolute left-0 right-0 mx-0.5 sm:mx-1 top-0 h-full">
+                                <div className="relative h-full flex">
                                   <AppointmentItem
                                     appointment={firstAppointment}
                                     onDelete={handleDeleteSchedule}
@@ -306,14 +334,14 @@ export default function CalendarPage() {
                                   {remainingCount > 0 && (
                                     <Dialog>
                                       <DialogTrigger asChild>
-                                        <div className="absolute h-5 w-5 bottom-2 right-0 bg-white text-black text-xs rounded-full w flex items-center justify-center cursor-pointer hover:bg-gray-300 border border-white shadow-sm">
+                                        <div className="absolute h-4 w-4 sm:h-5 sm:w-5 bottom-1 sm:bottom-2 right-0 bg-white text-black text-[10px] sm:text-xs rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-300 border border-white shadow-sm">
                                           +{remainingCount}
                                         </div>
                                       </DialogTrigger>
 
-                                      <DialogContent className="max-w-md">
+                                      <DialogContent className="max-w-[90vw] sm:max-w-md">
                                         <DialogHeader>
-                                          <DialogTitle>
+                                          <DialogTitle className="text-sm sm:text-base">
                                             Agendamentos -{" "}
                                             {format(day, "d 'de' MMMM", {
                                               locale: ptBR,
@@ -323,7 +351,7 @@ export default function CalendarPage() {
                                           </DialogTitle>
                                         </DialogHeader>
 
-                                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                                        <div className="space-y-2 max-h-[60vh] sm:max-h-96 overflow-y-auto">
                                           {appointmentsInSlot.map(
                                             (appointment) => (
                                               <AppointmentItem
@@ -347,7 +375,7 @@ export default function CalendarPage() {
                         return (
                           <div
                             key={hour}
-                            className="h-12 border-b relative"
+                            className="h-12 sm:h-12 border-b relative"
                           ></div>
                         );
                       })}
