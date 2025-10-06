@@ -3,7 +3,7 @@
 import type React from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, AlertTriangle } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,6 +25,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { getDisciplineById } from "../_actions/get-discipline-by-id";
 import { getTranslatedPeriods } from "../_helpers/getOrderedPeriods";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Teacher {
   name: string;
@@ -140,6 +141,31 @@ export const generateTimeSlotsAndCheckAvailability = (
   return result;
 };
 
+const checkExistingAppointments = (
+  date: Date | undefined,
+  scheduledTimes: Scheduling[],
+  courseId: string,
+  classId: string,
+  disciplineId: string
+): { hasConflict: boolean; existingCount: number } => {
+  if (!date) return { hasConflict: false, existingCount: 0 };
+
+  const existingAppointments = scheduledTimes.filter((scheduling) => {
+    const schedulingDate = new Date(scheduling.date);
+    return (
+      isSameDay(schedulingDate, date) &&
+      scheduling.courseId === courseId &&
+      scheduling.classId === classId &&
+      scheduling.disciplineId === disciplineId
+    );
+  });
+
+  return {
+    hasConflict: existingAppointments.length > 0,
+    existingCount: existingAppointments.length,
+  };
+};
+
 export function BookingForm({
   onSubmit,
   onBack,
@@ -154,6 +180,10 @@ export function BookingForm({
   const [disciplineData, setDisciplineData] = useState<{
     dayPeriods: Period[];
   } | null>(null);
+  const [appointmentConflict, setAppointmentConflict] = useState<{
+    hasConflict: boolean;
+    existingCount: number;
+  }>({ hasConflict: false, existingCount: 0 });
 
   const {
     handleSubmit,
@@ -187,10 +217,37 @@ export function BookingForm({
     }
   }, [disciplineId]);
 
+  useEffect(() => {
+    const conflict = checkExistingAppointments(
+      selectedDate,
+      schedulingTimes,
+      courseId,
+      classId,
+      disciplineId
+    );
+    setAppointmentConflict(conflict);
+  }, [selectedDate, schedulingTimes, courseId, classId, disciplineId]);
+
   async function handleSubmitForm(data: BookingSchema) {
     if (!data.date) {
       alert("Por favor, selecione uma data");
       return;
+    }
+
+    const finalConflict = checkExistingAppointments(
+      data.date,
+      schedulingTimes,
+      courseId,
+      classId,
+      disciplineId
+    );
+
+    if (finalConflict.hasConflict) {
+      const confirmMessage = `Já existem ${finalConflict.existingCount}avaliação(ões) para esta disciplina no mesmo dia. Deseja continuar mesmo assim?`;
+
+      if (!confirm(confirmMessage)) {
+        return;
+      }
     }
 
     const teacher = teachers.find((t) => t.id === data.teacherId);
@@ -314,6 +371,20 @@ export function BookingForm({
             <p className="text-sm text-muted-foreground mb-4">
               {`Selecione os horários para ${selectedDate.toLocaleDateString("pt-BR")}`}
             </p>
+
+            {appointmentConflict.hasConflict && (
+              <Alert className="mb-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  ⚠️ Atenção! Já existe {appointmentConflict.existingCount}
+                  {appointmentConflict.existingCount === 1
+                    ? " avaliação"
+                    : " avaliações"}{" "}
+                  agendada(s) para esta turma no mesmo dia. O recomendado é ter
+                  apenas 1 avaliação por dia.
+                </AlertDescription>
+              </Alert>
+            )}
 
             {disciplineData && (
               <div className="mb-4">
