@@ -3,21 +3,11 @@
 import type React from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { ChevronLeft, AlertTriangle } from "lucide-react";
+import { ChevronLeft, AlertTriangle, User } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useEffect, useState } from "react";
-import { getTeacherByCourse } from "../_actions/get-teacher-by-disciplines";
 import { format, isSameDay } from "date-fns";
 import { Scheduling, Period } from "@prisma/client";
 import { getSchedulingBySemester } from "../_actions/get-scheduling-by-semesterId";
@@ -26,6 +16,7 @@ import { ptBR } from "date-fns/locale";
 import { getDisciplineById } from "../_actions/get-discipline-by-id";
 import { getTranslatedPeriods } from "../_helpers/getOrderedPeriods";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSession } from "next-auth/react";
 
 interface Teacher {
   name: string;
@@ -35,7 +26,12 @@ interface Teacher {
 }
 
 interface BookingFormProps {
-  onSubmit: (details: { name: string; time: string; date: Date }) => void;
+  onSubmit: (details: {
+    name: string;
+    time: string;
+    date: Date;
+    teacherId: string;
+  }) => void;
   onBack: () => void;
   courseId: string;
   semesterId: string;
@@ -44,10 +40,7 @@ interface BookingFormProps {
 }
 
 const bookingSchema = z.object({
-  teacherId: z
-    .string()
-    .uuid("O nome do professor deve ser obrigatório")
-    .nonempty("O nome é obrigatório"),
+  teacherId: z.string().min(1, "Professor é obrigatório"),
   time: z.array(z.string()).nonempty("Selecione pelo menos um horário"),
   date: z.date({ required_error: "Selecione uma data" }),
 });
@@ -174,7 +167,6 @@ export function BookingForm({
   disciplineId,
   classId,
 }: BookingFormProps) {
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [schedulingTimes, setSchedulingTimes] = useState<Scheduling[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [disciplineData, setDisciplineData] = useState<{
@@ -184,6 +176,9 @@ export function BookingForm({
     hasConflict: boolean;
     existingCount: number;
   }>({ hasConflict: false, existingCount: 0 });
+
+  const { data: session } = useSession();
+  const user = session?.user;
 
   const {
     handleSubmit,
@@ -196,9 +191,15 @@ export function BookingForm({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
       time: [],
-      teacherId: "",
+      teacherId: user?.id || "",
     },
   });
+
+  useEffect(() => {
+    if (user?.id) {
+      setValue("teacherId", user.id);
+    }
+  }, [user, setValue]);
 
   const watchedDate = watch("date");
 
@@ -243,17 +244,15 @@ export function BookingForm({
     );
 
     if (finalConflict.hasConflict) {
-      const confirmMessage = `Já existem ${finalConflict.existingCount}avaliação(ões) para esta disciplina no mesmo dia. Deseja continuar mesmo assim?`;
+      const confirmMessage = `Já existem ${finalConflict.existingCount} avaliação(ões) para esta disciplina no mesmo dia. Deseja continuar mesmo assim?`;
 
       if (!confirm(confirmMessage)) {
         return;
       }
     }
 
-    const teacher = teachers.find((t) => t.id === data.teacherId);
-
-    if (!teacher) {
-      alert("Professor não encontrado");
+    if (!user?.name || !data.teacherId) {
+      alert("Usuário não encontrado");
       return;
     }
 
@@ -267,25 +266,12 @@ export function BookingForm({
     });
 
     onSubmit({
-      ...data,
-      name: teacher.name,
+      name: user.name,
+      teacherId: data.teacherId,
       time: sortedTimes.join(", "),
       date: data.date,
     });
   }
-
-  useEffect(() => {
-    async function fetchTeachers() {
-      try {
-        const data = await getTeacherByCourse(courseId);
-        setTeachers(data);
-      } catch (error) {
-        console.error("❌ Erro ao carregar professores:", error);
-      }
-    }
-
-    fetchTeachers();
-  }, [courseId]);
 
   useEffect(() => {
     async function fetchSchedulingTimes() {
@@ -395,10 +381,29 @@ export function BookingForm({
               </div>
             )}
 
+            {user && (
+              <div className="mb-4 p-3 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium">Professor:</span>
+                  <span className="text-sm font-semibold text-blue-700">
+                    {user.name}
+                  </span>
+                </div>
+                <input type="hidden" value={user.id} />
+              </div>
+            )}
+
             <form
               onSubmit={handleSubmit(handleSubmitForm)}
               className="space-y-4"
             >
+              <input
+                type="hidden"
+                {...control.register("teacherId")}
+                value={user?.id || ""}
+              />
+
               <Controller
                 control={control}
                 name="time"
@@ -472,39 +477,9 @@ export function BookingForm({
                 <p className="text-red-500 text-sm">{errors.time.message}</p>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="teacher">Selecione o Professor</Label>
-                <Controller
-                  control={control}
-                  name="teacherId"
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Escolha um professor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Professores</SelectLabel>
-                          {teachers.map((teacher) => (
-                            <SelectItem key={teacher.id} value={teacher.id}>
-                              {teacher.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.teacherId && (
-                  <p className="text-red-500 text-sm">
-                    {errors.teacherId.message}
-                  </p>
-                )}
-              </div>
-
               <Button
                 type="submit"
-                className="w-full cursor-pointer"
+                className="w-full cursor-pointer mt-2"
                 disabled={!selectedDate}
               >
                 Confirmar Agendamento

@@ -179,7 +179,7 @@ export function Scheduling() {
 
         {step === "discipline" && selectedClass && selectedSemester && (
           <DisciplineSelector
-            classId={selectedClass.id} // Nova prop
+            classId={selectedClass.id}
             semesterId={selectedSemester.id}
             onSelectDiscipline={handleDisciplineSelect}
             onBack={() => setStep("class")}
