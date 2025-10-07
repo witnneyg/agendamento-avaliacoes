@@ -52,6 +52,43 @@ export type UserWithoutEmailVerified = Omit<User, "emailVerified">;
 
 const timeSlots = Array.from({ length: 17 }, (_, i) => i + 7);
 
+const loadVisibleDepartmentsFromStorage = (courses: Course[]) => {
+  if (typeof window === "undefined") {
+    return courses.reduce((acc, course) => ({ ...acc, [course.id]: true }), {});
+  }
+
+  try {
+    const stored = localStorage.getItem("visibleDepartments");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return courses.reduce(
+        (acc, course) => ({
+          ...acc,
+          [course.id]:
+            parsed[course.id] !== undefined ? parsed[course.id] : true,
+        }),
+        {}
+      );
+    }
+  } catch (error) {
+    console.error("Erro ao carregar do localStorage:", error);
+  }
+
+  return courses.reduce((acc, course) => ({ ...acc, [course.id]: true }), {});
+};
+
+const saveVisibleDepartmentsToStorage = (
+  departments: Record<string, boolean>
+) => {
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem("visibleDepartments", JSON.stringify(departments));
+    } catch (error) {
+      console.error("Erro ao salvar no localStorage:", error);
+    }
+  }
+};
+
 export default function CalendarPage() {
   const [academicCourses, setAcademicCourses] = useState<Course[]>([]);
   const [schedulingCourses, setSchedulingCourses] = useState<
@@ -60,9 +97,7 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [visibleDepartments, setVisibleDepartments] = useState<
     Record<string, boolean>
-  >(
-    academicCourses.reduce((acc, course) => ({ ...acc, [course.id]: true }), {})
-  );
+  >({});
   const [user, setUser] = useState<UserWithoutEmailVerified | null>(null);
   const [view, setView] = useState<"week" | "day">("week");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -92,10 +127,14 @@ export default function CalendarPage() {
   };
 
   const toggleDepartment = (departmentId: string) => {
-    setVisibleDepartments((prev) => ({
-      ...prev,
-      [departmentId]: !prev[departmentId],
-    }));
+    setVisibleDepartments((prev) => {
+      const newDepartments = {
+        ...prev,
+        [departmentId]: !prev[departmentId],
+      };
+      saveVisibleDepartmentsToStorage(newDepartments);
+      return newDepartments;
+    });
   };
 
   const handleNewAppointment = () => {
@@ -118,10 +157,19 @@ export default function CalendarPage() {
       const schedulingData = await getScheduling();
       setSchedulingCourses(schedulingData as any);
       setAcademicCourses(coursesData);
+
+      const savedDepartments = loadVisibleDepartmentsFromStorage(coursesData);
+      setVisibleDepartments(savedDepartments);
     }
 
     fetch();
   }, []);
+
+  useEffect(() => {
+    if (Object.keys(visibleDepartments).length > 0) {
+      saveVisibleDepartmentsToStorage(visibleDepartments);
+    }
+  }, [visibleDepartments]);
 
   const handleDeleteSchedule = async (scheduleId: string) => {
     await deleteSchedule(scheduleId);
@@ -160,7 +208,7 @@ export default function CalendarPage() {
             <div key={course.id} className="flex items-center space-x-2">
               <Checkbox
                 id={course.id}
-                checked={visibleDepartments[course.id]}
+                checked={visibleDepartments[course.id] || false}
                 onCheckedChange={() => toggleDepartment(course.id)}
                 className="cursor-pointer"
               />
