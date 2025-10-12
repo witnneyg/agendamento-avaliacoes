@@ -12,6 +12,7 @@ interface UpdatedAppointment {
   classId: string;
   semesterId: string;
   userId: string;
+  details?: any;
 }
 
 interface UpdateSchedulingInput {
@@ -41,6 +42,7 @@ export async function updateScheduling({
             classId: a.classId,
             semesterId: a.semesterId,
             userId: a.userId,
+            details: a.details || {},
           },
         })
       )

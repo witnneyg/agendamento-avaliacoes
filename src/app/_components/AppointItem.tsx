@@ -34,41 +34,73 @@ const getPeriodLabel = (period: string) => {
       return period;
   }
 };
+
 const periodOrder = ["MORNING", "AFTERNOON", "EVENING"];
+
+const extractTimeSlots = (appointment: SchedulingWithRelations) => {
+  try {
+    if (
+      appointment.details &&
+      typeof appointment.details === "object" &&
+      "timeSlots" in appointment.details
+    ) {
+      const details = appointment.details as any;
+      if (Array.isArray(details.timeSlots)) {
+        return details.timeSlots;
+      }
+    }
+
+    const startTime = new Date(appointment.startTime);
+    const endTime = new Date(appointment.endTime);
+    return [
+      `${startTime.getHours().toString().padStart(2, "0")}:${startTime
+        .getMinutes()
+        .toString()
+        .padStart(2, "0")} - ${endTime
+        .getHours()
+        .toString()
+        .padStart(2, "0")}:${endTime.getMinutes().toString().padStart(2, "0")}`,
+    ];
+  } catch (error) {
+    console.error("Erro ao extrair horários:", error);
+    return [];
+  }
+};
+
+interface AppointmentItemProps {
+  appointment: SchedulingWithRelations;
+  onDelete: (id: string) => void;
+  userSession: UserWithoutEmailVerified | null;
+  onAppointmentUpdated?: (
+    updatedAppointments: Partial<SchedulingWithRelations>[]
+  ) => void;
+  onAppointmentDeleted?: (deletedId: string) => void;
+  onRefreshAppointments?: () => Promise<void>;
+}
 
 export const AppointmentItem = ({
   appointment,
   onDelete,
   userSession,
-}: {
-  appointment: SchedulingWithRelations;
-  onDelete: (id: string) => void;
-  userSession: UserWithoutEmailVerified | null;
-}) => {
+  onAppointmentUpdated,
+  onAppointmentDeleted,
+  onRefreshAppointments,
+}: AppointmentItemProps) => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAlertOpen, setIsAlertOpen] = useState(false); // Estado para controlar o AlertDialog principal
 
-  // Verifica se o usuário atual é o dono do agendamento
   const isOwner = appointment.userId === userSession?.id;
+  const timeSlots = extractTimeSlots(appointment);
 
-  // Server action ou lógica de salvar múltiplos horários
-  const handleSave = async (
-    updatedAppointments: Partial<SchedulingWithRelations>[]
-  ) => {
-    // Aqui você chamaria sua server action, ex:
-    // await saveAppointments(updatedAppointments);
-    updatedAppointments.forEach((a) =>
-      console.log("Salvando agendamento editado:", a)
-    );
-    setIsEditOpen(false);
-  };
-
-  const handleEditClick = () => {
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsEditOpen(true);
   };
 
-  const handleDeleteClick = () => {
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsDeleteDialogOpen(true);
   };
 
@@ -76,11 +108,38 @@ export const AppointmentItem = ({
     setIsDeleteDialogOpen(false);
   };
 
+  const handleSave = async (
+    updatedAppointments: Partial<SchedulingWithRelations>[]
+  ) => {
+    console.log("Salvando agendamentos:", updatedAppointments);
+
+    // Atualiza o estado no componente pai se a função foi fornecida
+    if (onAppointmentUpdated) {
+      onAppointmentUpdated(updatedAppointments);
+    }
+
+    // FECHA AMBOS OS MODAIS
+    setIsEditOpen(false);
+    setIsAlertOpen(false); // Fecha o modal principal também
+  };
+
+  const handleEditClose = () => {
+    setIsEditOpen(false);
+    // Não fecha o modal principal aqui, apenas quando salvar
+  };
+
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
     try {
       await onDelete(appointment.id);
+
+      // Notifica o componente pai sobre a exclusão se a função foi fornecida
+      if (onAppointmentDeleted) {
+        onAppointmentDeleted(appointment.id);
+      }
+
       setIsDeleteDialogOpen(false);
+      setIsAlertOpen(false); // Fecha o modal principal após excluir
     } catch (error) {
       console.error("Erro ao excluir agendamento:", error);
     } finally {
@@ -90,7 +149,7 @@ export const AppointmentItem = ({
 
   return (
     <>
-      <AlertDialog>
+      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogTrigger asChild>
           <div
             className={cn(
@@ -100,19 +159,10 @@ export const AppointmentItem = ({
           >
             <div className="overflow-hidden">
               <div className="flex gap-2 font-medium text-xs truncate">
-                {appointment.discipline.name}{" "}
+                {appointment.discipline.name}
                 <div className="text-xs truncate">
-                  {new Intl.DateTimeFormat("pt-BR", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                    hour12: false,
-                  }).format(new Date(appointment.startTime))}
-                  {" – "}
-                  {new Intl.DateTimeFormat("pt-BR", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                    hour12: false,
-                  }).format(new Date(appointment.endTime))}
+                  {timeSlots[0]}
+                  {timeSlots.length > 1 && ` +${timeSlots.length - 1}`}
                 </div>
               </div>
               <div className="text-xs truncate">{appointment.name}</div>
@@ -123,14 +173,12 @@ export const AppointmentItem = ({
         <AlertDialogContent>
           <AlertDialogHeader>
             <div className="flex gap-4 justify-end">
-              {/* Ícone de edição - aparece apenas para o dono do agendamento */}
               {isOwner && (
                 <Edit
                   className="h-4 w-4 cursor-pointer hover:text-blue-500 transition-colors"
                   onClick={handleEditClick}
                 />
               )}
-              {/* Ícone de exclusão - aparece apenas para o dono do agendamento */}
               {isOwner && (
                 <Trash2
                   className="h-4 w-4 cursor-pointer hover:text-red-500 transition-colors"
@@ -167,6 +215,7 @@ export const AppointmentItem = ({
                 .map((p) => getPeriodLabel(p))
                 .join(", ")}
             </div>
+
             <div className="flex gap-2 items-center">
               <p className="font-medium">Turma:</p>
               {appointment.class?.name ?? "N/A"}
@@ -177,31 +226,33 @@ export const AppointmentItem = ({
               {appointment.name}
             </div>
 
+            <div className="flex gap-2 items-start">
+              <p className="font-medium">Horários:</p>
+              <div className="flex flex-col gap-1">
+                {timeSlots.map((timeSlot: any, index: any) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                      {timeSlot}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="flex gap-2 items-center">
-              <p className="font-medium">Horário:</p>
+              <p className="font-medium">Data:</p>
               {new Intl.DateTimeFormat("pt-BR", {
                 weekday: "long",
                 day: "2-digit",
                 month: "long",
-              }).format(new Date(appointment.startTime))}
-              {" ⋅ "}
-              {new Intl.DateTimeFormat("pt-BR", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false,
-              }).format(new Date(appointment.startTime))}
-              {" – "}
-              {new Intl.DateTimeFormat("pt-BR", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false,
-              }).format(new Date(appointment.endTime))}
+                year: "numeric",
+              }).format(new Date(appointment.date))}
             </div>
           </div>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dialog de confirmação de exclusão */}
+      {/* Diálogo de exclusão */}
       <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
@@ -244,9 +295,8 @@ export const AppointmentItem = ({
       <EditSchedulingModal
         appointment={appointment}
         isOpen={isEditOpen}
-        onClose={() => setIsEditOpen(false)}
+        onClose={handleEditClose}
         onSave={handleSave}
-        scheduledTimes={[]}
         disciplineDayPeriods={appointment.discipline.dayPeriods}
       />
     </>

@@ -121,6 +121,9 @@ model Scheduling {
   classId   String?
   class     Class?   @relation(fields: [classId], references: [id])
 
+  // Campo JSON para armazenar detalhes adicionais
+  details   Json
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

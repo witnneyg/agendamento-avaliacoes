@@ -90,41 +90,60 @@ export function Scheduling() {
 
   const handleCreateScheduling = async (details: BookingDetails) => {
     setBookingDetails(details);
-
+    console.log({ details });
     const slots = details.time.split(",").map((slot) => slot.trim());
+
+    // Encontrar o horário mais cedo e mais tarde para o período total
+    let earliestStartTime: Date | null = null;
+    let latestEndTime: Date | null = null;
 
     for (const slot of slots) {
       const [startStr, endStr] = slot.split(" - ");
 
       const startTime = parse(startStr, "HH:mm", new Date(details.date));
-
       const endTime = parse(endStr, "HH:mm", new Date(details.date));
 
-      if (
-        selectedCourse &&
-        selectedSemester &&
-        details.date &&
-        selectedClass &&
-        user &&
-        selectedDiscipline
-      ) {
-        const data = {
-          userId: user.id,
-          courseId: selectedCourse.id,
-          disciplineId: selectedDiscipline.id,
-          semesterId: selectedSemester.id,
-          classId: selectedClass.id,
-          date: new Date(details.date),
-          startTime,
-          endTime,
-          details: {
-            name: details.name,
-            time: details.time,
-          },
-        };
-        await createScheduling(data);
+      if (!earliestStartTime || startTime < earliestStartTime) {
+        earliestStartTime = startTime;
+      }
+
+      if (!latestEndTime || endTime > latestEndTime) {
+        latestEndTime = endTime;
       }
     }
+
+    // Criar apenas UM agendamento com todos os horários no details
+    if (
+      selectedCourse &&
+      selectedSemester &&
+      details.date &&
+      selectedClass &&
+      user &&
+      selectedDiscipline &&
+      earliestStartTime &&
+      latestEndTime
+    ) {
+      const data = {
+        userId: user.id,
+        courseId: selectedCourse.id,
+        disciplineId: selectedDiscipline.id,
+        semesterId: selectedSemester.id,
+        classId: selectedClass.id,
+        date: new Date(details.date),
+        startTime: earliestStartTime, // Horário mais cedo
+        endTime: latestEndTime, // Horário mais tarde
+        timeSlots: details.time,
+        details: {
+          name: details.name,
+          time: details.time, // String com todos os horários: "07:30 - 08:20, 08:20 - 09:10"
+          timeSlots: slots, // Array com os horários individuais
+        },
+      };
+
+      // Criar apenas UM agendamento
+      await createScheduling(data);
+    }
+
     setStep("confirmation");
   };
 

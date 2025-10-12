@@ -118,6 +118,16 @@ export default function CalendarPage() {
     )
   );
 
+  useEffect(() => {
+    async function fetchUser() {
+      const session = await getUser();
+      console.log({ session });
+      setUser(session);
+    }
+
+    fetchUser();
+  }, []);
+
   const navigatePrevious = () => {
     setCurrentDate((prev) => addDays(prev, view === "week" ? -7 : -1));
   };
@@ -141,15 +151,34 @@ export default function CalendarPage() {
     router.push("/");
   };
 
-  useEffect(() => {
-    async function fetchUser() {
-      const session = await getUser();
-      console.log({ session });
-      setUser(session);
-    }
+  const handleAppointmentUpdated = (
+    updatedAppointments: Partial<SchedulingWithRelations>[]
+  ) => {
+    console.log("Atualizando agendamentos:", updatedAppointments);
 
-    fetchUser();
-  }, []);
+    setSchedulingCourses((prev) =>
+      prev.map((apt) => {
+        const updated = updatedAppointments.find((u) => u.id === apt.id);
+        if (updated) {
+          return {
+            ...apt,
+            ...updated,
+            // Garantir que as datas sejam atualizadas corretamente
+            date: updated.date || apt.date,
+            startTime: updated.startTime || apt.startTime,
+            endTime: updated.endTime || apt.endTime,
+            details: updated.details || apt.details,
+          };
+        }
+        return apt;
+      })
+    );
+  };
+
+  const handleAppointmentDeleted = (deletedId: string) => {
+    console.log("Removendo agendamento:", deletedId);
+    setSchedulingCourses((prev) => prev.filter((apt) => apt.id !== deletedId));
+  };
 
   useEffect(() => {
     async function fetch() {
@@ -173,10 +202,7 @@ export default function CalendarPage() {
 
   const handleDeleteSchedule = async (scheduleId: string) => {
     await deleteSchedule(scheduleId);
-
-    setSchedulingCourses((prev) =>
-      prev.filter((schedule) => schedule.id !== scheduleId)
-    );
+    handleAppointmentDeleted(scheduleId);
   };
 
   const SidebarContent = () => (
@@ -377,6 +403,12 @@ export default function CalendarPage() {
                                     appointment={firstAppointment}
                                     onDelete={handleDeleteSchedule}
                                     userSession={user}
+                                    onAppointmentUpdated={
+                                      handleAppointmentUpdated
+                                    }
+                                    onAppointmentDeleted={
+                                      handleAppointmentDeleted
+                                    }
                                   />
 
                                   {remainingCount > 0 && (
@@ -407,6 +439,12 @@ export default function CalendarPage() {
                                                 appointment={appointment}
                                                 onDelete={handleDeleteSchedule}
                                                 userSession={user}
+                                                onAppointmentUpdated={
+                                                  handleAppointmentUpdated
+                                                }
+                                                onAppointmentDeleted={
+                                                  handleAppointmentDeleted
+                                                }
                                               />
                                             )
                                           )}

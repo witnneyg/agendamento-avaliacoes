@@ -4,9 +4,13 @@ import { db } from "@/lib/prisma";
 import { Appointment } from "../context/appointment";
 
 export async function createScheduling(data: Appointment) {
+  // Verificar conflitos para todo o período do agendamento
+
   const hasConflict = await db.scheduling.findFirst({
     where: {
-      semesterId: data.semesterId,
+      date: data.date,
+      classId: data.classId,
+      disciplineId: data.disciplineId,
       AND: [
         {
           startTime: { lt: data.endTime },
@@ -15,24 +19,18 @@ export async function createScheduling(data: Appointment) {
           endTime: { gt: data.startTime },
         },
       ],
+      // Não verificar o próprio agendamento se estiver editando
+      ...(data.id && { id: { not: data.id } }),
     },
   });
 
-  //   where: {
-  //   semesterId: data.semesterId,
-  //   classId: data.classId,
-  //   disciplineId: data.disciplineId,
-  //   AND: [
-  //     { startTime: { lt: data.endTime } },
-  //     { endTime: { gt: data.startTime } },
-  //   ],
-  // }
-
   if (hasConflict) {
-    throw new Error("Este horário já está agendado.");
+    throw new Error(
+      "Este horário já está agendado para esta turma e disciplina."
+    );
   }
 
-  const a = await db.scheduling.create({
+  const scheduling = await db.scheduling.create({
     data: {
       name: data.details.name,
       date: data.date,
@@ -43,6 +41,11 @@ export async function createScheduling(data: Appointment) {
       semesterId: data.semesterId,
       disciplineId: data.disciplineId,
       classId: data.classId,
+      details: data.details,
     },
   });
+
+  console.log({ scheduling });
+
+  return scheduling;
 }
