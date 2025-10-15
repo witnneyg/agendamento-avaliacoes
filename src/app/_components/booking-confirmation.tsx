@@ -7,7 +7,7 @@ import { Course } from "./course-selector";
 import { Semester } from "./semester-selector";
 import { ptBR } from "date-fns/locale";
 import { useRouter } from "next/navigation";
-import { Class, Discipline } from "@prisma/client";
+import { Class, Discipline, User } from "@prisma/client";
 import { getUser } from "../_actions/getUser";
 import { useEffect, useState } from "react";
 
@@ -23,6 +23,39 @@ interface BookingConfirmationProps {
   discipline: Discipline;
   onScheduleAnother: () => void;
 }
+
+const formatSemesterName = (semesterName: string): string => {
+  const cleanName = semesterName
+    .replace(/^\d+°?\s*/, "")
+    .replace(/\s*\d+°?$/, "")
+    .trim();
+
+  const numberMatch = semesterName.match(/^(\d+)/);
+  if (numberMatch) {
+    return `${numberMatch[1]}° ${cleanName}`;
+  }
+
+  if (semesterName.match(/Primeiro|primeiro|1/i)) {
+    return `1° ${cleanName}`;
+  } else if (semesterName.match(/Segundo|segundo|2/i)) {
+    return `2° ${cleanName}`;
+  } else if (semesterName.match(/Terceiro|terceiro|3/i)) {
+    return `3° ${cleanName}`;
+  } else if (semesterName.match(/Quarto|quarto|4/i)) {
+    return `4° ${cleanName}`;
+  } else if (semesterName.match(/Quinto|quinto|5/i)) {
+    return `5° ${cleanName}`;
+  } else if (semesterName.match(/Sexto|sexto|6/i)) {
+    return `6° ${cleanName}`;
+  } else if (semesterName.match(/Sétimo|sétimo|7/i)) {
+    return `7° ${cleanName}`;
+  } else if (semesterName.match(/Oitavo|oitavo|8/i)) {
+    return `8° ${cleanName}`;
+  }
+
+  return semesterName;
+};
+
 export function BookingConfirmation({
   course,
   semester,
@@ -32,7 +65,7 @@ export function BookingConfirmation({
   discipline,
   onScheduleAnother,
 }: BookingConfirmationProps) {
-  const [user, setUser] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
   const router = useRouter();
 
   function handleViewCalendar() {
@@ -41,11 +74,17 @@ export function BookingConfirmation({
 
   useEffect(() => {
     async function fetchData() {
-      const { email } = await getUser();
+      const user = await getUser();
 
-      setUser(email);
+      setEmail(user.email);
     }
+
+    fetchData();
   }, []);
+
+  const formattedSemesterName = formatSemesterName(semester.name);
+
+  console.log(semester.name);
 
   return (
     <div className="flex flex-col items-center space-y-6 py-4">
@@ -55,7 +94,7 @@ export function BookingConfirmation({
           Seu agendamento está confirmado!
         </h3>
         <p className="text-muted-foreground mt-2">
-          enviamos um e-mail de confirmação para {}
+          {`enviamos um e-mail de confirmação para ${email}`}
         </p>
       </div>
 
@@ -69,8 +108,8 @@ export function BookingConfirmation({
           <span>{classes.name}</span>
         </div>
         <div className="flex justify-between">
-          <span className="font-medium">Semestre:</span>
-          <span>{semester.name}</span>
+          <span className="font-medium">Período:</span>
+          <span>{formattedSemesterName}</span>
         </div>
         <div className="flex justify-between">
           <span className="font-medium">Disciplina:</span>
@@ -81,7 +120,7 @@ export function BookingConfirmation({
           <span>{format(date, "PPPP", { locale: ptBR })}</span>
         </div>
         <div className="flex justify-between">
-          <span className="font-medium">Horas:</span>
+          <span className="font-medium">Horários:</span>
           <span>{details.time}</span>
         </div>
         <div className="flex justify-between">

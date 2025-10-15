@@ -100,6 +100,26 @@ export const generateTimeSlotsAndCheckAvailability = (
         const isTaken = scheduledTimes.some((scheduling) => {
           try {
             const schedulingDate = new Date(scheduling.date);
+
+            if (!isSameDay(schedulingDate, date)) {
+              return false;
+            }
+
+            if (scheduling.details && typeof scheduling.details === "object") {
+              const details = scheduling.details as any;
+
+              if (details.timeSlots && Array.isArray(details.timeSlots)) {
+                return details.timeSlots.includes(slot);
+              }
+
+              if (details.time && typeof details.time === "string") {
+                const timeSlotsFromString = details.time
+                  .split(",")
+                  .map((t: string) => t.trim());
+                return timeSlotsFromString.includes(slot);
+              }
+            }
+
             const schedulingStartTime = format(
               new Date(scheduling.startTime),
               "HH:mm"
@@ -109,12 +129,10 @@ export const generateTimeSlotsAndCheckAvailability = (
               "HH:mm"
             );
 
-            const isSameDate = isSameDay(schedulingDate, date);
-            const isSameStartTime = schedulingStartTime === startStr;
-            const isSameEndTime = schedulingEndTime === endStr;
-
-            return isSameDate && isSameStartTime && isSameEndTime;
+            const existingTimeSlot = `${schedulingStartTime} - ${schedulingEndTime}`;
+            return existingTimeSlot === slot;
           } catch (error) {
+            console.error("Erro ao verificar horário ocupado:", error);
             return false;
           }
         });
@@ -144,13 +162,19 @@ const checkExistingAppointments = (
   if (!date) return { hasConflict: false, existingCount: 0 };
 
   const existingAppointments = scheduledTimes.filter((scheduling) => {
-    const schedulingDate = new Date(scheduling.date);
-    return (
-      isSameDay(schedulingDate, date) &&
-      scheduling.courseId === courseId &&
-      scheduling.classId === classId &&
-      scheduling.disciplineId === disciplineId
-    );
+    try {
+      const schedulingDate = new Date(scheduling.date);
+
+      return (
+        isSameDay(schedulingDate, date) &&
+        scheduling.courseId === courseId &&
+        scheduling.classId === classId &&
+        scheduling.disciplineId === disciplineId
+      );
+    } catch (error) {
+      console.error("Erro ao verificar conflito:", error);
+      return false;
+    }
   });
 
   return {

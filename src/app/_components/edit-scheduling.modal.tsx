@@ -109,10 +109,24 @@ const generateTimeSlotsAndCheckAvailability = (
       period: period as Period,
       slots: slots.map((slot) => {
         const isTaken = scheduledTimes.some((scheduling) => {
-          if (currentAppointmentId && scheduling.id === currentAppointmentId)
-            return false;
           const schedulingDate = new Date(scheduling.date);
           if (!isSameDay(schedulingDate, date)) return false;
+
+          if (scheduling.details && typeof scheduling.details === "object") {
+            const details = scheduling.details as any;
+
+            if (details.timeSlots && Array.isArray(details.timeSlots)) {
+              return details.timeSlots.includes(slot);
+            }
+
+            if (details.time && typeof details.time === "string") {
+              const timeSlotsFromString = details.time
+                .split(",")
+                .map((t: string) => t.trim());
+              return timeSlotsFromString.includes(slot);
+            }
+          }
+
           const schedulingStartTime = format(
             new Date(scheduling.startTime),
             "HH:mm"
@@ -124,10 +138,12 @@ const generateTimeSlotsAndCheckAvailability = (
           const existingTimeSlot = `${schedulingStartTime} - ${schedulingEndTime}`;
           return existingTimeSlot === slot;
         });
+
         const isCurrentTimeSlot =
           currentTimeSlots?.includes(slot) &&
           originalAppointmentDate &&
-          isSameDay(originalAppointmentDate, date);
+          isSameDay(originalAppointmentDate, date) &&
+          currentAppointmentId;
 
         return {
           time: slot,
@@ -210,7 +226,6 @@ export const EditSchedulingModal = ({
       return;
     }
     const count = scheduledTimes.filter((scheduling) => {
-      if (appointment.id && scheduling.id === appointment.id) return false;
       const schedulingDate = new Date(scheduling.date);
       return (
         isSameDay(schedulingDate, selectedDate) &&
@@ -264,13 +279,13 @@ export const EditSchedulingModal = ({
 
     if (hasUnavailableSlot)
       return alert(
-        "Um ou mais horários selecionados não estão mais disponíveis."
+        "Um ou mais horários selecionados não estão mais disponíveis. Estes horários podem estar ocupados por outros professores."
       );
 
     if (existingAppointmentsCount > 0) {
       if (
         !confirm(
-          `Já existem ${existingAppointmentsCount} avaliação(ões) para esta disciplina no mesmo dia. Deseja continuar mesmo assim?`
+          `Já existem ${existingAppointmentsCount} avaliação(ões) para esta disciplina no mesmo dia (incluindo de outros professores). Deseja continuar mesmo assim?`
         )
       )
         return;
@@ -288,17 +303,14 @@ export const EditSchedulingModal = ({
         return getStartHour(a) - getStartHour(b);
       });
 
-      // CORREÇÃO: Garantir que funciona com 1 ou mais horários
       let earliestStartTime: Date;
       let latestEndTime: Date;
 
-      // Se tiver apenas 1 horário
       if (sortedTimes.length === 1) {
         const [startStr, endStr] = sortedTimes[0].split(" - ");
         earliestStartTime = parse(startStr, "HH:mm", new Date(data.date));
         latestEndTime = parse(endStr, "HH:mm", new Date(data.date));
       } else {
-        // Se tiver múltiplos horários
         earliestStartTime = parse(
           sortedTimes[0].split(" - ")[0],
           "HH:mm",
@@ -311,7 +323,6 @@ export const EditSchedulingModal = ({
         );
       }
 
-      // Criar objeto completo com TODOS os dados necessários
       const updatedAppointment = {
         id: appointment.id,
         startTime: earliestStartTime,
@@ -334,15 +345,23 @@ export const EditSchedulingModal = ({
         class: appointment.class,
       };
 
-      const result = await updateScheduling({
+      const result: any = await updateScheduling({
         appointmentId: appointment.id,
         updatedAppointments: [updatedAppointment],
       });
 
       if (result.success) {
-        onSave([updatedAppointment]);
+        if (result.updated && result.updated.length > 0) {
+          onSave(result.updated);
+        } else if (result.created && result.created.length > 0) {
+          onSave(result.created);
+        } else {
+          onSave([updatedAppointment]);
+        }
         onClose();
-      } else alert(`Erro ao atualizar agendamento: ${result.error}`);
+      } else {
+        alert(`Erro ao atualizar agendamento: ${result.error}`);
+      }
     } catch (error) {
       console.error("Erro ao atualizar agendamento:", error);
       alert("Erro ao atualizar agendamento. Tente novamente.");

@@ -163,7 +163,7 @@ export default function CalendarPage() {
           return {
             ...apt,
             ...updated,
-            // Garantir que as datas sejam atualizadas corretamente
+            id: updated.id || apt.id,
             date: updated.date || apt.date,
             startTime: updated.startTime || apt.startTime,
             endTime: updated.endTime || apt.endTime,

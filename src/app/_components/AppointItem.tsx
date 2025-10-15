@@ -113,14 +113,21 @@ export const AppointmentItem = ({
   ) => {
     console.log("Salvando agendamentos:", updatedAppointments);
 
-    // Atualiza o estado no componente pai se a função foi fornecida
-    if (onAppointmentUpdated) {
-      onAppointmentUpdated(updatedAppointments);
+    if (updatedAppointments.length > 0 && updatedAppointments[0].id) {
+      const updatedAppointment = {
+        ...appointment,
+        ...updatedAppointments[0],
+        id: updatedAppointments[0].id,
+      };
+
+      if (onAppointmentUpdated) {
+        onAppointmentUpdated([updatedAppointment]);
+      }
     }
 
     // FECHA AMBOS OS MODAIS
     setIsEditOpen(false);
-    setIsAlertOpen(false); // Fecha o modal principal também
+    setIsAlertOpen(false);
   };
 
   const handleEditClose = () => {

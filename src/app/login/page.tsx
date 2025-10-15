@@ -1,7 +1,7 @@
 import { Clock } from "lucide-react";
-import { MagicLinkForm } from "../_components/magic-link-form";
+import { GoogleSignIn } from "../_components/googleSignIn";
 
-export default function MagicLinkPage() {
+export default function SignInPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <main className="flex-1 flex items-center justify-center px-6 py-12">
@@ -14,12 +14,12 @@ export default function MagicLinkPage() {
               Agendamento de avaliações
             </h2>
             <p className="text-muted-foreground">
-              Insira seu e-mail para receber um link e acessar seu painel de
-              agendamento instantaneamente.
+              Faça login com sua conta Google para acessar seu painel de
+              agendamento.
             </p>
           </div>
 
-          <MagicLinkForm />
+          <GoogleSignIn />
         </div>
       </main>
     </div>
