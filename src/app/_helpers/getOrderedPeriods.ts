@@ -7,9 +7,9 @@ export const periodOrder = {
 };
 
 export const periodTranslations = {
-  [Period.MORNING]: "Manhã",
-  [Period.AFTERNOON]: "Tarde",
-  [Period.EVENING]: "Noite",
+  [Period.MORNING]: "Matutino",
+  [Period.AFTERNOON]: "Vespertino",
+  [Period.EVENING]: "Noturno",
 };
 
 /**

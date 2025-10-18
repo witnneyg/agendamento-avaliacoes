@@ -268,7 +268,7 @@ export function BookingForm({
     );
 
     if (finalConflict.hasConflict) {
-      const confirmMessage = `Já existem ${finalConflict.existingCount} avaliação(ões) para esta disciplina no mesmo dia. Deseja continuar mesmo assim?`;
+      const confirmMessage = `Já existe uma avaliação para esta turma no mesmo dia. A PROGRAD recomenda apenas uma avaliação por dia por turma.`;
 
       if (!confirm(confirmMessage)) {
         return;
@@ -386,12 +386,8 @@ export function BookingForm({
               <Alert className="mb-4">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  ⚠️ Atenção! Já existe {appointmentConflict.existingCount}
-                  {appointmentConflict.existingCount === 1
-                    ? " avaliação"
-                    : " avaliações"}{" "}
-                  agendada(s) para esta turma no mesmo dia. O recomendado é ter
-                  apenas 1 avaliação por dia.
+                  Já existe uma avaliação para esta turma no mesmo dia. A
+                  PROGRAD recomenda apenas uma avaliação por dia por turma.
                 </AlertDescription>
               </Alert>
             )}

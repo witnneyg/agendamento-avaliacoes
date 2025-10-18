@@ -124,7 +124,7 @@ export function BookingConfirmation({
           <span>{details.time}</span>
         </div>
         <div className="flex justify-between">
-          <span className="font-medium">Nome:</span>
+          <span className="font-medium">Professor:</span>
           <span>{details.name}</span>
         </div>
       </div>

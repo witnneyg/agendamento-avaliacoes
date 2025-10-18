@@ -154,6 +154,36 @@ const generateTimeSlotsAndCheckAvailability = (
     }));
 };
 
+// Nova função para verificar se uma data tem horários disponíveis suficientes
+const hasEnoughAvailableSlots = (
+  date: Date | undefined,
+  scheduledTimes: Scheduling[],
+  dayPeriods: Period[],
+  requiredSlotsCount: number,
+  currentAppointmentId?: string,
+  currentTimeSlots?: string[],
+  originalAppointmentDate?: Date
+): boolean => {
+  if (!date) return false;
+
+  const timeSlots = generateTimeSlotsAndCheckAvailability(
+    date,
+    scheduledTimes,
+    dayPeriods,
+    currentAppointmentId,
+    currentTimeSlots,
+    originalAppointmentDate
+  );
+
+  const availableSlotsCount = timeSlots.reduce((count, periodGroup) => {
+    return (
+      count + periodGroup.slots.filter((slot: any) => slot.available).length
+    );
+  }, 0);
+
+  return availableSlotsCount >= requiredSlotsCount;
+};
+
 export const EditSchedulingModal = ({
   appointment,
   isOpen,
@@ -175,6 +205,7 @@ export const EditSchedulingModal = ({
     [appointment]
   );
   const originalAppointmentDate = new Date(appointment.date);
+  const requiredSlotsCount = currentTimeSlots.length; // Número de horários do agendamento original
 
   const {
     handleSubmit,
@@ -249,6 +280,24 @@ export const EditSchedulingModal = ({
     }
   }, [isOpen, appointment.date, reset]);
 
+  // Função para desabilitar datas que não têm horários disponíveis suficientes
+  const isDateDisabled = (date: Date): boolean => {
+    return (
+      isPastDate(date) ||
+      date.getDay() === 0 ||
+      date.getDay() === 6 ||
+      !hasEnoughAvailableSlots(
+        date,
+        scheduledTimes,
+        disciplineDayPeriods,
+        requiredSlotsCount,
+        appointment.id,
+        currentTimeSlots,
+        originalAppointmentDate
+      )
+    );
+  };
+
   const handleSelectDate = (date: Date | undefined) => {
     setSelectedDate(date);
     if (date) {
@@ -260,6 +309,23 @@ export const EditSchedulingModal = ({
   const handleFormSubmit = async (data: EditSchema) => {
     if (!data.date || isPastDate(data.date) || data.time.length === 0)
       return alert("Verifique os dados do formulário.");
+
+    // Verificar se a data selecionada tem horários disponíveis suficientes
+    if (
+      !hasEnoughAvailableSlots(
+        data.date,
+        scheduledTimes,
+        disciplineDayPeriods,
+        requiredSlotsCount,
+        appointment.id,
+        currentTimeSlots,
+        originalAppointmentDate
+      )
+    ) {
+      return alert(
+        `A data selecionada não possui pelo menos ${requiredSlotsCount} horário(s) disponível(eis) para o agendamento.`
+      );
+    }
 
     const isSameDayAndSameSlots =
       isSameDay(originalAppointmentDate, data.date) &&
@@ -285,7 +351,7 @@ export const EditSchedulingModal = ({
     if (existingAppointmentsCount > 0) {
       if (
         !confirm(
-          `Já existem ${existingAppointmentsCount} avaliação(ões) para esta disciplina no mesmo dia (incluindo de outros professores). Deseja continuar mesmo assim?`
+          `Já existe uma avaliação para esta turma no mesmo dia. A PROGRAD recomenda apenas uma avaliação por dia por turma.`
         )
       )
         return;
@@ -389,6 +455,9 @@ export const EditSchedulingModal = ({
             <p className="text-sm text-blue-600">
               <strong>Horários atuais:</strong> {currentTimeSlots.join(", ")}
             </p>
+            <p className="text-sm text-blue-600">
+              <strong>Horários necessários:</strong> {requiredSlotsCount}
+            </p>
             {isLoading && (
               <p className="text-sm text-blue-600">
                 <strong>Carregando agendamentos...</strong>
@@ -403,9 +472,7 @@ export const EditSchedulingModal = ({
                 mode="single"
                 selected={selectedDate}
                 onSelect={handleSelectDate}
-                disabled={(date) =>
-                  isPastDate(date) || date.getDay() === 0 || date.getDay() === 6
-                }
+                disabled={isDateDisabled}
                 locale={ptBR}
                 className="rounded-md border"
               />
@@ -415,6 +482,9 @@ export const EditSchedulingModal = ({
                 {errors.date.message}
               </p>
             )}
+            <p className="text-sm text-muted-foreground text-center">
+              * Datas desabilitadas não possuem horários disponíveis suficientes
+            </p>
           </div>
 
           <div className="mt-4">
@@ -433,12 +503,31 @@ export const EditSchedulingModal = ({
                   <Alert className="mb-4 border-yellow-200 bg-yellow-50">
                     <AlertTriangle className="h-4 w-4 text-yellow-600" />
                     <AlertDescription className="text-yellow-700">
-                      ⚠️ Já existe {existingAppointmentsCount} avaliação(ões)
-                      para esta turma no mesmo dia. O recomendado é ter apenas 1
-                      avaliação por dia.
+                      Já existe uma avaliação para esta turma no mesmo dia. A
+                      PROGRAD recomenda apenas uma avaliação por dia por turma.
                     </AlertDescription>
                   </Alert>
                 )}
+
+                {selectedDate &&
+                  !hasEnoughAvailableSlots(
+                    selectedDate,
+                    scheduledTimes,
+                    disciplineDayPeriods,
+                    requiredSlotsCount,
+                    appointment.id,
+                    currentTimeSlots,
+                    originalAppointmentDate
+                  ) && (
+                    <Alert className="mb-4 border-red-200 bg-red-50">
+                      <AlertTriangle className="h-4 w-4 text-red-600" />
+                      <AlertDescription className="text-red-700">
+                        Esta data não possui pelo menos {requiredSlotsCount}{" "}
+                        horário(s) disponível(eis). Selecione outra data com
+                        mais horários livres.
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
                 {disciplineDayPeriods && (
                   <div className="mb-4">
@@ -562,7 +651,16 @@ export const EditSchedulingModal = ({
                         !selectedDate ||
                         isSubmitting ||
                         isPastDate(selectedDate) ||
-                        watch("time").length === 0
+                        watch("time").length === 0 ||
+                        !hasEnoughAvailableSlots(
+                          selectedDate,
+                          scheduledTimes,
+                          disciplineDayPeriods,
+                          requiredSlotsCount,
+                          appointment.id,
+                          currentTimeSlots,
+                          originalAppointmentDate
+                        )
                       }
                     >
                       {isSubmitting ? "Salvando..." : "Salvar Alterações"}

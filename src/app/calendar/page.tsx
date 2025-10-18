@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { format, startOfWeek, addDays, isSameDay } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, Filter } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Filter, Menu, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -99,14 +99,18 @@ export default function CalendarPage() {
     Record<string, boolean>
   >({});
   const [user, setUser] = useState<UserWithoutEmailVerified | null>(null);
-  const [view, setView] = useState<"week" | "day">("week");
+  const [view, setView] = useState<"week" | "day" | "fortnight">("week");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Estado para controlar sidebar
   const router = useRouter();
-  const daysToShow = view === "week" ? 7 : 1;
+
+  // Calcular dias baseado na visualização
+  const daysToShow = view === "week" ? 7 : view === "day" ? 1 : 14;
   const startDate =
-    view === "week"
+    view === "week" || view === "fortnight"
       ? startOfWeek(currentDate, { weekStartsOn: 0 })
       : currentDate;
+
   const days = Array.from({ length: daysToShow }, (_, i) =>
     addDays(startDate, i)
   );
@@ -129,11 +133,23 @@ export default function CalendarPage() {
   }, []);
 
   const navigatePrevious = () => {
-    setCurrentDate((prev) => addDays(prev, view === "week" ? -7 : -1));
+    if (view === "day") {
+      setCurrentDate((prev) => addDays(prev, -1));
+    } else if (view === "week") {
+      setCurrentDate((prev) => addDays(prev, -7));
+    } else if (view === "fortnight") {
+      setCurrentDate((prev) => addDays(prev, -14));
+    }
   };
 
   const navigateNext = () => {
-    setCurrentDate((prev) => addDays(prev, view === "week" ? 7 : 1));
+    if (view === "day") {
+      setCurrentDate((prev) => addDays(prev, 1));
+    } else if (view === "week") {
+      setCurrentDate((prev) => addDays(prev, 7));
+    } else if (view === "fortnight") {
+      setCurrentDate((prev) => addDays(prev, 14));
+    }
   };
 
   const toggleDepartment = (departmentId: string) => {
@@ -205,8 +221,37 @@ export default function CalendarPage() {
     handleAppointmentDeleted(scheduleId);
   };
 
+  const formatDateRange = () => {
+    if (view === "day") {
+      return format(currentDate, "MMM d, yyyy", { locale: ptBR });
+    } else if (view === "week") {
+      return `${format(days[0], "MMM d", { locale: ptBR })} - ${format(
+        days[days.length - 1],
+        "MMM d, yyyy",
+        { locale: ptBR }
+      )}`;
+    } else if (view === "fortnight") {
+      return `${format(days[0], "MMM d", { locale: ptBR })} - ${format(
+        days[days.length - 1],
+        "MMM d, yyyy",
+        { locale: ptBR }
+      )}`;
+    }
+  };
+
   const SidebarContent = () => (
     <>
+      <div className="flex items-center justify-between mb-6">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsSidebarOpen(false)}
+          className="h-8 w-8 cursor-pointer lg:hidden bg-amber-200-"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+
       <div className="mb-6">
         <Button
           onClick={handleNewAppointment}
@@ -261,13 +306,59 @@ export default function CalendarPage() {
     <div className="min-h-screen flex flex-col">
       <NavBar />
       <div className="flex flex-1">
-        <aside className="hidden lg:block w-72 border-r p-4 flex-col overflow-y-auto">
-          <SidebarContent />
+        {/* Sidebar Desktop com toggle */}
+        <aside
+          className={cn(
+            "border-r p-4 flex-col overflow-y-auto bg-background transition-all duration-300 ease-in-out",
+            isSidebarOpen ? "w-72" : "w-0 p-0 overflow-hidden",
+            "hidden lg:flex"
+          )}
+        >
+          {isSidebarOpen && <SidebarContent />}
         </aside>
+
+        {isSidebarOpen && (
+          <div
+            className="lg:hidden fixed inset-0 bg-black/50 z-40"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
+        <div
+          className={cn(
+            "fixed inset-y-0 left-0 z-50 w-72 bg-background border-r transform transition-transform duration-300 ease-in-out lg:hidden",
+            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
+          <div className="p-4 h-full overflow-y-auto">
+            <SidebarContent />
+          </div>
+        </div>
 
         <main className="flex-1 flex flex-col">
           <div className="p-2 sm:p-4 border-b flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
+            <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0 h-full">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsSidebarOpen(true)}
+                className="cursor-pointer bg-transparent flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 lg:hidden"
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
+
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="cursor-pointer bg-transparent flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 hidden lg:flex mr-5"
+              >
+                {isSidebarOpen ? (
+                  <ChevronLeft className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </Button>
               <Button
                 variant="outline"
                 size="icon"
@@ -285,24 +376,17 @@ export default function CalendarPage() {
                 <ChevronRight className="h-4 w-4" />
               </Button>
               <h2 className="text-sm sm:text-xl font-semibold ml-1 sm:ml-2 truncate">
-                {view === "week"
-                  ? `${format(days[0], "MMM d", { locale: ptBR })} - ${format(
-                      days[days.length - 1],
-                      "MMM d, yyyy",
-                      {
-                        locale: ptBR,
-                      }
-                    )}`
-                  : format(currentDate, "MMM d, yyyy", { locale: ptBR })}
+                {formatDateRange()}
               </h2>
             </div>
             <div className="flex gap-1 sm:gap-2 flex-shrink-0">
+              {/* Botão de filtro para mobile (alternativo) */}
               <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                 <SheetTrigger asChild>
                   <Button
                     variant="outline"
                     size="icon"
-                    className="lg:hidden cursor-pointer h-8 w-8 sm:h-10 sm:w-10 bg-transparent"
+                    className="cursor-pointer h-8 w-8 sm:h-10 sm:w-10 bg-transparent lg:hidden"
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
@@ -329,15 +413,32 @@ export default function CalendarPage() {
                 variant={view === "week" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setView("week")}
-                className="cursor-pointer h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3 hidden sm:inline-flex"
+                className="cursor-pointer h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3"
               >
                 Semana
+              </Button>
+              <Button
+                variant={view === "fortnight" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setView("fortnight")}
+                className="cursor-pointer h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3 hidden sm:inline-flex"
+              >
+                Quinzena
               </Button>
             </div>
           </div>
 
           <div className="flex-1 overflow-auto h-full">
-            <div className="flex h-full min-w-[600px] lg:min-w-0">
+            <div
+              className={cn(
+                "flex h-full",
+                view === "day"
+                  ? "min-w-[200px]"
+                  : view === "week"
+                    ? "min-w-[600px]"
+                    : "min-w-[1200px]"
+              )}
+            >
               <div className="w-12 sm:w-16 flex-shrink-0 border-r">
                 <div className="h-10 sm:h-12 border-b text-[10px] sm:text-xs text-gray-500 flex items-center justify-center">
                   GMT-03
@@ -351,11 +452,16 @@ export default function CalendarPage() {
                 ))}
               </div>
 
-              <div className="flex-1 flex">
+              <div className="flex-1 flex overflow-x-auto">
                 {days.map((day, dayIndex) => (
                   <div
                     key={dayIndex}
-                    className="flex-1 min-w-[80px] sm:min-w-[120px] border-r"
+                    className={cn(
+                      "flex-1 border-r",
+                      view === "fortnight"
+                        ? "min-w-[85px]"
+                        : "min-w-[80px] sm:min-w-[120px]"
+                    )}
                   >
                     <div className="h-10 sm:h-12 border-b flex flex-col items-center justify-center">
                       <div className="text-[10px] sm:text-xs text-gray-500">
