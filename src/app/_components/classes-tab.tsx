@@ -158,17 +158,22 @@ export function ClassesTab() {
 
     setIsSubmitting(true);
     try {
+      const classData = {
+        ...data,
+        name: data.name.toUpperCase(),
+      };
+
       if (editingClass) {
         const updated = await updateClass({
           id: editingClass.id,
-          ...data,
+          ...classData,
         });
 
         setClasses((prev) =>
           prev.map((cls) => (cls.id === updated.id ? updated : cls))
         );
       } else {
-        const newClass = await createClasses(data);
+        const newClass = await createClasses(classData);
         setClasses((prev) => [...prev, newClass]);
       }
 

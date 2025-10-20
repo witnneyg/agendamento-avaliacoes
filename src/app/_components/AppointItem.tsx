@@ -25,11 +25,11 @@ import { EditSchedulingModal } from "./edit-scheduling.modal";
 const getPeriodLabel = (period: string) => {
   switch (period) {
     case "MORNING":
-      return "Manhã";
+      return "Matutino";
     case "AFTERNOON":
-      return "Tarde";
+      return "Vespertino";
     case "EVENING":
-      return "Noite";
+      return "Noturno";
     default:
       return period;
   }

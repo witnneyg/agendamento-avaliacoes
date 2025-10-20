@@ -1,13 +1,14 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { Teacher, Course, Discipline } from "@prisma/client";
+import { Teacher, Course, Discipline, Status } from "@prisma/client";
 
 interface UpdateTeacherInput {
   id: string;
   name: string;
   courseIds: string[];
   disciplineIds: string[];
+  status: Status; // Use o enum Status
 }
 
 export type TeacherWithRelations = Teacher & {
@@ -22,6 +23,7 @@ export async function updateTeacher(
     where: { id: data.id },
     data: {
       name: data.name,
+      status: data.status, // Adicione esta linha
       courses: {
         set: [],
         connect: data.courseIds.map((courseId) => ({ id: courseId })),

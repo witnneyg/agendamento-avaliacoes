@@ -112,10 +112,15 @@ export function CoursesTab() {
 
     setIsSubmitting(true);
     try {
+      const courseData = {
+        ...data,
+        name: data.name.toUpperCase(),
+      };
+
       if (editingCourse) {
         const updatedCourse = await updateCourse({
           id: editingCourse.id,
-          ...data,
+          ...courseData,
         });
 
         setCourses((prev) =>
@@ -124,7 +129,7 @@ export function CoursesTab() {
           )
         );
       } else {
-        const newCourse = await createCourse(data);
+        const newCourse = await createCourse(courseData);
         setCourses((prev) => [...prev, newCourse]);
       }
 

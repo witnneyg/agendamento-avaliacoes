@@ -19,6 +19,7 @@ import { TimePeriod } from "./time-period.selector";
 import { getUser } from "../_actions/getUser";
 import { Class, Discipline, User } from "@prisma/client";
 import { ClassSelector } from "./class-selector";
+import { sendSchedulingEmail } from "../_actions/send-scheduling-email";
 
 type Step =
   | "course"
@@ -90,10 +91,8 @@ export function Scheduling() {
 
   const handleCreateScheduling = async (details: BookingDetails) => {
     setBookingDetails(details);
-    console.log({ details });
     const slots = details.time.split(",").map((slot) => slot.trim());
 
-    // Encontrar o horário mais cedo e mais tarde para o período total
     let earliestStartTime: Date | null = null;
     let latestEndTime: Date | null = null;
 
@@ -112,7 +111,6 @@ export function Scheduling() {
       }
     }
 
-    // Criar apenas UM agendamento com todos os horários no details
     if (
       selectedCourse &&
       selectedSemester &&
@@ -130,18 +128,23 @@ export function Scheduling() {
         semesterId: selectedSemester.id,
         classId: selectedClass.id,
         date: new Date(details.date),
-        startTime: earliestStartTime, // Horário mais cedo
-        endTime: latestEndTime, // Horário mais tarde
+        startTime: earliestStartTime,
+        endTime: latestEndTime,
         timeSlots: details.time,
         details: {
           name: details.name,
-          time: details.time, // String com todos os horários: "07:30 - 08:20, 08:20 - 09:10"
-          timeSlots: slots, // Array com os horários individuais
+          time: details.time,
+          timeSlots: slots,
         },
       };
 
-      // Criar apenas UM agendamento
       await createScheduling(data);
+      await sendSchedulingEmail({
+        to: user!.email as string,
+        name: details.name,
+        date: details.date,
+        time: details.time,
+      });
     }
 
     setStep("confirmation");

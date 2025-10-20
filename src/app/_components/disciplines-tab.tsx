@@ -168,6 +168,7 @@ export default function DisciplinesTab() {
     try {
       const sortedData = {
         ...data,
+        name: data.name.toUpperCase(),
         dayPeriods: data.dayPeriods.sort(
           (a, b) => periodOrder.indexOf(a) - periodOrder.indexOf(b)
         ),

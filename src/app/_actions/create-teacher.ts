@@ -7,17 +7,19 @@ interface CreateTeacherInput {
   name: string;
   courseIds: string[];
   disciplineIds: string[];
+  status: Status;
 }
 
 export async function createTeacher({
   name,
   courseIds,
   disciplineIds,
+  status,
 }: CreateTeacherInput) {
   return await db.teacher.create({
     data: {
       name,
-      status: Status.ACTIVE,
+      status: status,
       courses: {
         connect: courseIds.map((id) => ({ id })),
       },

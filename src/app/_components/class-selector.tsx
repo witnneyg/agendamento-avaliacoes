@@ -27,7 +27,6 @@ export function ClassSelector({
       setIsLoading(true);
       try {
         const data = await getClassBySemesterId(semesterId);
-        console.log({ data });
         setClasses(data as any);
       } finally {
         setIsLoading(false);

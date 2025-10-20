@@ -104,7 +104,6 @@ export default function CalendarPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Estado para controlar sidebar
   const router = useRouter();
 
-  // Calcular dias baseado na visualização
   const daysToShow = view === "week" ? 7 : view === "day" ? 1 : 14;
   const startDate =
     view === "week" || view === "fortnight"
@@ -125,7 +124,6 @@ export default function CalendarPage() {
   useEffect(() => {
     async function fetchUser() {
       const session = await getUser();
-      console.log({ session });
       setUser(session);
     }
 
