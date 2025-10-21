@@ -61,6 +61,7 @@ import {
   ChevronUp,
   User,
   Users,
+  AlertTriangle,
 } from "lucide-react";
 
 import { getTeachers } from "@/app/_actions/get-teacher";
@@ -77,12 +78,17 @@ import type {
 } from "@prisma/client";
 import { translateTeacherStatus } from "@/utils/translate-teacher-status";
 import { updateTeacher } from "../_actions/update-teacher";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type TeacherWithRelations = Prisma.TeacherGetPayload<{
   include: { courses: true; disciplines: true };
 }>;
 
-type DisciplineWithCourse = Discipline & { courseName: string };
+type DisciplineWithCourse = Discipline & {
+  courseName: string;
+  isAssigned: boolean;
+  assignedTo?: string;
+};
 
 const teacherSchema = z.object({
   userId: z.string().min(1, "Selecione um professor"),
@@ -174,6 +180,27 @@ export function TeachersTab() {
     )
   );
 
+  // Função para verificar se uma disciplina já está atribuída a outro professor
+  const getDisciplineAssignmentInfo = (disciplineId: string) => {
+    const teacherWithDiscipline = teachers.find((teacher) =>
+      teacher.disciplines.some((d) => d.id === disciplineId)
+    );
+
+    if (teacherWithDiscipline) {
+      return {
+        isAssigned: true,
+        assignedTo: teacherWithDiscipline.name,
+        isAssignedToCurrent: editingTeacher?.id === teacherWithDiscipline.id,
+      };
+    }
+
+    return {
+      isAssigned: false,
+      assignedTo: null,
+      isAssignedToCurrent: false,
+    };
+  };
+
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
@@ -204,15 +231,22 @@ export function TeachersTab() {
         selectedCourseIds.map(async (courseId) => {
           const disciplines = await getDisciplinesByCourseId(courseId);
           const course = courses.find((c) => c.id === courseId);
-          return disciplines.map((discipline) => ({
-            ...discipline,
-            courseName: course?.name || "Curso não encontrado",
-          }));
+
+          return disciplines.map((discipline) => {
+            const assignmentInfo = getDisciplineAssignmentInfo(discipline.id);
+
+            return {
+              ...discipline,
+              courseName: course?.name || "Curso não encontrado",
+              isAssigned: assignmentInfo.isAssigned,
+              assignedTo: assignmentInfo.assignedTo,
+            };
+          });
         })
       );
 
       const allDisciplines = disciplinesData.flat();
-      setAvailableDisciplines(allDisciplines);
+      setAvailableDisciplines(allDisciplines as any);
 
       const newExpanded = new Set(expandedCourses);
       selectedCourseIds.forEach((courseId) => {
@@ -223,14 +257,25 @@ export function TeachersTab() {
       });
       setExpandedCourses(newExpanded);
 
-      const validDisciplineIds = selectedDisciplineIds.filter((id) =>
-        allDisciplines.some((d) => d.id === id)
-      );
+      // Remover disciplinas que estão atribuídas a outros professores (exceto na edição)
+      const validDisciplineIds = selectedDisciplineIds.filter((id) => {
+        const discipline = allDisciplines.find((d) => d.id === id);
+        if (!discipline) return false;
+
+        // Na edição, permitir manter disciplinas já atribuídas ao professor atual
+        if (editingTeacher && discipline.isAssigned) {
+          const assignmentInfo = getDisciplineAssignmentInfo(id);
+          return assignmentInfo.isAssignedToCurrent;
+        }
+
+        return !discipline.isAssigned;
+      });
+
       setValue("disciplineIds", validDisciplineIds);
     }
 
     fetchDisciplines();
-  }, [selectedCourseIds, setValue, watch, courses]);
+  }, [selectedCourseIds, setValue, watch, courses, editingTeacher]);
 
   const toggleCourseExpansion = (courseName: string) => {
     const newExpanded = new Set(expandedCourses);
@@ -251,6 +296,30 @@ export function TeachersTab() {
 
       if (!selectedUser) {
         alert("Usuário selecionado não encontrado");
+        return;
+      }
+
+      // Verificar se alguma disciplina selecionada já está atribuída a outro professor
+      const conflictedDisciplines = data.disciplineIds.filter(
+        (disciplineId) => {
+          const assignmentInfo = getDisciplineAssignmentInfo(disciplineId);
+          return (
+            assignmentInfo.isAssigned && !assignmentInfo.isAssignedToCurrent
+          );
+        }
+      );
+
+      if (conflictedDisciplines.length > 0 && !editingTeacher) {
+        const conflictedNames = conflictedDisciplines
+          .map((id) => {
+            const discipline = availableDisciplines.find((d) => d.id === id);
+            return discipline?.name || id;
+          })
+          .join(", ");
+
+        alert(
+          `As seguintes disciplinas já estão atribuídas a outros professores: ${conflictedNames}`
+        );
         return;
       }
 
@@ -337,7 +406,6 @@ export function TeachersTab() {
   };
 
   const handleUserSelect = (userId: string) => {
-    // Se já está selecionado, desmarca. Caso contrário, seleciona apenas este usuário
     if (selectedUserId === userId) {
       setValue("userId", "");
     } else {
@@ -347,6 +415,21 @@ export function TeachersTab() {
 
   const handleDisciplineToggle = (disciplineId: string, checked: boolean) => {
     const currentDisciplineIds = watch("disciplineIds");
+
+    const discipline = availableDisciplines.find((d) => d.id === disciplineId);
+
+    // Impedir seleção de disciplinas já atribuídas a outros professores
+    if (
+      checked &&
+      discipline?.isAssigned &&
+      (!editingTeacher || discipline.assignedTo !== editingTeacher.name)
+    ) {
+      alert(
+        `Esta disciplina já está atribuída ao professor: ${discipline.assignedTo}`
+      );
+      return;
+    }
+
     if (checked) {
       setValue("disciplineIds", [...currentDisciplineIds, disciplineId]);
     } else {
@@ -369,21 +452,28 @@ export function TeachersTab() {
     const courseDisciplines = sortedDisciplinesByCourse[courseName] || [];
     const currentDisciplineIds = watch("disciplineIds");
 
-    const allSelected = courseDisciplines.every((d) =>
+    // Filtrar apenas disciplinas disponíveis (não atribuídas a outros professores)
+    const availableDisciplines = courseDisciplines.filter(
+      (discipline) =>
+        !discipline.isAssigned ||
+        (editingTeacher && discipline.assignedTo === editingTeacher.name)
+    );
+
+    const allSelected = availableDisciplines.every((d) =>
       currentDisciplineIds.includes(d.id)
     );
 
     if (allSelected) {
       // Desmarcar todas
       const newDisciplineIds = currentDisciplineIds.filter(
-        (id) => !courseDisciplines.some((d) => d.id === id)
+        (id) => !availableDisciplines.some((d) => d.id === id)
       );
       setValue("disciplineIds", newDisciplineIds);
     } else {
-      // Marcar todas
-      const courseDisciplineIds = courseDisciplines.map((d) => d.id);
+      // Marcar apenas as disponíveis
+      const availableDisciplineIds = availableDisciplines.map((d) => d.id);
       const newDisciplineIds = [
-        ...new Set([...currentDisciplineIds, ...courseDisciplineIds]),
+        ...new Set([...currentDisciplineIds, ...availableDisciplineIds]),
       ];
       setValue("disciplineIds", newDisciplineIds);
     }
@@ -668,6 +758,15 @@ export function TeachersTab() {
 
               <div className="space-y-3">
                 <Label>Disciplinas</Label>
+
+                <Alert className="mb-4">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    Cada disciplina só pode ser atribuída a um professor.
+                    Disciplinas já atribuídas estarão desabilitadas.
+                  </AlertDescription>
+                </Alert>
+
                 <div className="border rounded-lg p-4 space-y-4 max-h-96 overflow-y-auto">
                   {availableDisciplines.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">
@@ -678,7 +777,13 @@ export function TeachersTab() {
                     Object.entries(sortedDisciplinesByCourse).map(
                       ([courseName, disciplines]) => {
                         const isExpanded = expandedCourses.has(courseName);
-                        const courseDisciplineIds = disciplines.map(
+                        const availableDisciplines = disciplines.filter(
+                          (discipline) =>
+                            !discipline.isAssigned ||
+                            (editingTeacher &&
+                              discipline.assignedTo === editingTeacher.name)
+                        );
+                        const courseDisciplineIds = availableDisciplines.map(
                           (d) => d.id
                         );
                         const allSelected = courseDisciplineIds.every((id) =>
@@ -702,12 +807,14 @@ export function TeachersTab() {
                                     selectAllDisciplinesInCourse(courseName)
                                   }
                                   onClick={(e) => e.stopPropagation()}
+                                  disabled={availableDisciplines.length === 0}
                                 />
                                 <span className="font-medium text-sm">
                                   {courseName}
                                 </span>
                                 <Badge variant="outline" className="text-xs">
-                                  {disciplines.length} disciplinas
+                                  {availableDisciplines.length} de{" "}
+                                  {disciplines.length} disponíveis
                                 </Badge>
                               </div>
                               {isExpanded ? (
@@ -723,7 +830,14 @@ export function TeachersTab() {
                                 {disciplines.map((discipline) => (
                                   <div
                                     key={discipline.id}
-                                    className="flex items-center space-x-2 py-1"
+                                    className={`flex items-center space-x-2 py-1 ${
+                                      discipline.isAssigned &&
+                                      (!editingTeacher ||
+                                        discipline.assignedTo !==
+                                          editingTeacher.name)
+                                        ? "opacity-50"
+                                        : ""
+                                    }`}
                                   >
                                     <Checkbox
                                       id={`discipline-${discipline.id}`}
@@ -736,12 +850,31 @@ export function TeachersTab() {
                                           checked as boolean
                                         )
                                       }
+                                      disabled={
+                                        discipline.isAssigned &&
+                                        (!editingTeacher ||
+                                          discipline.assignedTo !==
+                                            editingTeacher.name)
+                                      }
                                     />
                                     <Label
                                       htmlFor={`discipline-${discipline.id}`}
                                       className="text-sm font-normal cursor-pointer flex-1"
                                     >
-                                      {discipline.name}
+                                      <div className="flex items-center justify-between">
+                                        <span>{discipline.name}</span>
+                                        {discipline.isAssigned && (
+                                          <Badge
+                                            variant="outline"
+                                            className="text-xs ml-2"
+                                          >
+                                            {discipline.assignedTo ===
+                                            editingTeacher?.name
+                                              ? "Sua disciplina"
+                                              : `Prof: ${discipline.assignedTo}`}
+                                          </Badge>
+                                        )}
+                                      </div>
                                     </Label>
                                   </div>
                                 ))}
@@ -806,7 +939,7 @@ export function TeachersTab() {
         </Dialog>
       </div>
 
-      {/* Filtros */}
+      {/* Resto do código permanece igual */}
       <div className="flex gap-4">
         <div className="flex-1">
           <Input
