@@ -85,7 +85,7 @@ type TeacherWithRelations = Prisma.TeacherGetPayload<{
 type DisciplineWithCourse = Discipline & { courseName: string };
 
 const teacherSchema = z.object({
-  userIds: z.array(z.string()).min(1, "Selecione pelo menos um professor"),
+  userId: z.string().min(1, "Selecione um professor"),
   courseIds: z.array(z.string()).min(1, "Selecione pelo menos um curso"),
   disciplineIds: z
     .array(z.string())
@@ -125,7 +125,7 @@ export function TeachersTab() {
   } = useForm<TeacherForm>({
     resolver: zodResolver(teacherSchema),
     defaultValues: {
-      userIds: [],
+      userId: "",
       courseIds: [],
       disciplineIds: [],
       status: "ACTIVE",
@@ -134,7 +134,7 @@ export function TeachersTab() {
 
   const selectedCourseIds = watch("courseIds");
   const selectedDisciplineIds = watch("disciplineIds");
-  const selectedUserIds = watch("userIds");
+  const selectedUserId = watch("userId");
 
   const filteredTeachers = teachers.filter((teacher) => {
     const matchesSearch = teacher.name
@@ -247,47 +247,34 @@ export function TeachersTab() {
 
     setIsSubmitting(true);
     try {
-      const selectedUsers = users.filter((user) =>
-        data.userIds.includes(user.id)
-      );
+      const selectedUser = users.find((user) => user.id === data.userId);
 
-      if (selectedUsers.length === 0) {
-        alert("Nenhum usuário selecionado");
+      if (!selectedUser) {
+        alert("Usuário selecionado não encontrado");
         return;
       }
 
-      const results = await Promise.allSettled(
-        selectedUsers.map(async (user) => {
-          const teacherData = {
-            name: user.name || "Nome não informado",
-            courseIds: data.courseIds,
-            disciplineIds: data.disciplineIds,
-            status: data.status,
-          };
+      const teacherData = {
+        name: selectedUser.name || "Nome não informado",
+        courseIds: data.courseIds,
+        disciplineIds: data.disciplineIds,
+        status: data.status,
+      };
 
-          const existingTeacher = teachers.find(
-            (teacher) => teacher.name === user.name
-          );
+      let result;
 
-          if (existingTeacher) {
-            return await updateTeacher({
-              id: existingTeacher.id,
-              ...teacherData,
-            });
-          } else {
-            return await createTeacher(teacherData);
-          }
-        })
-      );
+      if (editingTeacher) {
+        result = await updateTeacher({
+          id: editingTeacher.id,
+          ...teacherData,
+        });
+      } else {
+        result = await createTeacher(teacherData);
+      }
 
-      const failedResults = results.filter(
-        (result) => result.status === "rejected"
-      );
-      if (failedResults.length > 0) {
-        console.error("Alguns professores falharam:", failedResults);
-        alert(
-          `Erro ao salvar ${failedResults.length} professores. Verifique o console.`
-        );
+      if (result && "error" in result) {
+        alert(`Erro ao salvar professor: ${result.error}`);
+        return;
       }
 
       const updatedTeachers = await getTeachers();
@@ -300,8 +287,8 @@ export function TeachersTab() {
       setUserSearchTerm("");
       setExpandedCourses(new Set());
     } catch (error) {
-      console.error("Erro ao salvar professores:", error);
-      alert("Erro ao salvar professores. Tente novamente.");
+      console.error("Erro ao salvar professor:", error);
+      alert("Erro ao salvar professor. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -314,7 +301,7 @@ export function TeachersTab() {
     const correspondingUser = users.find((user) => user.name === teacher.name);
 
     reset({
-      userIds: correspondingUser ? [correspondingUser.id] : [],
+      userId: correspondingUser ? correspondingUser.id : "",
       courseIds: teacher.courses.map((c) => c.id),
       disciplineIds: teacher.disciplines.map((d) => d.id),
       status: teacher.status,
@@ -349,17 +336,13 @@ export function TeachersTab() {
     }
   };
 
-  const handleUserToggle = (userId: string, checked: boolean) => {
-    const currentUserIds = watch("userIds");
-    let newUserIds: string[];
-
-    if (checked) {
-      newUserIds = [...currentUserIds, userId];
+  const handleUserSelect = (userId: string) => {
+    // Se já está selecionado, desmarca. Caso contrário, seleciona apenas este usuário
+    if (selectedUserId === userId) {
+      setValue("userId", "");
     } else {
-      newUserIds = currentUserIds.filter((id) => id !== userId);
+      setValue("userId", userId, { shouldValidate: true });
     }
-
-    setValue("userIds", newUserIds, { shouldValidate: true });
   };
 
   const handleDisciplineToggle = (disciplineId: string, checked: boolean) => {
@@ -406,31 +389,9 @@ export function TeachersTab() {
     }
   };
 
-  const selectAllUsers = () => {
-    const currentUserIds = watch("userIds");
-    const allSelected = filteredUsers.every((user) =>
-      currentUserIds.includes(user.id)
-    );
-
-    if (allSelected) {
-      // Desmarcar todos
-      setValue("userIds", []);
-    } else {
-      // Marcar todos
-      setValue(
-        "userIds",
-        filteredUsers.map((user) => user.id)
-      );
-    }
-  };
-
-  const getSelectedUsersInfo = () => {
-    return selectedUserIds
-      .map((userId) => {
-        const user = users.find((u) => u.id === userId);
-        return user;
-      })
-      .filter(Boolean);
+  const getSelectedUserInfo = () => {
+    if (!selectedUserId) return null;
+    return users.find((user) => user.id === selectedUserId);
   };
 
   const isUserAlreadyTeacher = (userId: string) => {
@@ -454,7 +415,7 @@ export function TeachersTab() {
             setIsDialogOpen(open);
             if (!open) {
               reset({
-                userIds: [],
+                userId: "",
                 courseIds: [],
                 disciplineIds: [],
                 status: "ACTIVE",
@@ -469,7 +430,7 @@ export function TeachersTab() {
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              {editingTeacher ? "Editar Professor" : "Gerenciar Professores"}
+              {editingTeacher ? "Editar Professor" : "Adicionar Professor"}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -477,86 +438,63 @@ export function TeachersTab() {
               <DialogTitle>
                 {editingTeacher
                   ? `Editar Professor: ${editingTeacher.name}`
-                  : "Adicionar/Atualizar Professores"}
+                  : "Adicionar Professor"}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {!editingTeacher && (
                 <div className="space-y-2">
-                  <Label htmlFor="userIds">
+                  <Label htmlFor="userId">
                     <User className="inline h-4 w-4 mr-2" />
-                    Selecionar Usuários ({selectedUserIds.length} selecionados)
+                    Selecionar Usuário
                   </Label>
 
-                  {selectedUserIds.length > 0 && (
+                  {selectedUserId && (
                     <div className="mb-3 p-3 bg-primary/10 rounded-lg border border-primary">
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Users className="h-4 w-4 text-primary" />
                           <span className="font-medium">
-                            Usuários selecionados:
+                            Usuário selecionado:
                           </span>
                         </div>
-                        <Badge variant="secondary">
-                          {selectedUserIds.length} usuários
-                        </Badge>
+                        <Badge variant="secondary">1 usuário</Badge>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {getSelectedUsersInfo().map((user) => (
-                          <Badge
-                            key={user!.id}
-                            variant="outline"
-                            className="flex items-center gap-1"
-                          >
-                            <User className="h-3 w-3" />
-                            {user!.name}
-                            {isUserAlreadyTeacher(user!.id) && (
-                              <Badge
-                                variant="secondary"
-                                className="ml-1 text-xs"
-                              >
-                                Professor
-                              </Badge>
-                            )}
-                            <X
-                              className="h-3 w-3 cursor-pointer"
-                              onClick={() => handleUserToggle(user!.id, false)}
-                            />
-                          </Badge>
-                        ))}
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <Badge
+                          variant="outline"
+                          className="flex items-center gap-1"
+                        >
+                          <User className="h-3 w-3" />
+                          {getSelectedUserInfo()?.name}
+                          {isUserAlreadyTeacher(selectedUserId) && (
+                            <Badge variant="secondary" className="ml-1 text-xs">
+                              Professor
+                            </Badge>
+                          )}
+                          <X
+                            className="h-3 w-3 cursor-pointer"
+                            onClick={() => setValue("userId", "")}
+                          />
+                        </Badge>
                       </div>
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        placeholder="Buscar usuários por nome ou email..."
-                        value={userSearchTerm}
-                        onChange={(e) => setUserSearchTerm(e.target.value)}
-                        className="pl-10 pr-10"
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Buscar usuários por nome ou email..."
+                      value={userSearchTerm}
+                      onChange={(e) => setUserSearchTerm(e.target.value)}
+                      className="pl-10 pr-10"
+                    />
+                    {userSearchTerm && (
+                      <X
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 cursor-pointer"
+                        onClick={clearUserSearch}
                       />
-                      {userSearchTerm && (
-                        <X
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 cursor-pointer"
-                          onClick={clearUserSearch}
-                        />
-                      )}
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={selectAllUsers}
-                      className="ml-2"
-                    >
-                      {filteredUsers.every((user) =>
-                        selectedUserIds.includes(user.id)
-                      )
-                        ? "Desmarcar Todos"
-                        : "Selecionar Todos"}
-                    </Button>
+                    )}
                   </div>
 
                   <div className="border rounded-lg p-4 space-y-3 max-h-48 overflow-y-auto">
@@ -568,7 +506,7 @@ export function TeachersTab() {
                       </p>
                     ) : (
                       filteredUsers.map((user) => {
-                        const isSelected = selectedUserIds.includes(user.id);
+                        const isSelected = selectedUserId === user.id;
                         const isTeacher = isUserAlreadyTeacher(user.id);
 
                         return (
@@ -579,17 +517,7 @@ export function TeachersTab() {
                                 ? "bg-primary/10 border-primary"
                                 : "hover:bg-muted/50"
                             } ${isTeacher ? "border-l-4 border-l-blue-500" : ""}`}
-                            onClick={(e) => {
-                              // Prevenir que o clique no checkbox dispare também o clique no container
-                              if (
-                                (e.target as HTMLElement).closest(
-                                  'button, input, [role="checkbox"]'
-                                )
-                              ) {
-                                return;
-                              }
-                              handleUserToggle(user.id, !isSelected);
-                            }}
+                            onClick={() => handleUserSelect(user.id)}
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
@@ -616,15 +544,17 @@ export function TeachersTab() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
-                                <Checkbox
-                                  checked={isSelected}
-                                  onCheckedChange={(checked) => {
-                                    handleUserToggle(
-                                      user.id,
-                                      checked as boolean
-                                    );
-                                  }}
-                                />
+                                <div
+                                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                    isSelected
+                                      ? "bg-primary border-primary"
+                                      : "border-gray-300"
+                                  }`}
+                                >
+                                  {isSelected && (
+                                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -632,9 +562,9 @@ export function TeachersTab() {
                       })
                     )}
                   </div>
-                  {errors.userIds && (
+                  {errors.userId && (
                     <p className="text-sm text-red-500">
-                      {errors.userIds.message}
+                      {errors.userId.message}
                     </p>
                   )}
                 </div>
@@ -867,7 +797,7 @@ export function TeachersTab() {
                   ) : editingTeacher ? (
                     "Atualizar Professor"
                   ) : (
-                    "Aplicar aos Professores"
+                    "Adicionar Professor"
                   )}
                 </Button>
               </DialogFooter>

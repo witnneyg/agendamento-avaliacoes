@@ -447,10 +447,12 @@ export function BookingForm({
                           <div className="flex items-center gap-2">
                             <div className="w-2 h-2 bg-primary rounded-full"></div>
                             <Label className="text-base font-semibold">
-                              {periodGroup.period === Period.MORNING && "Manhã"}
+                              {periodGroup.period === Period.MORNING &&
+                                "Matutino"}
                               {periodGroup.period === Period.AFTERNOON &&
-                                "Tarde"}
-                              {periodGroup.period === Period.EVENING && "Noite"}
+                                "Vespertino"}
+                              {periodGroup.period === Period.EVENING &&
+                                "Noturno"}
                             </Label>
                           </div>
 

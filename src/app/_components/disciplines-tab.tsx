@@ -79,9 +79,9 @@ export type DisciplineWithRelations = Prisma.DisciplineGetPayload<{
 }>;
 
 const periodOptions: { value: Period; label: string }[] = [
-  { value: "MORNING", label: "Manhã" },
-  { value: "AFTERNOON", label: "Tarde" },
-  { value: "EVENING", label: "Noite" },
+  { value: "MORNING", label: "Matutino" },
+  { value: "AFTERNOON", label: "Vespertino" },
+  { value: "EVENING", label: "Noturno" },
 ];
 
 const periodOrder: Period[] = ["MORNING", "AFTERNOON", "EVENING"];
@@ -489,10 +489,10 @@ export default function DisciplinesTab() {
                       {disciplina.dayPeriods
                         .map((p) =>
                           p === "MORNING"
-                            ? "Manhã"
+                            ? "Matutino"
                             : p === "AFTERNOON"
-                              ? "Tarde"
-                              : "Noite"
+                              ? "Vespertino"
+                              : "Noturno"
                         )
                         .join(", ")}
                     </TableCell>

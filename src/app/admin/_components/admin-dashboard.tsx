@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,25 +34,38 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Plus, Trash2, Users, Check, X, Settings } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Trash2,
+  Users,
+  Check,
+  X,
+  Settings,
+  Loader2,
+} from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProfileManagement from "./permissions";
 import { NavBar } from "@/app/_components/navbar";
+import { getUsers } from "@/app/_actions/get-users";
 
-type Role = "DIRECAO" | "PROFESSOR" | "SECRETARIA" | "USUARIO_PADRAO" | "ADMIN";
+// Baseado no seu schema, o Role padrão é USER, não USUARIO_PADRAO
+type Role = "DIRECAO" | "PROFESSOR" | "SECRETARIA" | "USER" | "ADMIN";
 
 type User = {
   id: string;
-  name: string;
-  email: string;
+  name: string | null;
+  email: string | null;
   roles: Role[];
+  image?: string | null;
+  emailVerified?: Date | null;
 };
 
 const roleLabels: Record<Role, string> = {
   DIRECAO: "Direção",
   PROFESSOR: "Professor",
   SECRETARIA: "Secretaria",
-  USUARIO_PADRAO: "Usuário Padrão",
+  USER: "Usuário", // Alterado de USUARIO_PADRAO para USER
   ADMIN: "Admin",
 };
 
@@ -64,7 +77,7 @@ const getAccessBadgeVariant = (access: Role) => {
       return "default";
     case "SECRETARIA":
       return "secondary";
-    case "USUARIO_PADRAO":
+    case "USER":
       return "outline";
     case "ADMIN":
       return "destructive";
@@ -76,32 +89,9 @@ const getAccessBadgeVariant = (access: Role) => {
 export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [accessFilter, setAccessFilter] = useState<Role | "ALL">("ALL");
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: "1",
-      name: "João Silva",
-      email: "joao@escola.com",
-      roles: ["DIRECAO", "ADMIN"],
-    },
-    {
-      id: "2",
-      name: "Maria Santos",
-      email: "maria@escola.com",
-      roles: ["PROFESSOR"],
-    },
-    {
-      id: "3",
-      name: "Ana Costa",
-      email: "ana@escola.com",
-      roles: ["SECRETARIA"],
-    },
-    {
-      id: "4",
-      name: "Pedro Oliveira",
-      email: "pedro@escola.com",
-      roles: ["USUARIO_PADRAO"],
-    },
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [removeAccessConfirmOpen, setRemoveAccessConfirmOpen] = useState(false);
@@ -110,13 +100,39 @@ export default function AdminDashboard() {
     accessLevel: Role;
     userName: string;
   } | null>(null);
-  const currentUserId = "1";
 
-  const handleDeleteClick = (user: User) => {
-    if (user.id === currentUserId && user.roles.includes("ADMIN")) {
-      return;
+  // Buscar usuários do banco de dados
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        setLoading(true);
+        setError(null);
+        const usersData = await getUsers();
+
+        // Converter os dados do banco para o formato esperado pelo componente
+        const formattedUsers: User[] = usersData.map((user) => ({
+          id: user.id,
+          name: user.name || "Nome não informado",
+          email: user.email,
+          roles: (user.roles || ["USER"]) as Role[], // Default para ["USER"] conforme schema
+          image: user.image,
+          emailVerified: user.emailVerified,
+        }));
+
+        setUsers(formattedUsers);
+      } catch (error) {
+        console.error("Erro ao buscar usuários:", error);
+        setError("Erro ao carregar usuários. Tente novamente.");
+      } finally {
+        setLoading(false);
+      }
     }
 
+    fetchUsers();
+  }, []);
+
+  const handleDeleteClick = (user: User) => {
+    // Verificar se é o único admin
     const adminCount = users.filter((u) => u.roles.includes("ADMIN")).length;
     if (user.roles.includes("ADMIN") && adminCount <= 1) {
       return;
@@ -142,7 +158,10 @@ export default function AdminDashboard() {
       }
 
       const newAccess = currentAccess.filter((level) => level !== accessLevel);
-      if (newAccess.length === 0) return;
+      if (newAccess.length === 0) {
+        // Se remover todas as roles, manter pelo menos USER (default do schema)
+        newAccess.push("USER");
+      }
 
       setUsers((prevUsers) =>
         prevUsers.map((u) => (u.id === userId ? { ...u, roles: newAccess } : u))
@@ -165,7 +184,10 @@ export default function AdminDashboard() {
     }
 
     const newAccess = user.roles.filter((level) => level !== accessLevel);
-    if (newAccess.length === 0) return;
+    if (newAccess.length === 0) {
+      // Garantir que sempre tenha pelo menos USER role
+      newAccess.push("USER");
+    }
 
     setAccessToRemove({
       userId,
@@ -183,6 +205,10 @@ export default function AdminDashboard() {
     if (!user) return;
 
     const newAccess = user.roles.filter((level) => level !== accessLevel);
+    if (newAccess.length === 0) {
+      newAccess.push("USER");
+    }
+
     setUsers((prevUsers) =>
       prevUsers.map((u) => (u.id === userId ? { ...u, roles: newAccess } : u))
     );
@@ -205,7 +231,8 @@ export default function AdminDashboard() {
       if (adminCount <= 1) return false;
     }
 
-    if (user.roles.length <= 1) return false;
+    // Não permitir remover se for a única role (sempre deve ter pelo menos USER)
+    if (user.roles.length <= 1 && user.roles[0] === accessLevel) return false;
 
     return true;
   };
@@ -231,6 +258,50 @@ export default function AdminDashboard() {
     setDeleteConfirmOpen(false);
   };
 
+  if (loading) {
+    return (
+      <>
+        <NavBar />
+        <div className="min-h-screen bg-background p-3 sm:p-6">
+          <div className="container mx-auto space-y-6">
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">Carregando usuários...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <NavBar />
+        <div className="min-h-screen bg-background p-3 sm:p-6">
+          <div className="container mx-auto space-y-6">
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="bg-destructive/10 p-3 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4">
+                  <X className="h-6 w-6 text-destructive" />
+                </div>
+                <h3 className="text-lg font-medium mb-2">
+                  Erro ao carregar usuários
+                </h3>
+                <p className="text-muted-foreground mb-4">{error}</p>
+                <Button onClick={() => window.location.reload()}>
+                  Tentar Novamente
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <NavBar />
@@ -246,7 +317,7 @@ export default function AdminDashboard() {
                   Gerenciamento de Usuários
                 </h1>
                 <p className="text-sm sm:text-base text-muted-foreground">
-                  Gerencie usuários e seus níveis de acesso
+                  {users.length} usuário(s) encontrado(s)
                 </p>
               </div>
             </div>
@@ -301,7 +372,7 @@ export default function AdminDashboard() {
                             "DIRECAO",
                             "PROFESSOR",
                             "SECRETARIA",
-                            "USUARIO_PADRAO",
+                            "USER", // Alterado de USUARIO_PADRAO para USER
                             "ADMIN",
                           ] as Role[]
                         ).map((r) => (
@@ -343,7 +414,7 @@ export default function AdminDashboard() {
                               {user.name}
                             </TableCell>
                             <TableCell className="text-card-foreground">
-                              {user.email}
+                              {user.email || "Email não informado"}
                             </TableCell>
                             <TableCell>
                               <div className="flex flex-wrap gap-1">
@@ -389,7 +460,7 @@ export default function AdminDashboard() {
                                         "DIRECAO",
                                         "PROFESSOR",
                                         "SECRETARIA",
-                                        "USUARIO_PADRAO",
+                                        "USER", // Alterado de USUARIO_PADRAO para USER
                                         "ADMIN",
                                       ] as Role[]
                                     ).map((level) => (
@@ -416,20 +487,14 @@ export default function AdminDashboard() {
                                 size="sm"
                                 onClick={() => handleDeleteClick(user)}
                                 disabled={
-                                  (user.id === currentUserId &&
-                                    user.roles.includes("ADMIN")) ||
-                                  (user.roles.includes("ADMIN") &&
-                                    users.filter((u) =>
-                                      u.roles.includes("ADMIN")
-                                    ).length <= 1)
+                                  user.roles.includes("ADMIN") &&
+                                  users.filter((u) => u.roles.includes("ADMIN"))
+                                    .length <= 1
                                 }
                                 className={`h-8 w-8 p-0 cursor-pointer ${
-                                  (user.id === currentUserId &&
-                                    user.roles.includes("ADMIN")) ||
-                                  (user.roles.includes("ADMIN") &&
-                                    users.filter((u) =>
-                                      u.roles.includes("ADMIN")
-                                    ).length <= 1)
+                                  user.roles.includes("ADMIN") &&
+                                  users.filter((u) => u.roles.includes("ADMIN"))
+                                    .length <= 1
                                     ? "opacity-50 cursor-not-allowed"
                                     : "hover:bg-destructive/10 hover:text-destructive"
                                 }`}
@@ -454,7 +519,7 @@ export default function AdminDashboard() {
                                   {user.name}
                                 </h3>
                                 <p className="text-sm text-muted-foreground truncate">
-                                  {user.email}
+                                  {user.email || "Email não informado"}
                                 </p>
                               </div>
                               <Button
@@ -462,20 +527,14 @@ export default function AdminDashboard() {
                                 size="sm"
                                 onClick={() => handleDeleteClick(user)}
                                 disabled={
-                                  (user.id === currentUserId &&
-                                    user.roles.includes("ADMIN")) ||
-                                  (user.roles.includes("ADMIN") &&
-                                    users.filter((u) =>
-                                      u.roles.includes("ADMIN")
-                                    ).length <= 1)
+                                  user.roles.includes("ADMIN") &&
+                                  users.filter((u) => u.roles.includes("ADMIN"))
+                                    .length <= 1
                                 }
                                 className={`h-8 w-8 p-0 ml-2 ${
-                                  (user.id === currentUserId &&
-                                    user.roles.includes("ADMIN")) ||
-                                  (user.roles.includes("ADMIN") &&
-                                    users.filter((u) =>
-                                      u.roles.includes("ADMIN")
-                                    ).length <= 1)
+                                  user.roles.includes("ADMIN") &&
+                                  users.filter((u) => u.roles.includes("ADMIN"))
+                                    .length <= 1
                                     ? "opacity-50 cursor-not-allowed"
                                     : "hover:bg-destructive/10 hover:text-destructive"
                                 }`}
@@ -532,7 +591,7 @@ export default function AdminDashboard() {
                                         "DIRECAO",
                                         "PROFESSOR",
                                         "SECRETARIA",
-                                        "USUARIO_PADRAO",
+                                        "USER", // Alterado de USUARIO_PADRAO para USER
                                         "ADMIN",
                                       ] as Role[]
                                     ).map((level) => (
@@ -562,7 +621,9 @@ export default function AdminDashboard() {
                   {filteredUsers.length === 0 && (
                     <div className="text-center py-8">
                       <p className="text-muted-foreground">
-                        Nenhum usuário encontrado com os filtros aplicados.
+                        {users.length === 0
+                          ? "Nenhum usuário encontrado no sistema."
+                          : "Nenhum usuário encontrado com os filtros aplicados."}
                       </p>
                     </div>
                   )}

@@ -19,7 +19,7 @@ export default function AdminPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">
-                Painel da Direção
+                Painel da Secretaria
               </h1>
               <p className="text-muted-foreground">
                 Gerencie o seu sistema de orientação acadêmica

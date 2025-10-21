@@ -52,9 +52,9 @@ const PERIODS: Period[] = ["MORNING", "AFTERNOON", "EVENING"];
 const SEMESTER_DURATIONS = Array.from({ length: 12 }, (_, i) => i + 1);
 
 const periodLabels = {
-  MORNING: "Manhã",
-  AFTERNOON: "Tarde",
-  EVENING: "Noite",
+  MORNING: "Matutino",
+  AFTERNOON: "Vespertino",
+  EVENING: "Noturno",
 };
 
 const courseSchema = z.object({
