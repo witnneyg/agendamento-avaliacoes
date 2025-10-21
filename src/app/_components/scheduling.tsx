@@ -20,6 +20,8 @@ import { getUser } from "../_actions/getUser";
 import { Class, Discipline, User } from "@prisma/client";
 import { ClassSelector } from "./class-selector";
 import { sendSchedulingEmail } from "../_actions/send-scheduling-email";
+// IMPORTE A SERVER ACTION CORRETAMENTE
+import { getTeacherByUserId } from "../_actions/get-teacher-by-user-id";
 
 type Step =
   | "course"
@@ -56,6 +58,7 @@ export function Scheduling() {
   const [selectedTimePeriod, setSelectedTimePeriod] = useState<
     TimePeriod | undefined
   >(undefined);
+  const [teacherId, setTeacherId] = useState<string | undefined>(undefined);
 
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(
     null
@@ -85,9 +88,28 @@ export function Scheduling() {
     async function fetch() {
       const data = await getUser();
       setUser(data);
+
+      // Use a server action importada, não uma função local
+      if (data) {
+        const teacherData = await getTeacherByUserId(data.id);
+        if (teacherData) {
+          setTeacherId(teacherData.id);
+        }
+      }
     }
     fetch();
   }, []);
+
+  // REMOVA ESTA FUNÇÃO LOCAL - ELA ESTÁ CAUSANDO A RECURSÃO INFINITA
+  // const getTeacherByUserId = async (userId: string): Promise<any> => {
+  //   try {
+  //     const teacherData = await getTeacherByUserId(userId);
+  //     return teacherData;
+  //   } catch (error) {
+  //     console.error("Erro ao buscar professor:", error);
+  //     return null;
+  //   }
+  // };
 
   const handleCreateScheduling = async (details: BookingDetails) => {
     setBookingDetails(details);
@@ -139,12 +161,14 @@ export function Scheduling() {
       };
 
       await createScheduling(data);
-      await sendSchedulingEmail({
-        to: user!.email as string,
-        name: details.name,
-        date: details.date,
-        time: details.time,
-      });
+      if (user.email) {
+        await sendSchedulingEmail({
+          to: user.email,
+          name: details.name,
+          date: details.date,
+          time: details.time,
+        });
+      }
     }
 
     setStep("confirmation");
@@ -182,7 +206,10 @@ export function Scheduling() {
       </CardHeader>
       <CardContent>
         {step === "course" && (
-          <CourseSelector onSelectCourse={handleCourseSelect} />
+          <CourseSelector
+            onSelectCourse={handleCourseSelect}
+            teacherId={teacherId}
+          />
         )}
         {step === "period" && selectedCourse && (
           <SemesterSelector
@@ -232,7 +259,7 @@ export function Scheduling() {
               classes={selectedClass}
               semester={selectedSemester}
               discipline={selectedDiscipline}
-              date={bookingDetails.date} // Use a data do bookingDetails
+              date={bookingDetails.date}
               details={bookingDetails}
               onScheduleAnother={handleReset}
             />

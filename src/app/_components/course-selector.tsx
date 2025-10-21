@@ -9,6 +9,9 @@ import { useEffect, useState } from "react";
 import { getIconByName } from "../_helpers/getIconByName";
 import { Period } from "@prisma/client";
 import { getCourses } from "../_actions/get-courses";
+import { getUser } from "../_actions/getUser";
+import { getTeacherByUserId } from "../_actions/get-teacher-by-user-id";
+import { getTeacherCourses } from "../_actions/get-teacher-courses";
 
 export interface Course {
   id: string;
@@ -19,63 +22,171 @@ export interface Course {
 
 interface CourseSelectorProps {
   onSelectCourse: (course: Course) => void;
+  teacherId?: string; // Para passar o teacherId diretamente
+  filterByUser?: boolean; // Para filtrar automaticamente pelo usuário logado
 }
 
-export function CourseSelector({ onSelectCourse }: CourseSelectorProps) {
+export function CourseSelector({
+  onSelectCourse,
+  teacherId,
+  filterByUser = false,
+}: CourseSelectorProps) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetch() {
+    async function fetchCourses() {
       setIsLoading(true);
+      setError(null);
+      console.log({ teacherId });
       try {
-        const data = await getCourses();
-        setCourses(data);
+        if (teacherId) {
+          // Se tem teacherId, busca apenas os cursos do professor específico
+          console.log("Buscando cursos para o professor:", teacherId);
+          const teacherCourses = await getTeacherCourses(teacherId);
+          setCourses(teacherCourses);
+        } else if (filterByUser) {
+          // Se deve filtrar pelo usuário logado
+          console.log("Buscando cursos para o usuário logado");
+          const userData = await getUser();
+
+          if (!userData) {
+            setError("Usuário não encontrado");
+            setCourses([]);
+            return;
+          }
+
+          const teacherData = await getTeacherByUserId(userData.id);
+
+          if (!teacherData) {
+            setError("Professor não encontrado para este usuário");
+            setCourses([]);
+            return;
+          }
+
+          const teacherCourses = await getTeacherCourses(teacherData.id);
+          setCourses(teacherCourses);
+        } else {
+          // Busca todos os cursos (comportamento padrão)
+          console.log("Buscando todos os cursos");
+          const data = await getCourses();
+          setCourses(data);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar cursos:", error);
+        setError("Erro ao carregar cursos. Tente novamente.");
+        setCourses([]);
       } finally {
         setIsLoading(false);
       }
     }
 
-    fetch();
-  }, []);
+    fetchCourses();
+  }, [teacherId, filterByUser]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin" />
+        <span className="ml-2">
+          {teacherId || filterByUser
+            ? "Carregando seus cursos..."
+            : "Carregando cursos..."}
+        </span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <div className="bg-destructive/10 p-4 rounded-lg max-w-md mx-auto">
+          <p className="text-destructive font-medium mb-2">Erro</p>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (courses.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <div className="bg-muted/50 p-6 rounded-lg max-w-md mx-auto">
+          <p className="font-medium mb-2">
+            {teacherId || filterByUser
+              ? "Nenhum curso encontrado"
+              : "Nenhum curso disponível"}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {teacherId || filterByUser
+              ? "Você não está associado a nenhum curso no momento."
+              : "Não há cursos cadastrados no sistema."}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
-      {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span className="ml-2">Carregando cursos...</span>
-        </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-3">
-          {courses.map((course) => {
-            const icon = getIconByName(course.name);
+      <div className="mb-4">
+        <p className="text-sm text-muted-foreground">
+          {teacherId || filterByUser
+            ? `${courses.length} curso(s) disponível(eis) para você`
+            : `${courses.length} curso(s) disponível(eis)`}
+        </p>
+      </div>
 
-            return (
-              <Card
-                key={course.id}
-                className="cursor-pointer transition-all hover:bg-primary/5"
-                onClick={() => onSelectCourse(course)}
-              >
-                <CardContent className="p-6 h-full">
-                  <div className="flex flex-col items-center text-center space-y-3 h-full justify-between">
-                    <div className="bg-primary/10 p-3 rounded-full hover:bg-primary/15">
-                      {icon}
-                    </div>
-                    <h3 className="font-medium text-lg">{course.name}</h3>
-                    <p className="text-sm text-muted-foreground">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {courses.map((course) => {
+          const icon = getIconByName(course.name);
+
+          return (
+            <Card
+              key={course.id}
+              className="cursor-pointer transition-all hover:shadow-md hover:border-primary/50 border-2"
+              onClick={() => onSelectCourse(course)}
+            >
+              <CardContent className="p-6 h-full">
+                <div className="flex flex-col items-center text-center space-y-3 h-full justify-between">
+                  <div className="bg-primary/10 p-3 rounded-full hover:bg-primary/15 transition-colors">
+                    {icon}
+                  </div>
+
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg mb-2">
+                      {course.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
                       {course.description}
                     </p>
-                    <Button className="mt-2 w-full cursor-pointer">
-                      Selecionar
+                  </div>
+
+                  <div className="w-full">
+                    <div className="flex flex-wrap gap-1 justify-center mb-3">
+                      {course.periods.map((period) => (
+                        <span
+                          key={period}
+                          className="inline-block px-2 py-1 text-xs bg-secondary text-secondary-foreground rounded-full"
+                        >
+                          {period === Period.MORNING && "Matutino"}
+                          {period === Period.AFTERNOON && "Vespertino"}
+                          {period === Period.EVENING && "Noturno"}
+                        </span>
+                      ))}
+                    </div>
+
+                    <Button className="w-full cursor-pointer">
+                      Selecionar Curso
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }
