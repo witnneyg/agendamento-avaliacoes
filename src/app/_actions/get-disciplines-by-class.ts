@@ -2,7 +2,10 @@
 
 import { db } from "@/lib/prisma";
 
-export async function getDisciplinesByClass(classId: string) {
+export async function getDisciplinesByClass(
+  classId: string,
+  teacherId?: string
+) {
   const classData = await db.class.findUnique({
     where: { id: classId },
     include: {
@@ -12,6 +15,27 @@ export async function getDisciplinesByClass(classId: string) {
           disciplines: {
             where: {
               status: "ACTIVE",
+              // Filtro por professor se teacherId for fornecido
+              ...(teacherId && {
+                teachers: {
+                  some: {
+                    id: teacherId,
+                    status: "ACTIVE",
+                  },
+                },
+              }),
+            },
+            include: {
+              // Incluir informações dos professores para mostrar no componente
+              teachers: {
+                where: {
+                  status: "ACTIVE",
+                },
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
           },
         },

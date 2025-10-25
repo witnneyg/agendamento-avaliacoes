@@ -11,22 +11,25 @@ import { getOrderedPeriods } from "../_helpers/getOrderedPeriods";
 interface DisciplineSelectorProps {
   classId: string;
   semesterId: string;
+  teacherId?: string;
   onSelectDiscipline: (discipline: Discipline) => void;
   onBack: () => void;
 }
 
 export function DisciplineSelector({
   classId,
+  teacherId,
   onSelectDiscipline,
   onBack,
 }: DisciplineSelectorProps) {
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     async function fetch() {
       setIsLoading(true);
       try {
-        const data = await getDisciplinesByClass(classId);
+        const data = await getDisciplinesByClass(classId, teacherId);
         setDisciplines(data);
       } finally {
         setIsLoading(false);
@@ -34,7 +37,8 @@ export function DisciplineSelector({
     }
 
     fetch();
-  }, [classId]);
+  }, [classId, teacherId]);
+
   return (
     <div className="space-y-4">
       <Button variant="ghost" size="sm" onClick={onBack} className="mb-2">
@@ -59,6 +63,7 @@ export function DisciplineSelector({
                 <CardContent className="p-6 h-full">
                   <div className="flex flex-col space-y-2 h-full justify-between">
                     <h3 className="font-medium text-lg">{discipline.name}</h3>
+
                     <div className="flex flex-wrap gap-1 mt-2">
                       {getOrderedPeriods(discipline.dayPeriods).map(
                         (period) => (
@@ -81,7 +86,9 @@ export function DisciplineSelector({
           ) : (
             <div className="col-span-2 text-center py-8">
               <p className="text-muted-foreground">
-                Nenhuma disciplina disponível para esta turma.
+                {teacherId
+                  ? "Nenhuma disciplina vinculada a você nesta turma."
+                  : "Nenhuma disciplina disponível para esta turma."}
               </p>
             </div>
           )}
