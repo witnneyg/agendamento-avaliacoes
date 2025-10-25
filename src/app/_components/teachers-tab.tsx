@@ -114,8 +114,9 @@ export function TeachersTab() {
   const [loadingDeleteId, setLoadingDeleteId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [teacherSearchTerm, setTeacherSearchTerm] = useState("");
   const [userSearchTerm, setUserSearchTerm] = useState("");
+  const [courseSearchTerm, setCourseSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(
     new Set()
@@ -145,7 +146,7 @@ export function TeachersTab() {
   const filteredTeachers = teachers.filter((teacher) => {
     const matchesSearch = teacher.name
       .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+      .includes(teacherSearchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === "ALL" || teacher.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -153,7 +154,7 @@ export function TeachersTab() {
 
   const filteredCourses = courses
     .filter((course) =>
-      course.name.toLowerCase().includes(searchTerm.toLowerCase())
+      course.name.toLowerCase().includes(courseSearchTerm.toLowerCase())
     )
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -180,7 +181,6 @@ export function TeachersTab() {
     )
   );
 
-  // Função para verificar se uma disciplina já está atribuída a outro professor
   const getDisciplineAssignmentInfo = (disciplineId: string) => {
     const teacherWithDiscipline = teachers.find((teacher) =>
       teacher.disciplines.some((d) => d.id === disciplineId)
@@ -257,12 +257,10 @@ export function TeachersTab() {
       });
       setExpandedCourses(newExpanded);
 
-      // Remover disciplinas que estão atribuídas a outros professores (exceto na edição)
       const validDisciplineIds = selectedDisciplineIds.filter((id) => {
         const discipline = allDisciplines.find((d) => d.id === id);
         if (!discipline) return false;
 
-        // Na edição, permitir manter disciplinas já atribuídas ao professor atual
         if (editingTeacher && discipline.isAssigned) {
           const assignmentInfo = getDisciplineAssignmentInfo(id);
           return assignmentInfo.isAssignedToCurrent;
@@ -299,7 +297,6 @@ export function TeachersTab() {
         return;
       }
 
-      // Verificar se alguma disciplina selecionada já está atribuída a outro professor
       const conflictedDisciplines = data.disciplineIds.filter(
         (disciplineId) => {
           const assignmentInfo = getDisciplineAssignmentInfo(disciplineId);
@@ -352,7 +349,8 @@ export function TeachersTab() {
       reset();
       setEditingTeacher(null);
       setIsDialogOpen(false);
-      setSearchTerm("");
+      setTeacherSearchTerm("");
+      setCourseSearchTerm("");
       setUserSearchTerm("");
       setExpandedCourses(new Set());
     } catch (error) {
@@ -366,7 +364,6 @@ export function TeachersTab() {
   const handleEdit = (teacher: TeacherWithRelations) => {
     setEditingTeacher(teacher);
 
-    // Para edição, selecionar apenas o usuário correspondente ao professor
     const correspondingUser = users.find((user) => user.name === teacher.name);
 
     reset({
@@ -377,7 +374,6 @@ export function TeachersTab() {
     });
     setIsDialogOpen(true);
 
-    // Expandir todos os cursos ao editar
     const coursesToExpand = new Set(teacher.courses.map((c) => c.name));
     setExpandedCourses(coursesToExpand);
   };
@@ -392,17 +388,18 @@ export function TeachersTab() {
     }
   };
 
-  const handleCourseSelect = (courseId: string) => {
+  const handleCourseSelect = (course: Course) => {
     const currentCourseIds = watch("courseIds");
 
-    if (currentCourseIds.includes(courseId)) {
+    if (currentCourseIds.includes(course.id)) {
       setValue(
         "courseIds",
-        currentCourseIds.filter((id) => id !== courseId)
+        currentCourseIds.filter((id) => id !== course.id)
       );
     } else {
-      setValue("courseIds", [...currentCourseIds, courseId]);
+      setValue("courseIds", [...currentCourseIds, course.id]);
     }
+    setCourseSearchTerm("");
   };
 
   const handleUserSelect = (userId: string) => {
@@ -418,7 +415,6 @@ export function TeachersTab() {
 
     const discipline = availableDisciplines.find((d) => d.id === disciplineId);
 
-    // Impedir seleção de disciplinas já atribuídas a outros professores
     if (
       checked &&
       discipline?.isAssigned &&
@@ -440,8 +436,12 @@ export function TeachersTab() {
     }
   };
 
-  const clearSearch = () => {
-    setSearchTerm("");
+  const clearTeacherSearch = () => {
+    setTeacherSearchTerm("");
+  };
+
+  const clearCourseSearch = () => {
+    setCourseSearchTerm("");
   };
 
   const clearUserSearch = () => {
@@ -452,7 +452,6 @@ export function TeachersTab() {
     const courseDisciplines = sortedDisciplinesByCourse[courseName] || [];
     const currentDisciplineIds = watch("disciplineIds");
 
-    // Filtrar apenas disciplinas disponíveis (não atribuídas a outros professores)
     const availableDisciplines = courseDisciplines.filter(
       (discipline) =>
         !discipline.isAssigned ||
@@ -464,13 +463,11 @@ export function TeachersTab() {
     );
 
     if (allSelected) {
-      // Desmarcar todas
       const newDisciplineIds = currentDisciplineIds.filter(
         (id) => !availableDisciplines.some((d) => d.id === id)
       );
       setValue("disciplineIds", newDisciplineIds);
     } else {
-      // Marcar apenas as disponíveis
       const availableDisciplineIds = availableDisciplines.map((d) => d.id);
       const newDisciplineIds = [
         ...new Set([...currentDisciplineIds, ...availableDisciplineIds]),
@@ -511,7 +508,7 @@ export function TeachersTab() {
                 status: "ACTIVE",
               });
               setEditingTeacher(null);
-              setSearchTerm("");
+              setCourseSearchTerm("");
               setUserSearchTerm("");
               setExpandedCourses(new Set());
             }
@@ -677,24 +674,65 @@ export function TeachersTab() {
               <div className="space-y-3">
                 <Label>Cursos</Label>
 
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Buscar cursos..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-10"
-                  />
-                  {searchTerm && (
-                    <X
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 cursor-pointer"
-                      onClick={clearSearch}
+                {/* BUSCA SIMPLES DE CURSOS - APENAS PESQUISA E SELEÇÃO */}
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Digite o nome do curso..."
+                      value={courseSearchTerm}
+                      onChange={(e) => setCourseSearchTerm(e.target.value)}
+                      className="pl-10 pr-10"
                     />
+                    {courseSearchTerm && (
+                      <X
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 cursor-pointer"
+                        onClick={clearCourseSearch}
+                      />
+                    )}
+                  </div>
+
+                  {/* RESULTADOS DA PESQUISA */}
+                  {courseSearchTerm && (
+                    <div className="border rounded-lg p-2 max-h-32 overflow-y-auto">
+                      {filteredCourses.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-2">
+                          Nenhum curso encontrado
+                        </p>
+                      ) : (
+                        filteredCourses.map((course) => {
+                          const isSelected = selectedCourseIds.includes(
+                            course.id
+                          );
+                          return (
+                            <div
+                              key={course.id}
+                              className={`p-2 rounded cursor-pointer transition-colors ${
+                                isSelected
+                                  ? "bg-primary/10 border border-primary"
+                                  : "hover:bg-muted/50"
+                              }`}
+                              onClick={() => handleCourseSelect(course)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm">{course.name}</span>
+                                {isSelected && (
+                                  <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
                   )}
                 </div>
 
+                {/* CURSOS SELECIONADOS */}
                 {selectedCourseIds.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-3">
+                  <div className="flex flex-wrap gap-2">
                     {selectedCourseIds.map((courseId) => {
                       const course = courses.find((c) => c.id === courseId);
                       return course ? (
@@ -706,7 +744,7 @@ export function TeachersTab() {
                           {course.name}
                           <X
                             className="h-3 w-3 cursor-pointer"
-                            onClick={() => handleCourseSelect(courseId)}
+                            onClick={() => handleCourseSelect(course)}
                           />
                         </Badge>
                       ) : null;
@@ -714,41 +752,6 @@ export function TeachersTab() {
                   </div>
                 )}
 
-                <div className="border rounded-lg p-4 space-y-3 max-h-48 overflow-y-auto">
-                  {filteredCourses.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      {searchTerm
-                        ? "Nenhum curso encontrado"
-                        : "Nenhum curso disponível"}
-                    </p>
-                  ) : (
-                    filteredCourses.map((course) => {
-                      const isSelected = selectedCourseIds.includes(course.id);
-                      return (
-                        <div
-                          key={course.id}
-                          className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                            isSelected
-                              ? "bg-primary/10 border-primary"
-                              : "hover:bg-muted/50"
-                          }`}
-                          onClick={() => handleCourseSelect(course.id)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">
-                              {course.name}
-                            </span>
-                            {isSelected && (
-                              <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                                <div className="w-2 h-2 bg-white rounded-full" />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
                 {errors.courseIds && (
                   <p className="text-sm text-red-500">
                     {errors.courseIds.message}
@@ -795,7 +798,6 @@ export function TeachersTab() {
 
                         return (
                           <div key={courseName} className="space-y-2">
-                            {/* Cabeçalho do curso */}
                             <div
                               className="flex items-center justify-between p-2 bg-muted/30 rounded-lg cursor-pointer"
                               onClick={() => toggleCourseExpansion(courseName)}
@@ -824,7 +826,6 @@ export function TeachersTab() {
                               )}
                             </div>
 
-                            {/* Lista de disciplinas (expandida) */}
                             {isExpanded && (
                               <div className="ml-6 space-y-2 border-l-2 border-muted pl-4">
                                 {disciplines.map((discipline) => (
@@ -939,13 +940,12 @@ export function TeachersTab() {
         </Dialog>
       </div>
 
-      {/* Resto do código permanece igual */}
       <div className="flex gap-4">
         <div className="flex-1">
           <Input
             placeholder="Buscar professores por nome..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={teacherSearchTerm}
+            onChange={(e) => setTeacherSearchTerm(e.target.value)}
             className="max-w-sm"
           />
         </div>

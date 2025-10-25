@@ -109,11 +109,8 @@ const generateTimeSlotsAndCheckAvailability = (
       period: period as Period,
       slots: slots.map((slot) => {
         const isTaken = scheduledTimes.some((scheduling) => {
-          if (
-            scheduling.id === currentAppointmentId &&
-            originalAppointmentDate &&
-            isSameDay(originalAppointmentDate, date)
-          ) {
+          // SEMPRE permite editar o agendamento atual
+          if (scheduling.id === currentAppointmentId) {
             return false;
           }
 
@@ -147,6 +144,7 @@ const generateTimeSlotsAndCheckAvailability = (
           return existingTimeSlot === slot;
         });
 
+        // Marca como horário atual, mas NÃO desabilita
         const isCurrentTimeSlot =
           currentTimeSlots?.includes(slot) &&
           originalAppointmentDate &&
@@ -155,7 +153,7 @@ const generateTimeSlotsAndCheckAvailability = (
 
         return {
           time: slot,
-          available: !isTaken && !isCurrentTimeSlot,
+          available: !isTaken || isCurrentTimeSlot, // Permite horários atuais
           isCurrentTimeSlot,
         };
       }),
@@ -172,6 +170,11 @@ const hasEnoughAvailableSlots = (
   originalAppointmentDate?: Date
 ): boolean => {
   if (!date) return false;
+
+  // Se for a mesma data, sempre permite (usuário pode estar apenas trocando horários)
+  if (originalAppointmentDate && isSameDay(originalAppointmentDate, date)) {
+    return true;
+  }
 
   const timeSlots = generateTimeSlotsAndCheckAvailability(
     date,
@@ -223,7 +226,10 @@ export const EditSchedulingModal = ({
     reset,
   } = useForm<EditSchema>({
     resolver: zodResolver(editSchema),
-    defaultValues: { date: new Date(appointment.date), time: [] },
+    defaultValues: {
+      date: new Date(appointment.date),
+      time: extractCurrentTimeSlots(appointment), // Inicializa com os horários atuais
+    },
   });
 
   const watchedDate = watch("date");
@@ -288,7 +294,10 @@ export const EditSchedulingModal = ({
 
   useEffect(() => {
     if (isOpen) {
-      reset({ date: new Date(appointment.date), time: [] });
+      reset({
+        date: new Date(appointment.date),
+        time: extractCurrentTimeSlots(appointment),
+      });
       setSelectedDate(new Date(appointment.date));
       if (scheduledTimes.length > 0) updateTimeSlots();
     }
@@ -316,13 +325,23 @@ export const EditSchedulingModal = ({
     setSelectedDate(date);
     if (date) {
       setValue("date", date);
+      // Limpa os horários selecionados ao mudar de data
       setValue("time", []);
     }
   };
 
   const handleFormSubmit = async (data: EditSchema) => {
-    if (!data.date || data.time.length === 0)
-      return alert("Verifique os dados do formulário.");
+    if (!data.date || data.time.length === 0) {
+      return alert("Selecione pelo menos um horário.");
+    }
+
+    // Validação adicional: não permitir desmarcar todos os horários atuais na mesma data
+    if (
+      isSameDay(originalAppointmentDate, data.date) &&
+      data.time.length === 0
+    ) {
+      return alert("Você deve manter pelo menos um horário selecionado.");
+    }
 
     if (
       isPastDate(data.date) &&
@@ -589,7 +608,9 @@ export const EditSchedulingModal = ({
                           field.onChange(
                             selectedTimes.filter((t) => t !== slotTime)
                           );
-                        } else field.onChange([...selectedTimes, slotTime]);
+                        } else {
+                          field.onChange([...selectedTimes, slotTime]);
+                        }
                       };
 
                       return (
@@ -600,7 +621,7 @@ export const EditSchedulingModal = ({
                                 <div className="w-2 h-2 bg-primary rounded-full"></div>
                                 <Label className="text-base font-semibold">
                                   {periodGroup.period === Period.MORNING &&
-                                    "Noturno"}
+                                    "Matutino"}
                                   {periodGroup.period === Period.AFTERNOON &&
                                     "Vespertino"}
                                   {periodGroup.period === Period.EVENING &&
@@ -623,40 +644,46 @@ export const EditSchedulingModal = ({
                                             : "outline"
                                       }
                                       className={
-                                        slot.isCurrentTimeSlot
-                                          ? "bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed opacity-50 w-full justify-start"
-                                          : !slot.available
+                                        slot.isCurrentTimeSlot &&
+                                        !selectedTimes.includes(slot.time)
+                                          ? "bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200 w-full justify-start"
+                                          : !slot.available &&
+                                              !slot.isCurrentTimeSlot
                                             ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-500 border-gray-300 w-full justify-start"
                                             : selectedTimes.includes(slot.time)
                                               ? "bg-primary text-primary-foreground hover:bg-primary/90 w-full justify-start"
                                               : "hover:bg-primary/10 cursor-pointer border-primary w-full justify-start"
                                       }
                                       disabled={
-                                        (!slot.available &&
-                                          !slot.isCurrentTimeSlot) ||
-                                        slot.isCurrentTimeSlot
+                                        !slot.available &&
+                                        !slot.isCurrentTimeSlot
                                       }
-                                      onClick={() =>
-                                        (slot.available ||
-                                          slot.isCurrentTimeSlot) &&
-                                        toggleTime(slot.time)
-                                      }
+                                      onClick={() => toggleTime(slot.time)}
                                     >
                                       <div className="flex items-center w-full">
                                         <span className="font-medium">
                                           {slot.time}
                                         </span>
+                                        {slot.isCurrentTimeSlot &&
+                                          !selectedTimes.includes(
+                                            slot.time
+                                          ) && (
+                                            <span className="text-xs ml-2 text-blue-600">
+                                              (Horário Atual)
+                                            </span>
+                                          )}
+                                        {slot.isCurrentTimeSlot &&
+                                          selectedTimes.includes(slot.time) && (
+                                            <span className="text-xs ml-2 text-green-600">
+                                              (Selecionado)
+                                            </span>
+                                          )}
                                         {!slot.available &&
                                           !slot.isCurrentTimeSlot && (
                                             <span className="text-xs ml-2">
                                               (Indisponível)
                                             </span>
                                           )}
-                                        {slot.isCurrentTimeSlot && (
-                                          <span className="text-xs ml-2">
-                                            (Atual)
-                                          </span>
-                                        )}
                                       </div>
                                     </Button>
                                   )

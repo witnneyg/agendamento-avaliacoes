@@ -22,8 +22,8 @@ export interface Course {
 
 interface CourseSelectorProps {
   onSelectCourse: (course: Course) => void;
-  teacherId?: string; // Para passar o teacherId diretamente
-  filterByUser?: boolean; // Para filtrar automaticamente pelo usuário logado
+  teacherId?: string;
+  filterByUser?: boolean;
 }
 
 export function CourseSelector({
@@ -39,15 +39,29 @@ export function CourseSelector({
     async function fetchCourses() {
       setIsLoading(true);
       setError(null);
-      console.log({ teacherId });
+
+      console.log("CourseSelector - Iniciando busca:", {
+        teacherId,
+        filterByUser,
+      });
+
       try {
+        // Se não tem teacherId nem filterByUser, não busca nada
+        if (!teacherId && !filterByUser) {
+          console.log("Nenhum filtro especificado - não buscando cursos");
+          setCourses([]);
+          return;
+        }
+
+        let coursesData: Course[] = [];
+
         if (teacherId) {
-          // Se tem teacherId, busca apenas os cursos do professor específico
+          // Busca cursos do professor específico
           console.log("Buscando cursos para o professor:", teacherId);
-          const teacherCourses = await getTeacherCourses(teacherId);
-          setCourses(teacherCourses);
+          coursesData = await getTeacherCourses(teacherId);
+          console.log("Cursos do professor encontrados:", coursesData);
         } else if (filterByUser) {
-          // Se deve filtrar pelo usuário logado
+          // Busca cursos do usuário logado
           console.log("Buscando cursos para o usuário logado");
           const userData = await getUser();
 
@@ -65,14 +79,11 @@ export function CourseSelector({
             return;
           }
 
-          const teacherCourses = await getTeacherCourses(teacherData.id);
-          setCourses(teacherCourses);
-        } else {
-          // Busca todos os cursos (comportamento padrão)
-          console.log("Buscando todos os cursos");
-          const data = await getCourses();
-          setCourses(data);
+          coursesData = await getTeacherCourses(teacherData.id);
+          console.log("Cursos do usuário logado encontrados:", coursesData);
         }
+
+        setCourses(coursesData || []);
       } catch (error) {
         console.error("Erro ao carregar cursos:", error);
         setError("Erro ao carregar cursos. Tente novamente.");
@@ -85,15 +96,17 @@ export function CourseSelector({
     fetchCourses();
   }, [teacherId, filterByUser]);
 
+  // Estados de renderização
   if (isLoading) {
+    const loadingMessage =
+      teacherId || filterByUser
+        ? "Carregando seus cursos..."
+        : "Aguardando seleção...";
+
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-6 w-6 animate-spin" />
-        <span className="ml-2">
-          {teacherId || filterByUser
-            ? "Carregando seus cursos..."
-            : "Carregando cursos..."}
-        </span>
+        <span className="ml-2">{loadingMessage}</span>
       </div>
     );
   }
@@ -110,32 +123,38 @@ export function CourseSelector({
   }
 
   if (courses.length === 0) {
+    const noCoursesMessage =
+      teacherId || filterByUser
+        ? "Nenhum curso encontrado"
+        : "Nenhum curso disponível";
+
+    const noCoursesDescription =
+      teacherId || filterByUser
+        ? "Você não está associado a nenhum curso no momento."
+        : "Não há cursos cadastrados no sistema.";
+
     return (
       <div className="text-center py-8">
         <div className="bg-muted/50 p-6 rounded-lg max-w-md mx-auto">
-          <p className="font-medium mb-2">
-            {teacherId || filterByUser
-              ? "Nenhum curso encontrado"
-              : "Nenhum curso disponível"}
-          </p>
+          <p className="font-medium mb-2">{noCoursesMessage}</p>
           <p className="text-sm text-muted-foreground">
-            {teacherId || filterByUser
-              ? "Você não está associado a nenhum curso no momento."
-              : "Não há cursos cadastrados no sistema."}
+            {noCoursesDescription}
           </p>
         </div>
       </div>
     );
   }
 
+  // Renderização dos cursos
+  const coursesCountMessage =
+    teacherId || filterByUser
+      ? `${courses.length} curso(s) disponível(eis) para você`
+      : `${courses.length} curso(s) disponível(eis)`;
+
   return (
     <div>
       <div className="mb-4">
-        <p className="text-sm text-muted-foreground">
-          {teacherId || filterByUser
-            ? `${courses.length} curso(s) disponível(eis) para você`
-            : `${courses.length} curso(s) disponível(eis)`}
-        </p>
+        <p className="text-sm text-muted-foreground">{coursesCountMessage}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
