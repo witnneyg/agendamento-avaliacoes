@@ -46,9 +46,7 @@ export function CourseSelector({
       });
 
       try {
-        // Se não tem teacherId nem filterByUser, não busca nada
         if (!teacherId && !filterByUser) {
-          console.log("Nenhum filtro especificado - não buscando cursos");
           setCourses([]);
           return;
         }
@@ -56,13 +54,8 @@ export function CourseSelector({
         let coursesData: Course[] = [];
 
         if (teacherId) {
-          // Busca cursos do professor específico
-          console.log("Buscando cursos para o professor:", teacherId);
           coursesData = await getTeacherCourses(teacherId);
-          console.log("Cursos do professor encontrados:", coursesData);
         } else if (filterByUser) {
-          // Busca cursos do usuário logado
-          console.log("Buscando cursos para o usuário logado");
           const userData = await getUser();
 
           if (!userData) {
@@ -80,7 +73,6 @@ export function CourseSelector({
           }
 
           coursesData = await getTeacherCourses(teacherData.id);
-          console.log("Cursos do usuário logado encontrados:", coursesData);
         }
 
         setCourses(coursesData || []);
@@ -145,7 +137,6 @@ export function CourseSelector({
     );
   }
 
-  // Renderização dos cursos
   const coursesCountMessage =
     teacherId || filterByUser
       ? `${courses.length} curso(s) disponível(eis) para você`

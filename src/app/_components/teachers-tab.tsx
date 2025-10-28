@@ -408,6 +408,7 @@ export function TeachersTab() {
     } else {
       setValue("userId", userId, { shouldValidate: true });
     }
+    setUserSearchTerm("");
   };
 
   const handleDisciplineToggle = (disciplineId: string, checked: boolean) => {
@@ -536,6 +537,7 @@ export function TeachersTab() {
                     Selecionar Usuário
                   </Label>
 
+                  {/* USUÁRIO SELECIONADO */}
                   {selectedUserId && (
                     <div className="mb-3 p-3 bg-primary/10 rounded-lg border border-primary">
                       <div className="flex items-center justify-between">
@@ -550,7 +552,8 @@ export function TeachersTab() {
                       <div className="flex flex-wrap gap-2 mt-2">
                         <Badge
                           variant="outline"
-                          className="flex items-center gap-1"
+                          className="flex items-center gap-1 cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => setValue("userId", "")}
                         >
                           <User className="h-3 w-3" />
                           {getSelectedUserInfo()?.name}
@@ -559,94 +562,87 @@ export function TeachersTab() {
                               Professor
                             </Badge>
                           )}
-                          <X
-                            className="h-3 w-3 cursor-pointer"
-                            onClick={() => setValue("userId", "")}
-                          />
+                          <X className="h-3 w-3" />
                         </Badge>
                       </div>
                     </div>
                   )}
 
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input
-                      placeholder="Buscar usuários por nome ou email..."
-                      value={userSearchTerm}
-                      onChange={(e) => setUserSearchTerm(e.target.value)}
-                      className="pl-10 pr-10"
-                    />
-                    {userSearchTerm && (
-                      <X
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 cursor-pointer"
-                        onClick={clearUserSearch}
+                  {/* BUSCA DE USUÁRIOS */}
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        placeholder="Digite o nome ou email do usuário..."
+                        value={userSearchTerm}
+                        onChange={(e) => setUserSearchTerm(e.target.value)}
+                        className="pl-10 pr-10"
                       />
-                    )}
-                  </div>
+                      {userSearchTerm && (
+                        <X
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 cursor-pointer hover:text-foreground"
+                          onClick={clearUserSearch}
+                        />
+                      )}
+                    </div>
 
-                  <div className="border rounded-lg p-4 space-y-3 max-h-48 overflow-y-auto">
-                    {filteredUsers.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        {userSearchTerm
-                          ? "Nenhum usuário encontrado"
-                          : "Nenhum usuário disponível"}
-                      </p>
-                    ) : (
-                      filteredUsers.map((user) => {
-                        const isSelected = selectedUserId === user.id;
-                        const isTeacher = isUserAlreadyTeacher(user.id);
+                    {/* RESULTADOS DA PESQUISA DE USUÁRIOS */}
+                    {userSearchTerm && (
+                      <div className="border rounded-lg p-2 max-h-32 overflow-y-auto">
+                        {filteredUsers.length === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-2">
+                            Nenhum usuário encontrado
+                          </p>
+                        ) : (
+                          filteredUsers.map((user) => {
+                            const isSelected = selectedUserId === user.id;
+                            const isTeacher = isUserAlreadyTeacher(user.id);
 
-                        return (
-                          <div
-                            key={user.id}
-                            className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                              isSelected
-                                ? "bg-primary/10 border-primary"
-                                : "hover:bg-muted/50"
-                            } ${isTeacher ? "border-l-4 border-l-blue-500" : ""}`}
-                            onClick={() => handleUserSelect(user.id)}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                                  <User className="h-4 w-4 text-primary" />
-                                </div>
-                                <div>
+                            return (
+                              <div
+                                key={user.id}
+                                className={`p-2 rounded cursor-pointer transition-colors ${
+                                  isSelected
+                                    ? "bg-primary/10 border border-primary"
+                                    : "hover:bg-muted/50"
+                                } ${isTeacher ? "border-l-4 border-l-blue-500" : ""}`}
+                                onClick={() => handleUserSelect(user.id)}
+                              >
+                                <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium">
-                                      {user.name}
-                                    </span>
-                                    {isTeacher && (
-                                      <Badge
-                                        variant="outline"
-                                        className="text-xs"
-                                      >
-                                        Professor
-                                      </Badge>
-                                    )}
+                                    <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
+                                      <User className="h-3 w-3 text-primary" />
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium">
+                                          {user.name}
+                                        </span>
+                                        {isTeacher && (
+                                          <Badge
+                                            variant="outline"
+                                            className="text-xs"
+                                          >
+                                            Professor
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <span className="text-xs text-muted-foreground">
+                                        {user.email}
+                                      </span>
+                                    </div>
                                   </div>
-                                  <span className="text-xs text-muted-foreground">
-                                    {user.email}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                                    isSelected
-                                      ? "bg-primary border-primary"
-                                      : "border-gray-300"
-                                  }`}
-                                >
                                   {isSelected && (
-                                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                                    <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                      <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                                    </div>
                                   )}
                                 </div>
                               </div>
-                            </div>
-                          </div>
-                        );
-                      })
+                            );
+                          })
+                        )}
+                      </div>
                     )}
                   </div>
                   {errors.userId && (
@@ -686,11 +682,31 @@ export function TeachersTab() {
                     />
                     {courseSearchTerm && (
                       <X
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 cursor-pointer"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 cursor-pointer hover:text-foreground"
                         onClick={clearCourseSearch}
                       />
                     )}
                   </div>
+
+                  {/* CURSOS SELECIONADOS */}
+                  {selectedCourseIds.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCourseIds.map((courseId) => {
+                        const course = courses.find((c) => c.id === courseId);
+                        return course ? (
+                          <Badge
+                            key={courseId}
+                            variant="secondary"
+                            className="flex items-center gap-1 cursor-pointer hover:bg-muted/50 transition-colors"
+                            onClick={() => handleCourseSelect(course)}
+                          >
+                            {course.name}
+                            <X className="h-3 w-3" />
+                          </Badge>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
 
                   {/* RESULTADOS DA PESQUISA */}
                   {courseSearchTerm && (
@@ -729,28 +745,6 @@ export function TeachersTab() {
                     </div>
                   )}
                 </div>
-
-                {/* CURSOS SELECIONADOS */}
-                {selectedCourseIds.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {selectedCourseIds.map((courseId) => {
-                      const course = courses.find((c) => c.id === courseId);
-                      return course ? (
-                        <Badge
-                          key={courseId}
-                          variant="secondary"
-                          className="flex items-center gap-1"
-                        >
-                          {course.name}
-                          <X
-                            className="h-3 w-3 cursor-pointer"
-                            onClick={() => handleCourseSelect(course)}
-                          />
-                        </Badge>
-                      ) : null;
-                    })}
-                  </div>
-                )}
 
                 {errors.courseIds && (
                   <p className="text-sm text-red-500">
@@ -942,12 +936,21 @@ export function TeachersTab() {
 
       <div className="flex gap-4">
         <div className="flex-1">
-          <Input
-            placeholder="Buscar professores por nome..."
-            value={teacherSearchTerm}
-            onChange={(e) => setTeacherSearchTerm(e.target.value)}
-            className="max-w-sm"
-          />
+          <div className="relative max-w-sm">
+            <Input
+              placeholder="Buscar professores por nome..."
+              value={teacherSearchTerm}
+              onChange={(e) => setTeacherSearchTerm(e.target.value)}
+              className="pl-10 pr-10"
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            {teacherSearchTerm && (
+              <X
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 cursor-pointer hover:text-foreground"
+                onClick={clearTeacherSearch}
+              />
+            )}
+          </div>
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-32">
