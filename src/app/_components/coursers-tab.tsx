@@ -78,6 +78,7 @@ export function CoursesTab() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null);
 
   const {
     register,
@@ -151,27 +152,31 @@ export function CoursesTab() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (courseId: string) => {
+  const handleDelete = (courseId: string) => {
+    setCourseToDelete(courseId);
+    setDeletingCourseId(courseId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!courseToDelete) return;
+
     if (isDeleting) return;
 
     setIsDeleting(true);
     try {
-      await deleteCourse(courseId);
-      setCourseToDelete(courseId);
-      setDeleteConfirmOpen(true);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const confirmDelete = () => {
-    if (courseToDelete) {
+      await deleteCourse(courseToDelete);
       setCourses((prev) =>
         prev.filter((course) => course.id !== courseToDelete)
       );
       setCourseToDelete(null);
+    } catch (error) {
+      console.error("Erro ao deletar curso:", error);
+    } finally {
+      setIsDeleting(false);
+      setDeletingCourseId(null);
+      setDeleteConfirmOpen(false);
     }
-    setDeleteConfirmOpen(false);
   };
 
   return (
@@ -227,7 +232,7 @@ export function CoursesTab() {
               <div className="space-y-3">
                 <Label className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
-                  Turno do Curso{" "}
+                  Períodos Disponíveis
                 </Label>
                 <div className="grid grid-cols-3 gap-4">
                   {PERIODS.map((period) => (
@@ -379,10 +384,13 @@ export function CoursesTab() {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleDelete(course.id)}
-                      className="text-red-500"
-                      disabled={isSubmitting || isDeleting}
+                      className="text-red-500 hover:text-red-600"
+                      disabled={
+                        isSubmitting ||
+                        (isDeleting && deletingCourseId !== course.id)
+                      }
                     >
-                      {isDeleting ? (
+                      {isDeleting && deletingCourseId === course.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Trash2 className="h-4 w-4" />
@@ -401,11 +409,14 @@ export function CoursesTab() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir este curso?
+              Tem certeza que deseja excluir este curso? Esta ação não pode ser
+              desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               className="bg-red-500 hover:bg-red-600"
