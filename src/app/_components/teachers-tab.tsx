@@ -219,6 +219,38 @@ export function TeachersTab() {
     fetchData();
   }, []);
 
+  // useEffect para limpar seleções quando dados forem excluídos
+  useEffect(() => {
+    // Limpa userId se o usuário não existir mais
+    if (selectedUserId && !users.some((user) => user.id === selectedUserId)) {
+      setValue("userId", "");
+    }
+
+    // Limpa cursos selecionados que não existem mais
+    const validCourseIds = selectedCourseIds.filter((courseId) =>
+      courses.some((course) => course.id === courseId)
+    );
+    if (validCourseIds.length !== selectedCourseIds.length) {
+      setValue("courseIds", validCourseIds);
+    }
+
+    // Limpa disciplinas selecionadas que não existem mais
+    const validDisciplineIds = selectedDisciplineIds.filter((disciplineId) =>
+      availableDisciplines.some((discipline) => discipline.id === disciplineId)
+    );
+    if (validDisciplineIds.length !== selectedDisciplineIds.length) {
+      setValue("disciplineIds", validDisciplineIds);
+    }
+  }, [
+    courses,
+    users,
+    availableDisciplines,
+    selectedUserId,
+    selectedCourseIds,
+    selectedDisciplineIds,
+    setValue,
+  ]);
+
   useEffect(() => {
     async function fetchDisciplines() {
       if (!selectedCourseIds || selectedCourseIds.length === 0) {
@@ -290,14 +322,32 @@ export function TeachersTab() {
 
     setIsSubmitting(true);
     try {
+      // Validação adicional - verifica se os dados ainda existem
       const selectedUser = users.find((user) => user.id === data.userId);
-
       if (!selectedUser) {
         alert("Usuário selecionado não encontrado");
         return;
       }
 
-      const conflictedDisciplines = data.disciplineIds.filter(
+      const validCourseIds = data.courseIds.filter((courseId) =>
+        courses.some((course) => course.id === courseId)
+      );
+      if (validCourseIds.length === 0) {
+        alert("Nenhum curso válido selecionado");
+        return;
+      }
+
+      const validDisciplineIds = data.disciplineIds.filter((disciplineId) =>
+        availableDisciplines.some(
+          (discipline) => discipline.id === disciplineId
+        )
+      );
+      if (validDisciplineIds.length === 0) {
+        alert("Nenhuma disciplina válida selecionada");
+        return;
+      }
+
+      const conflictedDisciplines = validDisciplineIds.filter(
         (disciplineId) => {
           const assignmentInfo = getDisciplineAssignmentInfo(disciplineId);
           return (
@@ -322,8 +372,8 @@ export function TeachersTab() {
 
       const teacherData = {
         name: selectedUser.name || "Nome não informado",
-        courseIds: data.courseIds,
-        disciplineIds: data.disciplineIds,
+        courseIds: validCourseIds,
+        disciplineIds: validDisciplineIds,
         status: data.status,
       };
 
@@ -343,8 +393,16 @@ export function TeachersTab() {
         return;
       }
 
-      const updatedTeachers = await getTeachers();
-      setTeachers(updatedTeachers as any);
+      // Recarrega todos os dados para garantir sincronização
+      const [teachersData, coursesData, usersData] = await Promise.all([
+        getTeachers(),
+        getCourses(),
+        getUsers(),
+      ]);
+
+      setTeachers(teachersData as any);
+      setCourses(coursesData.sort((a, b) => a.name.localeCompare(b.name)));
+      setUsers(usersData);
 
       reset();
       setEditingTeacher(null);
@@ -382,7 +440,17 @@ export function TeachersTab() {
     setLoadingDeleteId(teacherId);
     try {
       await deleteTeacher(teacherId);
-      setTeachers((prev) => prev.filter((t) => t.id !== teacherId));
+
+      // Recarrega todos os dados para garantir que tudo está sincronizado
+      const [teachersData, coursesData, usersData] = await Promise.all([
+        getTeachers(),
+        getCourses(),
+        getUsers(),
+      ]);
+
+      setTeachers(teachersData as any);
+      setCourses(coursesData.sort((a, b) => a.name.localeCompare(b.name)));
+      setUsers(usersData);
     } finally {
       setLoadingDeleteId(null);
     }
