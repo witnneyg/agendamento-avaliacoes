@@ -8,7 +8,7 @@ interface UpdateTeacherInput {
   name: string;
   courseIds: string[];
   disciplineIds: string[];
-  status: Status; // Use o enum Status
+  status: Status;
 }
 
 export type TeacherWithRelations = Teacher & {
@@ -23,16 +23,16 @@ export async function updateTeacher(
     where: { id: data.id },
     data: {
       name: data.name,
-      status: data.status, // Adicione esta linha
+      status: data.status,
       courses: {
-        set: [],
-        connect: data.courseIds.map((courseId) => ({ id: courseId })),
+        set: [], // LIMPA os cursos existentes
+        connect: data.courseIds.map((courseId) => ({ id: courseId })), // CONECTA os novos cursos
       },
       disciplines: {
-        set: [],
+        set: [], // LIMPA as disciplinas existentes
         connect: data.disciplineIds.map((disciplineId) => ({
           id: disciplineId,
-        })),
+        })), // CONECTA as novas disciplinas
       },
     },
     include: {

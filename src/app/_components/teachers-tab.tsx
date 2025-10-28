@@ -322,12 +322,16 @@ export function TeachersTab() {
 
     setIsSubmitting(true);
     try {
-      // Validação adicional - verifica se os dados ainda existem
       const selectedUser = users.find((user) => user.id === data.userId);
       if (!selectedUser) {
         alert("Usuário selecionado não encontrado");
         return;
       }
+
+      // Verifica se o usuário já é um professor
+      const existingTeacher = teachers.find(
+        (teacher) => teacher.name === selectedUser.name
+      );
 
       const validCourseIds = data.courseIds.filter((courseId) =>
         courses.some((course) => course.id === courseId)
@@ -347,16 +351,26 @@ export function TeachersTab() {
         return;
       }
 
+      // REMOVA ESTA PARTE - não precisa combinar, o updateTeacher vai substituir
+      // let finalCourseIds = validCourseIds;
+      // let finalDisciplineIds = validDisciplineIds;
+
       const conflictedDisciplines = validDisciplineIds.filter(
+        // Use validDisciplineIds em vez de finalDisciplineIds
         (disciplineId) => {
           const assignmentInfo = getDisciplineAssignmentInfo(disciplineId);
+          const teacherToUpdate = editingTeacher || existingTeacher;
+
           return (
-            assignmentInfo.isAssigned && !assignmentInfo.isAssignedToCurrent
+            assignmentInfo.isAssigned &&
+            !assignmentInfo.isAssignedToCurrent &&
+            (!teacherToUpdate ||
+              assignmentInfo.assignedTo !== teacherToUpdate.name)
           );
         }
       );
 
-      if (conflictedDisciplines.length > 0 && !editingTeacher) {
+      if (conflictedDisciplines.length > 0) {
         const conflictedNames = conflictedDisciplines
           .map((id) => {
             const discipline = availableDisciplines.find((d) => d.id === id);
@@ -372,16 +386,19 @@ export function TeachersTab() {
 
       const teacherData = {
         name: selectedUser.name || "Nome não informado",
-        courseIds: validCourseIds,
-        disciplineIds: validDisciplineIds,
+        courseIds: validCourseIds, // Use validCourseIds diretamente
+        disciplineIds: validDisciplineIds, // Use validDisciplineIds diretamente
         status: data.status,
       };
 
       let result;
 
-      if (editingTeacher) {
+      if (editingTeacher || existingTeacher) {
+        const teacherId = editingTeacher
+          ? editingTeacher.id
+          : existingTeacher!.id;
         result = await updateTeacher({
-          id: editingTeacher.id,
+          id: teacherId,
           ...teacherData,
         });
       } else {
@@ -552,7 +569,9 @@ export function TeachersTab() {
 
   const isUserAlreadyTeacher = (userId: string) => {
     const user = users.find((u) => u.id === userId);
-    return teachers.some((teacher) => teacher.name === user?.name);
+    if (!user) return false;
+
+    return teachers.some((teacher) => teacher.name === user.name);
   };
 
   return (
@@ -598,45 +617,52 @@ export function TeachersTab() {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {!editingTeacher && (
-                <div className="space-y-2">
-                  <Label htmlFor="userId">
-                    <User className="inline h-4 w-4 mr-2" />
-                    Selecionar Usuário
-                  </Label>
+              <div className="space-y-2">
+                <Label htmlFor="userId">
+                  <User className="inline h-4 w-4 mr-2" />
+                  {editingTeacher ? "Professor" : "Selecionar Usuário"}
+                </Label>
 
-                  {/* USUÁRIO SELECIONADO */}
-                  {selectedUserId && (
-                    <div className="mb-3 p-3 bg-primary/10 rounded-lg border border-primary">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-primary" />
-                          <span className="font-medium">
-                            Usuário selecionado:
-                          </span>
-                        </div>
-                        <Badge variant="secondary">1 usuário</Badge>
+                {/* USUÁRIO SELECIONADO OU PROFESSOR EM EDIÇÃO */}
+                {(selectedUserId || editingTeacher) && (
+                  <div className="mb-3 p-3 bg-primary/10 rounded-lg border border-primary">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-primary" />
+                        <span className="font-medium">
+                          {editingTeacher
+                            ? "Professor em edição:"
+                            : "Usuário selecionado:"}
+                        </span>
                       </div>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <Badge
-                          variant="outline"
-                          className="flex items-center gap-1 cursor-pointer hover:bg-muted/50 transition-colors"
-                          onClick={() => setValue("userId", "")}
-                        >
-                          <User className="h-3 w-3" />
-                          {getSelectedUserInfo()?.name}
-                          {isUserAlreadyTeacher(selectedUserId) && (
+                      <Badge variant="secondary">1 usuário</Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Badge
+                        variant="outline"
+                        className="flex items-center gap-1 cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() =>
+                          !editingTeacher && setValue("userId", "")
+                        }
+                      >
+                        <User className="h-3 w-3" />
+                        {editingTeacher
+                          ? editingTeacher.name
+                          : getSelectedUserInfo()?.name}
+                        {!editingTeacher &&
+                          isUserAlreadyTeacher(selectedUserId!) && (
                             <Badge variant="secondary" className="ml-1 text-xs">
                               Professor
                             </Badge>
                           )}
-                          <X className="h-3 w-3" />
-                        </Badge>
-                      </div>
+                        {!editingTeacher && <X className="h-3 w-3" />}
+                      </Badge>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {/* BUSCA DE USUÁRIOS */}
+                {/* BUSCA DE USUÁRIOS (APENAS PARA NOVO PROFESSOR) */}
+                {!editingTeacher && (
                   <div className="space-y-2">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -713,27 +739,13 @@ export function TeachersTab() {
                       </div>
                     )}
                   </div>
-                  {errors.userId && (
-                    <p className="text-sm text-red-500">
-                      {errors.userId.message}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {editingTeacher && (
-                <div className="space-y-2">
-                  <Label>
-                    <User className="inline h-4 w-4 mr-2" />
-                    Editando Professor: {editingTeacher.name}
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Você está editando as informações do professor{" "}
-                    {editingTeacher.name}. Para alterar o usuário associado,
-                    cancele a edição e crie um novo professor.
+                )}
+                {errors.userId && (
+                  <p className="text-sm text-red-500">
+                    {errors.userId.message}
                   </p>
-                </div>
-              )}
+                )}
+              </div>
 
               <div className="space-y-3">
                 <Label>Cursos</Label>

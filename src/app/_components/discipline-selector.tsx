@@ -30,6 +30,8 @@ export function DisciplineSelector({
       setIsLoading(true);
       try {
         const data = await getDisciplinesByClass(classId, teacherId);
+
+        console.log({ data });
         setDisciplines(data);
       } finally {
         setIsLoading(false);

@@ -15,18 +15,9 @@ export async function getDisciplinesByClass(
           disciplines: {
             where: {
               status: "ACTIVE",
-              // Filtro por professor se teacherId for fornecido
-              ...(teacherId && {
-                teachers: {
-                  some: {
-                    id: teacherId,
-                    status: "ACTIVE",
-                  },
-                },
-              }),
             },
             include: {
-              // Incluir informações dos professores para mostrar no componente
+              // Incluir TODOS os professores da disciplina
               teachers: {
                 where: {
                   status: "ACTIVE",
@@ -43,12 +34,25 @@ export async function getDisciplinesByClass(
     },
   });
 
-  const compatibleDisciplines = classData?.semester.disciplines.filter(
+  if (!classData) {
+    return [];
+  }
+
+  // Filtra disciplinas compatíveis com os períodos do curso
+  const compatibleDisciplines = classData.semester.disciplines.filter(
     (discipline) =>
       discipline.dayPeriods.some((period) =>
         classData.course.periods.includes(period)
       )
   );
 
-  return compatibleDisciplines || [];
+  // Se teacherId for fornecido, filtra apenas as disciplinas desse professor
+  if (teacherId) {
+    const teacherDisciplines = compatibleDisciplines.filter((discipline) =>
+      discipline.teachers.some((teacher) => teacher.id === teacherId)
+    );
+    return teacherDisciplines;
+  }
+
+  return compatibleDisciplines;
 }
