@@ -3,7 +3,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -43,14 +49,29 @@ import {
   X,
   Settings,
   Loader2,
+  Shield,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ProfileManagement from "./permissions";
 import { NavBar } from "@/app/_components/navbar";
 import { getUsers } from "@/app/_actions/get-users";
+import { getRoles } from "@/app/_actions/permissions/get-roles";
+import { createRole } from "@/app/_actions/permissions/create-role";
+import { PermissionsSection } from "./permissions";
+import { updateUserRole } from "@/app/_actions/permissions/update-user-role";
+import { deleteRole } from "@/app/_actions/permissions/delete-role";
+import { deleteUser } from "@/app/_actions/delete-user";
+import { getUser } from "@/app/_actions/getUser";
 
-// Baseado no seu schema, o Role padrão é USER, não USUARIO_PADRAO
-type Role = "DIRECAO" | "PROFESSOR" | "SECRETARIA" | "USER" | "ADMIN";
+type Role = {
+  id: string;
+  name: string;
+  permissions: Permission[];
+};
+
+type Permission = {
+  id: string;
+  name: string;
+};
 
 type User = {
   id: string;
@@ -61,178 +82,196 @@ type User = {
   emailVerified?: Date | null;
 };
 
-const roleLabels: Record<Role, string> = {
-  DIRECAO: "Direção",
-  PROFESSOR: "Professor",
-  SECRETARIA: "Secretaria",
-  USER: "Usuário", // Alterado de USUARIO_PADRAO para USER
-  ADMIN: "Admin",
-};
-
-const getAccessBadgeVariant = (access: Role) => {
-  switch (access) {
-    case "DIRECAO":
-      return "destructive";
-    case "PROFESSOR":
-      return "default";
-    case "SECRETARIA":
-      return "secondary";
-    case "USER":
-      return "outline";
-    case "ADMIN":
-      return "destructive";
-    default:
-      return "outline";
-  }
-};
-
 export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [accessFilter, setAccessFilter] = useState<Role | "ALL">("ALL");
+  const [roleFilter, setRoleFilter] = useState<string>("ALL");
   const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
-  const [removeAccessConfirmOpen, setRemoveAccessConfirmOpen] = useState(false);
-  const [accessToRemove, setAccessToRemove] = useState<{
+  const [removeRoleConfirmOpen, setRemoveRoleConfirmOpen] = useState(false);
+  const [roleToRemove, setRoleToRemove] = useState<{
     userId: string;
-    accessLevel: Role;
+    roleId: string;
     userName: string;
+    roleName: string;
   } | null>(null);
+  const [updatingUser, setUpdatingUser] = useState<string | null>(null);
+  const [creatingRole, setCreatingRole] = useState(false);
+  const [newRoleName, setNewRoleName] = useState("");
+  const [deleteRoleConfirmOpen, setDeleteRoleConfirmOpen] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
+  const [deletingRole, setDeletingRole] = useState(false);
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
 
-  // Buscar usuários do banco de dados
   useEffect(() => {
-    async function fetchUsers() {
+    async function fetchData() {
       try {
         setLoading(true);
         setError(null);
-        const usersData = await getUsers();
 
-        // Converter os dados do banco para o formato esperado pelo componente
-        const formattedUsers: User[] = usersData.map((user) => ({
-          id: user.id,
-          name: user.name || "Nome não informado",
-          email: user.email,
-          roles: (user.roles || ["USER"]) as Role[], // Default para ["USER"] conforme schema
-          image: user.image,
-          emailVerified: user.emailVerified,
-        }));
+        const currentUserData = await getUser();
+        setCurrentUser(currentUserData.id);
+
+        const [usersData, rolesData] = await Promise.all([
+          getUsers(),
+          getRoles(),
+        ]);
+
+        const formattedUsers: User[] = usersData.map((user: any) => {
+          const userRoles = Array.isArray(user.roles) ? user.roles : [];
+
+          return {
+            id: user.id,
+            name: user.name || "Nome não informado",
+            email: user.email,
+            roles: userRoles,
+            image: user.image,
+            emailVerified: user.emailVerified,
+          };
+        });
 
         setUsers(formattedUsers);
+        setRoles(rolesData);
       } catch (error) {
-        console.error("Erro ao buscar usuários:", error);
-        setError("Erro ao carregar usuários. Tente novamente.");
+        console.error("Erro ao buscar dados:", error);
+        setError("Erro ao carregar dados. Tente novamente.");
       } finally {
         setLoading(false);
       }
     }
 
-    fetchUsers();
+    fetchData();
   }, []);
 
-  const handleDeleteClick = (user: User) => {
-    // Verificar se é o único admin
-    const adminCount = users.filter((u) => u.roles.includes("ADMIN")).length;
-    if (user.roles.includes("ADMIN") && adminCount <= 1) {
+  const getRoleBadgeVariant = (roleName: string) => {
+    const variantMap: {
+      [key: string]: "default" | "secondary" | "destructive" | "outline";
+    } = {
+      ADMIN: "destructive",
+      DIRECAO: "destructive",
+      PROFESSOR: "default",
+      SECRETARIA: "secondary",
+      USER: "outline",
+    };
+    return variantMap[roleName.toUpperCase()] || "outline";
+  };
+
+  const handleCreateRole = async () => {
+    if (!newRoleName.trim()) return;
+
+    try {
+      setCreatingRole(true);
+      const roleNameInCaps = newRoleName.trim().toUpperCase();
+      const newRole = await createRole({
+        name: roleNameInCaps,
+        permissions: [],
+      });
+
+      setRoles((prev) => [...prev, newRole]);
+      setNewRoleName("");
+    } catch (error) {
+      console.error("Erro ao criar role:", error);
+    } finally {
+      setCreatingRole(false);
+    }
+  };
+
+  const handleRoleToggle = async (userId: string, roleId: string) => {
+    const user = users.find((u) => u.id === userId);
+    if (!user) return;
+
+    const currentRoles = user.roles.map((r) => r.id);
+    const hasRole = currentRoles.includes(roleId);
+
+    let newRoleIds: string[];
+
+    if (hasRole) {
+      if (currentRoles.length <= 1) {
+        return;
+      }
+      newRoleIds = currentRoles.filter((id) => id !== roleId);
+    } else {
+      newRoleIds = [...currentRoles, roleId];
+    }
+
+    try {
+      setUpdatingUser(userId);
+      const updatedUser = await updateUserRole(userId, newRoleIds);
+
+      setUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === userId
+            ? {
+                ...u,
+                roles: updatedUser.roles,
+              }
+            : u
+        )
+      );
+    } catch (error) {
+      console.error("Erro ao atualizar roles do usuário:", error);
+      const [usersData] = await Promise.all([getUsers()]);
+      const refreshedUsers: User[] = usersData.map((user: any) => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        roles: Array.isArray(user.roles) ? user.roles : [],
+        image: user.image,
+        emailVerified: user.emailVerified,
+      }));
+      setUsers(refreshedUsers);
+    } finally {
+      setUpdatingUser(null);
+    }
+  };
+
+  const handleDeleteRoleClick = (role: Role) => {
+    setRoleToDelete(role);
+    setDeleteRoleConfirmOpen(true);
+  };
+
+  const handleRemoveRole = (userId: string, roleId: string) => {
+    const user = users.find((u) => u.id === userId);
+    const role = roles.find((r) => r.id === roleId);
+
+    if (!user || !role) return;
+
+    if (user.roles.length <= 1) {
       return;
     }
 
-    setUserToDelete(user);
-    setDeleteConfirmOpen(true);
-  };
-
-  const handleAccessToggle = (userId: string, accessLevel: Role) => {
-    const user = users.find((u) => u.id === userId);
-    if (!user) return;
-
-    const currentAccess = [...user.roles];
-    const hasAccess = currentAccess.includes(accessLevel);
-
-    if (hasAccess) {
-      if (accessLevel === "ADMIN") {
-        const adminCount = users.filter((u) =>
-          u.roles.includes("ADMIN")
-        ).length;
-        if (adminCount <= 1) return;
-      }
-
-      const newAccess = currentAccess.filter((level) => level !== accessLevel);
-      if (newAccess.length === 0) {
-        // Se remover todas as roles, manter pelo menos USER (default do schema)
-        newAccess.push("USER");
-      }
-
-      setUsers((prevUsers) =>
-        prevUsers.map((u) => (u.id === userId ? { ...u, roles: newAccess } : u))
-      );
-    } else {
-      const newAccess = [...currentAccess, accessLevel];
-      setUsers((prevUsers) =>
-        prevUsers.map((u) => (u.id === userId ? { ...u, roles: newAccess } : u))
-      );
-    }
-  };
-
-  const handleRemoveAccess = (userId: string, accessLevel: Role) => {
-    const user = users.find((u) => u.id === userId);
-    if (!user) return;
-
-    if (accessLevel === "ADMIN") {
-      const adminCount = users.filter((u) => u.roles.includes("ADMIN")).length;
-      if (adminCount <= 1) return;
-    }
-
-    const newAccess = user.roles.filter((level) => level !== accessLevel);
-    if (newAccess.length === 0) {
-      // Garantir que sempre tenha pelo menos USER role
-      newAccess.push("USER");
-    }
-
-    setAccessToRemove({
+    setRoleToRemove({
       userId,
-      accessLevel,
+      roleId,
       userName: user.name || "Usuário",
+      roleName: role.name,
     });
-    setRemoveAccessConfirmOpen(true);
+    setRemoveRoleConfirmOpen(true);
   };
 
-  const confirmRemoveAccess = () => {
-    if (!accessToRemove) return;
+  const confirmRemoveRole = async () => {
+    if (!roleToRemove) return;
 
-    const { userId, accessLevel } = accessToRemove;
-    const user = users.find((u) => u.id === userId);
-    if (!user) return;
+    const { userId, roleId } = roleToRemove;
+    await handleRoleToggle(userId, roleId);
 
-    const newAccess = user.roles.filter((level) => level !== accessLevel);
-    if (newAccess.length === 0) {
-      newAccess.push("USER");
-    }
-
-    setUsers((prevUsers) =>
-      prevUsers.map((u) => (u.id === userId ? { ...u, roles: newAccess } : u))
-    );
-
-    setAccessToRemove(null);
-    setRemoveAccessConfirmOpen(false);
+    setRoleToRemove(null);
+    setRemoveRoleConfirmOpen(false);
   };
 
-  const cancelRemoveAccess = () => {
-    setAccessToRemove(null);
-    setRemoveAccessConfirmOpen(false);
+  const cancelRemoveRole = () => {
+    setRoleToRemove(null);
+    setRemoveRoleConfirmOpen(false);
   };
 
-  const canRemoveAccess = (userId: string, accessLevel: Role) => {
+  const canRemoveRole = (userId: string, roleId: string) => {
     const user = users.find((u) => u.id === userId);
     if (!user) return false;
 
-    if (accessLevel === "ADMIN") {
-      const adminCount = users.filter((u) => u.roles.includes("ADMIN")).length;
-      if (adminCount <= 1) return false;
-    }
-
-    // Não permitir remover se for a única role (sempre deve ter pelo menos USER)
-    if (user.roles.length <= 1 && user.roles[0] === accessLevel) return false;
+    if (user.roles.length <= 1) return false;
 
     return true;
   };
@@ -241,21 +280,87 @@ export default function AdminDashboard() {
     const matchesSearch =
       user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesAccess =
-      accessFilter === "ALL" || user.roles.includes(accessFilter);
-    return matchesSearch && matchesAccess;
+
+    const matchesRole =
+      roleFilter === "ALL" || user.roles.some((role) => role.id === roleFilter);
+
+    return matchesSearch && matchesRole;
   });
+
+  const handleDeleteUser = (user: User) => {
+    setUserToDelete(user);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+
+    try {
+      await deleteUser(userToDelete.id);
+
+      setUsers((prevUsers) =>
+        prevUsers.filter((u) => u.id !== userToDelete.id)
+      );
+      setUserToDelete(null);
+      setDeleteConfirmOpen(false);
+
+      console.log(`Usuário ${userToDelete.name} excluído com sucesso`);
+    } catch (error) {
+      console.error("Erro ao excluir usuário:", error);
+    }
+  };
+
+  const confirmDeleteRole = async () => {
+    if (!roleToDelete) return;
+
+    try {
+      setDeletingRole(true);
+      await deleteRole(roleToDelete.id);
+
+      setRoles((prev) => prev.filter((role) => role.id !== roleToDelete.id));
+      setRoleToDelete(null);
+      setDeleteRoleConfirmOpen(false);
+    } catch (error) {
+      console.error("Erro ao excluir role:", error);
+    } finally {
+      setDeletingRole(false);
+    }
+  };
+
+  const cancelDeleteRole = () => {
+    setRoleToDelete(null);
+    setDeleteRoleConfirmOpen(false);
+  };
 
   const cancelDelete = () => {
     setUserToDelete(null);
     setDeleteConfirmOpen(false);
   };
 
-  const confirmDelete = () => {
-    if (!userToDelete) return;
-    setUsers((prevUsers) => prevUsers.filter((u) => u.id !== userToDelete.id));
-    setUserToDelete(null);
-    setDeleteConfirmOpen(false);
+  const canDeleteRole = (role: Role) => {
+    const usersWithRole = users.filter((user) =>
+      user.roles.some((userRole) => userRole.id === role.id)
+    );
+
+    return usersWithRole.length === 0;
+  };
+
+  const canDeleteUser = (user: User) => {
+    if (currentUser && user.id === currentUser) {
+      return false;
+    }
+
+    const userIsAdmin = user.roles.some((role) => role.name === "ADMIN");
+    if (userIsAdmin) {
+      const adminUsers = users.filter((u) =>
+        u.roles.some((role) => role.name === "ADMIN")
+      );
+      if (adminUsers.length <= 1) {
+        return false;
+      }
+    }
+
+    return true;
   };
 
   if (loading) {
@@ -267,33 +372,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
                 <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">Carregando usuários...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  if (error) {
-    return (
-      <>
-        <NavBar />
-        <div className="min-h-screen bg-background p-3 sm:p-6">
-          <div className="container mx-auto space-y-6">
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="bg-destructive/10 p-3 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4">
-                  <X className="h-6 w-6 text-destructive" />
-                </div>
-                <h3 className="text-lg font-medium mb-2">
-                  Erro ao carregar usuários
-                </h3>
-                <p className="text-muted-foreground mb-4">{error}</p>
-                <Button onClick={() => window.location.reload()}>
-                  Tentar Novamente
-                </Button>
+                <p className="text-muted-foreground">Carregando dados...</p>
               </div>
             </div>
           </div>
@@ -306,7 +385,7 @@ export default function AdminDashboard() {
     <>
       <NavBar />
       <div className="min-h-screen bg-background p-3 sm:p-6">
-        <div className="container mx-auto space-y-4 sm:space-y-6 ">
+        <div className="container mx-auto space-y-4 sm:space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -325,13 +404,16 @@ export default function AdminDashboard() {
 
           <Tabs defaultValue="users" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="users" className="flex items-center gap-2">
+              <TabsTrigger
+                value="users"
+                className="flex items-center gap-2 cursor-pointer"
+              >
                 <Users className="h-4" />
                 Gerenciar Usuários
               </TabsTrigger>
               <TabsTrigger
                 value="permissions"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 cursor-pointer"
               >
                 <Settings className="h-4" />
                 Gerenciar Permissões
@@ -339,6 +421,79 @@ export default function AdminDashboard() {
             </TabsList>
 
             <TabsContent value="users" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Gerenciar Roles
+                  </CardTitle>
+                  <CardDescription>
+                    Crie novas roles ou exclua roles existentes do sistema
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Nome da Role</label>
+                    <Input
+                      placeholder="Ex: COORDENADOR"
+                      value={newRoleName}
+                      onChange={(e) => setNewRoleName(e.target.value)}
+                    />
+                  </div>
+                  <div className="cursor-pointer w-fit">
+                    <Button
+                      onClick={handleCreateRole}
+                      disabled={!newRoleName.trim() || creatingRole}
+                      className="w-full md:w-auto "
+                    >
+                      {creatingRole ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Plus className="h-4 w-4 mr-2" />
+                      )}
+                      {creatingRole ? "Criando..." : "Criar Role"}
+                    </Button>
+                  </div>
+
+                  <div className="mt-6">
+                    <h4 className="text-sm font-medium mb-3">
+                      Roles do Sistema
+                    </h4>
+                    <div className="space-y-2">
+                      {roles.map((role) => (
+                        <div
+                          key={role.id}
+                          className="flex items-center justify-between p-3 border rounded-lg"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Badge variant={getRoleBadgeVariant(role.name)}>
+                              {role.name}
+                            </Badge>
+                            <span className="text-sm text-muted-foreground">
+                              {role.permissions.length} permissões
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteRoleClick(role)}
+                            disabled={!canDeleteRole(role)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive cursor-pointer"
+                            title={
+                              canDeleteRole(role)
+                                ? `Excluir role ${role.name}`
+                                : "Esta role não pode ser excluída"
+                            }
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader className="pb-3 sm:pb-6">
                   <CardTitle className="text-foreground text-lg sm:text-xl">
@@ -356,34 +511,26 @@ export default function AdminDashboard() {
                         className="pl-10 bg-input border-border"
                       />
                     </div>
-                    <Select
-                      value={accessFilter}
-                      onValueChange={(value: Role | "ALL") =>
-                        setAccessFilter(value)
-                      }
-                    >
-                      <SelectTrigger className="bg-input border-border">
-                        <SelectValue placeholder="Filtrar por acesso" />
+                    <Select value={roleFilter} onValueChange={setRoleFilter}>
+                      <SelectTrigger className="bg-input border-border cursor-pointer">
+                        <SelectValue placeholder="Filtrar por role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ALL">Todos</SelectItem>
-                        {(
-                          [
-                            "DIRECAO",
-                            "PROFESSOR",
-                            "SECRETARIA",
-                            "USER", // Alterado de USUARIO_PADRAO para USER
-                            "ADMIN",
-                          ] as Role[]
-                        ).map((r) => (
-                          <SelectItem key={r} value={r}>
-                            {roleLabels[r]}
+                        <SelectItem value="ALL">Todas as Roles</SelectItem>
+                        {roles.map((role) => (
+                          <SelectItem
+                            key={role.id}
+                            value={role.id}
+                            className="cursor-pointer"
+                          >
+                            {role.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
+                  {/* Tabela para desktop */}
                   <div className="hidden md:block rounded-md border border-border overflow-hidden">
                     <Table>
                       <TableHeader>
@@ -395,7 +542,7 @@ export default function AdminDashboard() {
                             Email
                           </TableHead>
                           <TableHead className="text-foreground font-semibold">
-                            Níveis de Acesso
+                            Roles
                           </TableHead>
                           <TableHead className="text-foreground font-semibold text-right">
                             Ações
@@ -418,27 +565,36 @@ export default function AdminDashboard() {
                             </TableCell>
                             <TableCell>
                               <div className="flex flex-wrap gap-1">
-                                {user.roles.map((access) => (
+                                {user.roles.map((role) => (
                                   <div
-                                    key={access}
+                                    key={role.id}
                                     className="flex items-center"
                                   >
                                     <Badge
-                                      variant={getAccessBadgeVariant(access)}
+                                      variant={getRoleBadgeVariant(role.name)}
                                       className="text-xs pr-1"
                                     >
-                                      {roleLabels[access]}
-                                      {canRemoveAccess(user.id, access) && (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleRemoveAccess(user.id, access);
-                                          }}
-                                          className="ml-1 hover:bg-black/20 rounded-full p-0.5 transition-colors"
-                                          title={`Remover acesso ${roleLabels[access]}`}
-                                        >
-                                          <X className="h-2.5 w-2.5" />
-                                        </button>
+                                      {updatingUser === user.id ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        <>
+                                          {role.name}
+                                          {canRemoveRole(user.id, role.id) && (
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRemoveRole(
+                                                  user.id,
+                                                  role.id
+                                                );
+                                              }}
+                                              className="ml-1 hover:bg-black/20 rounded-full p-0.5 transition-colors"
+                                              title={`Remover role ${role.name}`}
+                                            >
+                                              <X className="h-2.5 w-2.5" />
+                                            </button>
+                                          )}
+                                        </>
                                       )}
                                     </Badge>
                                   </div>
@@ -448,31 +604,31 @@ export default function AdminDashboard() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-6 w-6 p-0 ml-1"
-                                      title="Adicionar nível de acesso"
+                                      className="h-6 w-6 p-0 ml-1 cursor-pointer"
+                                      title="Adicionar role"
+                                      disabled={updatingUser === user.id}
                                     >
-                                      <Plus className="h-3 w-3" />
+                                      {updatingUser === user.id ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        <Plus className="h-3 w-3" />
+                                      )}
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="start">
-                                    {(
-                                      [
-                                        "DIRECAO",
-                                        "PROFESSOR",
-                                        "SECRETARIA",
-                                        "USER", // Alterado de USUARIO_PADRAO para USER
-                                        "ADMIN",
-                                      ] as Role[]
-                                    ).map((level) => (
+                                    {roles.map((role) => (
                                       <DropdownMenuItem
-                                        key={level}
+                                        key={role.id}
                                         onClick={() =>
-                                          handleAccessToggle(user.id, level)
+                                          handleRoleToggle(user.id, role.id)
                                         }
                                         className="flex items-center justify-between"
+                                        disabled={updatingUser === user.id}
                                       >
-                                        <span>{roleLabels[level]}</span>
-                                        {user.roles.includes(level) && (
+                                        <span>{role.name}</span>
+                                        {user.roles.some(
+                                          (r) => r.id === role.id
+                                        ) && (
                                           <Check className="h-4 w-4 text-green-600" />
                                         )}
                                       </DropdownMenuItem>
@@ -485,19 +641,14 @@ export default function AdminDashboard() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleDeleteClick(user)}
-                                disabled={
-                                  user.roles.includes("ADMIN") &&
-                                  users.filter((u) => u.roles.includes("ADMIN"))
-                                    .length <= 1
+                                onClick={() => handleDeleteUser(user)}
+                                disabled={!canDeleteUser(user)}
+                                className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive cursor-pointer"
+                                title={
+                                  canDeleteUser(user)
+                                    ? "Excluir usuário"
+                                    : "Não é possível excluir este usuário"
                                 }
-                                className={`h-8 w-8 p-0 cursor-pointer ${
-                                  user.roles.includes("ADMIN") &&
-                                  users.filter((u) => u.roles.includes("ADMIN"))
-                                    .length <= 1
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : "hover:bg-destructive/10 hover:text-destructive"
-                                }`}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -508,6 +659,7 @@ export default function AdminDashboard() {
                     </Table>
                   </div>
 
+                  {/* Cards para mobile */}
                   <div className="md:hidden space-y-3">
                     {filteredUsers.map((user) => (
                       <Card key={user.id} className="border border-border">
@@ -525,19 +677,8 @@ export default function AdminDashboard() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleDeleteClick(user)}
-                                disabled={
-                                  user.roles.includes("ADMIN") &&
-                                  users.filter((u) => u.roles.includes("ADMIN"))
-                                    .length <= 1
-                                }
-                                className={`h-8 w-8 p-0 ml-2 ${
-                                  user.roles.includes("ADMIN") &&
-                                  users.filter((u) => u.roles.includes("ADMIN"))
-                                    .length <= 1
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : "hover:bg-destructive/10 hover:text-destructive"
-                                }`}
+                                onClick={() => handleDeleteUser(user)}
+                                className="h-8 w-8 p-0 ml-2 hover:bg-destructive/10 hover:text-destructive"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -545,30 +686,39 @@ export default function AdminDashboard() {
 
                             <div className="space-y-2">
                               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                                Níveis de Acesso
+                                Roles
                               </p>
                               <div className="flex flex-wrap gap-2">
-                                {user.roles.map((access) => (
+                                {user.roles.map((role) => (
                                   <div
-                                    key={access}
+                                    key={role.id}
                                     className="flex items-center"
                                   >
                                     <Badge
-                                      variant={getAccessBadgeVariant(access)}
+                                      variant={getRoleBadgeVariant(role.name)}
                                       className="text-xs pr-1"
                                     >
-                                      {roleLabels[access]}
-                                      {canRemoveAccess(user.id, access) && (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleRemoveAccess(user.id, access);
-                                          }}
-                                          className="ml-1 hover:bg-black/20 rounded-full p-0.5 transition-colors"
-                                          title={`Remover acesso ${roleLabels[access]}`}
-                                        >
-                                          <X className="h-2.5 w-2.5" />
-                                        </button>
+                                      {updatingUser === user.id ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        <>
+                                          {role.name}
+                                          {canRemoveRole(user.id, role.id) && (
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRemoveRole(
+                                                  user.id,
+                                                  role.id
+                                                );
+                                              }}
+                                              className="ml-1 hover:bg-black/20 rounded-full p-0.5 transition-colors"
+                                              title={`Remover role ${role.name}`}
+                                            >
+                                              <X className="h-2.5 w-2.5" />
+                                            </button>
+                                          )}
+                                        </>
                                       )}
                                     </Badge>
                                   </div>
@@ -579,31 +729,31 @@ export default function AdminDashboard() {
                                       variant="outline"
                                       size="sm"
                                       className="h-6 px-2 text-xs bg-transparent"
-                                      title="Adicionar nível de acesso"
+                                      title="Adicionar role"
+                                      disabled={updatingUser === user.id}
                                     >
-                                      <Plus className="h-3 w-3 mr-1" />
+                                      {updatingUser === user.id ? (
+                                        <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                      ) : (
+                                        <Plus className="h-3 w-3 mr-1 " />
+                                      )}
                                       Adicionar
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="start">
-                                    {(
-                                      [
-                                        "DIRECAO",
-                                        "PROFESSOR",
-                                        "SECRETARIA",
-                                        "USER", // Alterado de USUARIO_PADRAO para USER
-                                        "ADMIN",
-                                      ] as Role[]
-                                    ).map((level) => (
+                                    {roles.map((role) => (
                                       <DropdownMenuItem
-                                        key={level}
+                                        key={role.id}
                                         onClick={() =>
-                                          handleAccessToggle(user.id, level)
+                                          handleRoleToggle(user.id, role.id)
                                         }
                                         className="flex items-center justify-between"
+                                        disabled={updatingUser === user.id}
                                       >
-                                        <span>{roleLabels[level]}</span>
-                                        {user.roles.includes(level) && (
+                                        <span>{role.name}</span>
+                                        {user.roles.some(
+                                          (r) => r.id === role.id
+                                        ) && (
                                           <Check className="h-4 w-4 text-green-600" />
                                         )}
                                       </DropdownMenuItem>
@@ -634,29 +784,43 @@ export default function AdminDashboard() {
                 open={deleteConfirmOpen}
                 onOpenChange={setDeleteConfirmOpen}
               >
-                <DialogContent className="sm:max-w-md mx-4 w-[calc(100vw-2rem)]">
+                <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle className="text-left">
-                      Confirmar Exclusão
-                    </DialogTitle>
-                    <DialogDescription className="text-left">
-                      Tem certeza que deseja excluir o usuário{" "}
-                      <strong>{userToDelete?.name}</strong>? Esta ação não pode
-                      ser desfeita.
+                    <DialogTitle>Confirmar Exclusão</DialogTitle>
+                    <DialogDescription>
+                      {userToDelete && !canDeleteUser(userToDelete) ? (
+                        <span className="text-destructive">
+                          Não é possível excluir este usuário.
+                          {userToDelete.roles.some(
+                            (role) => role.name === "ADMIN"
+                          ) &&
+                            users.filter((u) =>
+                              u.roles.some((role) => role.name === "ADMIN")
+                            ).length <= 1 &&
+                            " É o único administrador do sistema."}
+                          {currentUser &&
+                            userToDelete.id === currentUser &&
+                            " Você não pode excluir sua própria conta."}
+                        </span>
+                      ) : (
+                        <>
+                          Tem certeza que deseja excluir o usuário{" "}
+                          <strong>{userToDelete?.name}</strong>? Esta ação não
+                          pode ser desfeita.
+                        </>
+                      )}
                     </DialogDescription>
                   </DialogHeader>
-                  <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
-                    <Button
-                      variant="outline"
-                      onClick={cancelDelete}
-                      className="w-full sm:w-auto bg-transparent cursor-pointer"
-                    >
+                  <DialogFooter>
+                    <Button variant="outline" onClick={cancelDelete}>
                       Cancelar
                     </Button>
                     <Button
                       variant="destructive"
                       onClick={confirmDelete}
-                      className="w-full sm:w-auto cursor-pointer"
+                      disabled={
+                        userToDelete ? !canDeleteUser(userToDelete) : false
+                      }
                     >
                       Sim, Excluir
                     </Button>
@@ -665,38 +829,71 @@ export default function AdminDashboard() {
               </Dialog>
 
               <Dialog
-                open={removeAccessConfirmOpen}
-                onOpenChange={setRemoveAccessConfirmOpen}
+                open={removeRoleConfirmOpen}
+                onOpenChange={setRemoveRoleConfirmOpen}
               >
-                <DialogContent className="sm:max-w-md mx-4 w-[calc(100vw-2rem)]">
+                <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle className="text-left">
-                      Confirmar Remoção de Acesso
-                    </DialogTitle>
-                    <DialogDescription className="text-left">
-                      Tem certeza que deseja remover o nível de acesso{" "}
-                      <strong>
-                        {accessToRemove
-                          ? roleLabels[accessToRemove.accessLevel]
-                          : ""}
-                      </strong>{" "}
-                      do usuário <strong>{accessToRemove?.userName}</strong>?
+                    <DialogTitle>Confirmar Remoção de Role</DialogTitle>
+                    <DialogDescription>
+                      Tem certeza que deseja remover a role{" "}
+                      <strong>{roleToRemove?.roleName}</strong> do usuário{" "}
+                      <strong>{roleToRemove?.userName}</strong>?
                     </DialogDescription>
                   </DialogHeader>
-                  <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+                  <DialogFooter>
+                    <Button variant="outline" onClick={cancelRemoveRole}>
+                      Cancelar
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={confirmRemoveRole}
+                      disabled={updatingUser === roleToRemove?.userId}
+                    >
+                      {updatingUser === roleToRemove?.userId ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Sim, Remover"
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog
+                open={deleteRoleConfirmOpen}
+                onOpenChange={setDeleteRoleConfirmOpen}
+              >
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Confirmar Exclusão de Role</DialogTitle>
+                    <DialogDescription>
+                      Tem certeza que deseja excluir a role{" "}
+                      <strong>{roleToDelete?.name}</strong>?
+                      <br />
+                      <span className="text-destructive">
+                        Esta ação removerá permanentemente a role e todas as
+                        suas permissões associadas.
+                      </span>
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
                     <Button
                       variant="outline"
-                      onClick={cancelRemoveAccess}
-                      className="w-full sm:w-auto bg-transparent"
+                      onClick={cancelDeleteRole}
+                      disabled={deletingRole}
                     >
                       Cancelar
                     </Button>
                     <Button
                       variant="destructive"
-                      onClick={confirmRemoveAccess}
-                      className="w-full sm:w-auto"
+                      onClick={confirmDeleteRole}
+                      disabled={deletingRole}
                     >
-                      Sim, Remover
+                      {deletingRole ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : null}
+                      {deletingRole ? "Excluindo..." : "Sim, Excluir"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -704,7 +901,7 @@ export default function AdminDashboard() {
             </TabsContent>
 
             <TabsContent value="permissions" className="space-y-6">
-              <ProfileManagement />
+              <PermissionsSection />
             </TabsContent>
           </Tabs>
         </div>

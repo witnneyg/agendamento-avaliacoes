@@ -13,6 +13,13 @@ export async function getUser() {
 
   const user = await db.user.findUnique({
     where: { email: session.user.email },
+    include: {
+      roles: {
+        include: {
+          permissions: true,
+        },
+      },
+    },
   });
 
   if (!user) {
