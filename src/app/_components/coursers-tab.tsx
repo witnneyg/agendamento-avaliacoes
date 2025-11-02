@@ -232,7 +232,7 @@ export function CoursesTab() {
               <div className="space-y-3">
                 <Label className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
-                  Períodos Disponíveis
+                  Turno do Curso
                 </Label>
                 <div className="grid grid-cols-3 gap-4">
                   {PERIODS.map((period) => (
