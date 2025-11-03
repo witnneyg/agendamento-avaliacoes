@@ -1,9 +1,8 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { Appointment } from "../context/appointment";
 
-export async function createScheduling(data: Appointment) {
+export async function createScheduling(data: any) {
   // Verificar conflitos para todo o período do agendamento
 
   const hasConflict = await db.scheduling.findFirst({
