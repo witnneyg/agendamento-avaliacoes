@@ -80,6 +80,11 @@ type User = {
   roles: Role[];
   image?: string | null;
   emailVerified?: Date | null;
+  teacher?: {
+    id: string;
+    name: string;
+    status: string;
+  } | null;
 };
 
 export default function AdminDashboard() {
@@ -130,6 +135,7 @@ export default function AdminDashboard() {
             roles: userRoles,
             image: user.image,
             emailVerified: user.emailVerified,
+            teacher: user.teacher || null,
           };
         });
 
@@ -186,12 +192,27 @@ export default function AdminDashboard() {
     const currentRoles = user.roles.map((r) => r.id);
     const hasRole = currentRoles.includes(roleId);
 
-    let newRoleIds: string[];
-
     if (hasRole) {
+      const roleToRemove = roles.find((r) => r.id === roleId);
+
+      if (
+        roleToRemove?.name === "PROFESSOR" &&
+        user.teacher?.status === "ACTIVE"
+      ) {
+        alert(
+          "Não é possível remover a role de professor enquanto o professor estiver com status ATIVO"
+        );
+        return;
+      }
+
       if (currentRoles.length <= 1) {
         return;
       }
+    }
+
+    let newRoleIds: string[];
+
+    if (hasRole) {
       newRoleIds = currentRoles.filter((id) => id !== roleId);
     } else {
       newRoleIds = [...currentRoles, roleId];
@@ -221,6 +242,7 @@ export default function AdminDashboard() {
         roles: Array.isArray(user.roles) ? user.roles : [],
         image: user.image,
         emailVerified: user.emailVerified,
+        teacher: user.teacher || null,
       }));
       setUsers(refreshedUsers);
     } finally {
@@ -239,7 +261,12 @@ export default function AdminDashboard() {
 
     if (!user || !role) return;
 
-    if (user.roles.length <= 1) {
+    if (!canRemoveRole(userId, roleId)) {
+      if (role.name === "PROFESSOR" && user.teacher?.status === "ACTIVE") {
+        alert(
+          "Não é possível remover a role de professor enquanto o professor estiver com status ATIVO"
+        );
+      }
       return;
     }
 
@@ -272,6 +299,15 @@ export default function AdminDashboard() {
     if (!user) return false;
 
     if (user.roles.length <= 1) return false;
+
+    const roleToRemove = roles.find((r) => r.id === roleId);
+
+    if (
+      roleToRemove?.name === "PROFESSOR" &&
+      user.teacher?.status === "ACTIVE"
+    ) {
+      return false;
+    }
 
     return true;
   };
@@ -558,7 +594,7 @@ export default function AdminDashboard() {
                             }
                           >
                             <TableCell className="font-medium text-foreground">
-                              {user.name}
+                              <div>{user.name}</div>
                             </TableCell>
                             <TableCell className="text-card-foreground">
                               {user.email || "Email não informado"}
@@ -573,6 +609,12 @@ export default function AdminDashboard() {
                                     <Badge
                                       variant={getRoleBadgeVariant(role.name)}
                                       className="text-xs pr-1"
+                                      title={
+                                        role.name === "PROFESSOR" &&
+                                        user.teacher?.status === "ACTIVE"
+                                          ? "Não é possível remover a role de professor enquanto o professor estiver ativo"
+                                          : undefined
+                                      }
                                     >
                                       {updatingUser === user.id ? (
                                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -673,12 +715,32 @@ export default function AdminDashboard() {
                                 <p className="text-sm text-muted-foreground truncate">
                                   {user.email || "Email não informado"}
                                 </p>
+                                {user.teacher && (
+                                  <Badge
+                                    variant={
+                                      user.teacher.status === "ACTIVE"
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                    className="mt-1 text-xs"
+                                  >
+                                    {user.teacher.status === "ACTIVE"
+                                      ? "Professor Ativo"
+                                      : "Professor Inativo"}
+                                  </Badge>
+                                )}
                               </div>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDeleteUser(user)}
+                                disabled={!canDeleteUser(user)}
                                 className="h-8 w-8 p-0 ml-2 hover:bg-destructive/10 hover:text-destructive"
+                                title={
+                                  canDeleteUser(user)
+                                    ? "Excluir usuário"
+                                    : "Não é possível excluir este usuário"
+                                }
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -697,6 +759,12 @@ export default function AdminDashboard() {
                                     <Badge
                                       variant={getRoleBadgeVariant(role.name)}
                                       className="text-xs pr-1"
+                                      title={
+                                        role.name === "PROFESSOR" &&
+                                        user.teacher?.status === "ACTIVE"
+                                          ? "Não é possível remover a role de professor enquanto o professor estiver ativo"
+                                          : undefined
+                                      }
                                     >
                                       {updatingUser === user.id ? (
                                         <Loader2 className="h-3 w-3 animate-spin" />

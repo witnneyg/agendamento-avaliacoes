@@ -4,17 +4,33 @@ import { db } from "@/lib/prisma";
 
 export async function getUsers() {
   try {
-    const users = await db.user.findMany({
-      include: {
-        roles: {
-          // INCLUIR as roles no retorno
-          include: {
-            permissions: true,
+    const [users, teachers] = await Promise.all([
+      db.user.findMany({
+        include: {
+          roles: {
+            include: {
+              permissions: true,
+            },
           },
         },
-      },
+      }),
+      db.teacher.findMany(),
+    ]);
+
+    const usersWithTeachers = users.map((user) => {
+      const teacher = teachers.find(
+        (teacher) =>
+          teacher.name === user.name ||
+          teacher.name?.toLowerCase() === user.name?.toLowerCase()
+      );
+
+      return {
+        ...user,
+        teacher: teacher || null,
+      };
     });
-    return users;
+
+    return usersWithTeachers;
   } catch (error) {
     console.error("Erro ao buscar usuários:", error);
     throw new Error("Falha ao carregar usuários");
