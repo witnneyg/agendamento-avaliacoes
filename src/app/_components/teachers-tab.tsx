@@ -65,7 +65,6 @@ import {
 } from "lucide-react";
 
 import { getTeachers } from "@/app/_actions/get-teacher";
-import { getCourses } from "@/app/_actions/get-courses";
 import { getDisciplinesByCourseId } from "@/app/_actions/get-discipline-by-course-id";
 import { createTeacher } from "@/app/_actions/create-teacher";
 import { deleteTeacher } from "@/app/_actions/delete-teacher";
@@ -79,6 +78,7 @@ import type {
 import { translateTeacherStatus } from "@/utils/translate-teacher-status";
 import { updateTeacher } from "../_actions/update-teacher";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { getCourses } from "../_actions/get-coursers";
 
 type TeacherWithRelations = Prisma.TeacherGetPayload<{
   include: { courses: true; disciplines: true };

@@ -111,8 +111,6 @@ export const AppointmentItem = ({
   const handleSave = async (
     updatedAppointments: Partial<SchedulingWithRelations>[]
   ) => {
-    console.log("Salvando agendamentos:", updatedAppointments);
-
     if (updatedAppointments.length > 0 && updatedAppointments[0].id) {
       const updatedAppointment = {
         ...appointment,
@@ -125,14 +123,12 @@ export const AppointmentItem = ({
       }
     }
 
-    // FECHA AMBOS OS MODAIS
     setIsEditOpen(false);
     setIsAlertOpen(false);
   };
 
   const handleEditClose = () => {
     setIsEditOpen(false);
-    // Não fecha o modal principal aqui, apenas quando salvar
   };
 
   const handleConfirmDelete = async () => {
@@ -140,13 +136,12 @@ export const AppointmentItem = ({
     try {
       await onDelete(appointment.id);
 
-      // Notifica o componente pai sobre a exclusão se a função foi fornecida
       if (onAppointmentDeleted) {
         onAppointmentDeleted(appointment.id);
       }
 
       setIsDeleteDialogOpen(false);
-      setIsAlertOpen(false); // Fecha o modal principal após excluir
+      setIsAlertOpen(false);
     } catch (error) {
       console.error("Erro ao excluir agendamento:", error);
     } finally {

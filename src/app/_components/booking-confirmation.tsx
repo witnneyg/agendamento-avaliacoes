@@ -83,9 +83,6 @@ export function BookingConfirmation({
   }, []);
 
   const formattedSemesterName = formatSemesterName(semester.name);
-
-  console.log(semester.name);
-
   return (
     <div className="flex flex-col items-center space-y-6 py-4">
       <div className="flex flex-col items-center text-center">

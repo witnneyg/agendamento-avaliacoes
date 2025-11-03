@@ -26,7 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
 import { NavBar } from "../_components/navbar";
 import { ptBR } from "date-fns/locale";
-import { getCourses } from "../_actions/get-courses";
+import { getUserCourses } from "../_actions/get-user-courses";
 import { getScheduling } from "../_actions/get-scheduling";
 import { deleteSchedule } from "../_actions/delete-schedule";
 import type {
@@ -196,7 +196,7 @@ export default function CalendarPage() {
 
   useEffect(() => {
     async function fetch() {
-      const coursesData = await getCourses();
+      const coursesData = await getUserCourses();
       const schedulingData = await getScheduling();
       setSchedulingCourses(schedulingData as any);
       setAcademicCourses(coursesData);
@@ -289,7 +289,7 @@ export default function CalendarPage() {
               />
               <label
                 htmlFor={course.id}
-                className="text-sm font-medium leading-none cursor-pointer"
+                className="text-sm font-medium leading-none cursor-pointer flex-1 truncate"
               >
                 {course.name}
               </label>

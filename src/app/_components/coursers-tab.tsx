@@ -6,7 +6,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { createCourse } from "@/app/_actions/create-course";
-import { getCourses } from "@/app/_actions/get-courses";
 import { deleteCourse } from "@/app/_actions/delete-course";
 import type { Course } from "@prisma/client";
 
@@ -45,6 +44,7 @@ import {
 
 import { Plus, Edit, Trash2, Clock, Calendar, Loader2 } from "lucide-react";
 import { updateCourse } from "../_actions/update-course";
+import { getCourses } from "../_actions/get-coursers";
 
 type Period = "MORNING" | "AFTERNOON" | "EVENING";
 

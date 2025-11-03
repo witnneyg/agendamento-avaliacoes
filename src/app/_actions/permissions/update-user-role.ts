@@ -4,8 +4,6 @@ import { db } from "@/lib/prisma";
 
 export async function updateUserRole(userId: string, rolesId: string[]) {
   try {
-    console.log(userId, "userId");
-    console.log(rolesId, "rolesId");
     const existingUser = await db.user.findUnique({
       where: { id: userId },
     });
@@ -14,7 +12,6 @@ export async function updateUserRole(userId: string, rolesId: string[]) {
       throw new Error(`Role com ID ${userId} não encontrada`);
     }
 
-    // Atualizar as permissões da role
     const updatedRole = await db.user.update({
       where: { id: userId },
       data: {

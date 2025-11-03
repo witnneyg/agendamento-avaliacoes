@@ -13,14 +13,12 @@ import { BookingForm } from "./booking-form";
 import { BookingConfirmation } from "./booking-confirmation";
 import { DisciplineSelector } from "./discipline-selector";
 import { Semester, SemesterSelector } from "./semester-selector";
-import { useAppointments } from "../context/appointment";
 import { createScheduling } from "../_actions/create-schedule";
 import { TimePeriod } from "./time-period.selector";
 import { getUser } from "../_actions/getUser";
 import { Class, Discipline, User } from "@prisma/client";
 import { ClassSelector } from "./class-selector";
 import { sendSchedulingEmail } from "../_actions/send-scheduling-email";
-// IMPORTE A SERVER ACTION CORRETAMENTE
 import { getTeacherByUserId } from "../_actions/get-teacher-by-user-id";
 
 type Step =
@@ -38,7 +36,6 @@ type BookingDetails = {
 };
 
 export function Scheduling() {
-  const { addAppointment } = useAppointments();
   const [step, setStep] = useState<Step>("course");
   const [selectedCourse, setSelectedCourse] = useState<Course | undefined>(
     undefined
@@ -55,9 +52,6 @@ export function Scheduling() {
   const [user, setUser] = useState<Omit<User, "emailVerified"> | undefined>(
     undefined
   );
-  const [selectedTimePeriod, setSelectedTimePeriod] = useState<
-    TimePeriod | undefined
-  >(undefined);
   const [teacherId, setTeacherId] = useState<string | undefined>(undefined);
 
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(
@@ -89,7 +83,6 @@ export function Scheduling() {
       const data = await getUser();
       setUser(data);
 
-      // Use a server action importada, não uma função local
       if (data) {
         const teacherData = await getTeacherByUserId(data.id);
         if (teacherData) {
@@ -99,17 +92,6 @@ export function Scheduling() {
     }
     fetch();
   }, []);
-
-  // REMOVA ESTA FUNÇÃO LOCAL - ELA ESTÁ CAUSANDO A RECURSÃO INFINITA
-  // const getTeacherByUserId = async (userId: string): Promise<any> => {
-  //   try {
-  //     const teacherData = await getTeacherByUserId(userId);
-  //     return teacherData;
-  //   } catch (error) {
-  //     console.error("Erro ao buscar professor:", error);
-  //     return null;
-  //   }
-  // };
 
   const handleCreateScheduling = async (details: BookingDetails) => {
     setBookingDetails(details);

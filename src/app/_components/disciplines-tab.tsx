@@ -53,12 +53,12 @@ import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
 import type { Class, Course, Period, Prisma, Semester } from "@prisma/client";
 
 import { getDisciplines } from "@/app/_actions/get-disciplines";
-import { getCourses } from "@/app/_actions/get-courses";
 import { createDiscipline } from "@/app/_actions/create-discipline";
 import { getClassBySemesterId } from "@/app/_actions/get-class-by-semester-id";
 import { getSemesterByCourse } from "@/app/_actions/get-semester-by-course-selected";
 import { deleteDiscipline } from "../_actions/delete-discipline";
 import { updateDiscipline } from "../_actions/update-discipline";
+import { getCourses } from "../_actions/get-coursers";
 
 const disciplineSchema = z.object({
   name: z.string().min(1, "O nome da disciplina é obrigatório"),

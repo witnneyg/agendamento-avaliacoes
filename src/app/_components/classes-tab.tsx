@@ -51,7 +51,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
 
-import { getCourses } from "@/app/_actions/get-courses";
 import { getSemesterByCourse } from "@/app/_actions/get-semester-by-course-selected";
 import { getDisciplinesBySemester } from "@/app/_actions/get-disciplines-by-semester";
 import { createClasses } from "@/app/_actions/create-classes";
@@ -61,6 +60,7 @@ import { deleteClass } from "@/app/_actions/delete-classes";
 import type { Course, Prisma, Semester } from "@prisma/client";
 import type { DisciplineWithRelations } from "./disciplines-tab";
 import { updateClass } from "../_actions/update-classes";
+import { getCourses } from "../_actions/get-coursers";
 
 export type ClassesWithRelations = Prisma.ClassGetPayload<{
   include: { course: true; semester: true };

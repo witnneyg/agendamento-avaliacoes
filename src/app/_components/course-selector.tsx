@@ -8,7 +8,6 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getIconByName } from "../_helpers/getIconByName";
 import { Period } from "@prisma/client";
-import { getCourses } from "../_actions/get-courses";
 import { getUser } from "../_actions/getUser";
 import { getTeacherByUserId } from "../_actions/get-teacher-by-user-id";
 import { getTeacherCourses } from "../_actions/get-teacher-courses";
@@ -39,12 +38,6 @@ export function CourseSelector({
     async function fetchCourses() {
       setIsLoading(true);
       setError(null);
-
-      console.log("CourseSelector - Iniciando busca:", {
-        teacherId,
-        filterByUser,
-      });
-
       try {
         if (!teacherId && !filterByUser) {
           setCourses([]);
@@ -88,7 +81,6 @@ export function CourseSelector({
     fetchCourses();
   }, [teacherId, filterByUser]);
 
-  // Estados de renderização
   if (isLoading) {
     const loadingMessage =
       teacherId || filterByUser
