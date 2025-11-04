@@ -81,11 +81,7 @@ export function NavBar() {
       return [...baseLinks, secretariaLink, direcaoLink, adminLink];
     }
 
-    if (hasRole("DIRETOR")) {
-      return [...baseLinks, direcaoLink];
-    }
-
-    if (hasRole("DIREÇÃO")) {
+    if (hasRole("DIRETOR") || hasRole("DIREÇÃO")) {
       return [...baseLinks, direcaoLink];
     }
 
@@ -110,6 +106,7 @@ export function NavBar() {
   return (
     <nav className="border-b bg-background">
       <div className="container mx-auto flex h-16 items-center px-4 justify-between">
+        {/* Logo */}
         <Link
           href="/"
           className="font-semibold hover:text-primary/70 flex-shrink-0"
@@ -117,34 +114,50 @@ export function NavBar() {
           UniCerrado
         </Link>
 
+        {/* Desktop menu */}
         <div className="hidden md:flex space-x-1 lg:space-x-4">
-          {navLinks.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "flex items-center px-2 lg:px-3 py-2 text-sm transition-colors hover:text-primary rounded-md",
-                isActiveLink(href)
-                  ? "text-primary bg-primary/10"
-                  : "text-muted-foreground"
-              )}
-            >
-              <Icon className="mr-1 lg:mr-2 h-4 w-4" />
-              <span className="hidden lg:inline">{label}</span>
-            </Link>
-          ))}
+          {isLoading ? (
+            // Skeleton de carregamento
+            <>
+              <div className="h-6 w-20 bg-muted animate-pulse rounded-md" />
+              <div className="h-6 w-24 bg-muted animate-pulse rounded-md" />
+              <div className="h-6 w-16 bg-muted animate-pulse rounded-md" />
+            </>
+          ) : (
+            navLinks.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  "flex items-center px-2 lg:px-3 py-2 text-sm transition-colors hover:text-primary rounded-md",
+                  isActiveLink(href)
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground"
+                )}
+              >
+                <Icon className="mr-1 lg:mr-2 h-4 w-4" />
+                <span className="hidden lg:inline">{label}</span>
+              </Link>
+            ))
+          )}
         </div>
 
+        {/* Botão de sair */}
         <div className="hidden md:flex items-center space-x-4">
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex items-center text-sm px-3 py-2 rounded-md transition-colors hover:text-primary text-muted-foreground cursor-pointer"
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            <span className="hidden lg:inline">Sair</span>
-          </button>
+          {isLoading ? (
+            <div className="h-6 w-14 bg-muted animate-pulse rounded-md" />
+          ) : (
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="flex items-center text-sm px-3 py-2 rounded-md transition-colors hover:text-primary text-muted-foreground cursor-pointer"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span className="hidden lg:inline">Sair</span>
+            </button>
+          )}
         </div>
 
+        {/* Botão do menu mobile */}
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className="md:hidden p-2 rounded-md hover:bg-accent"
@@ -157,38 +170,51 @@ export function NavBar() {
         </button>
       </div>
 
+      {/* Menu mobile */}
       {isMenuOpen && (
         <div className="md:hidden border-t bg-background">
           <div className="container mx-auto px-4 py-2 space-y-1">
-            {navLinks.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setIsMenuOpen(false)}
-                className={cn(
-                  "flex items-center px-3 py-3 text-sm transition-colors hover:text-primary rounded-md w-full",
-                  isActiveLink(href)
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground"
-                )}
-              >
-                <Icon className="mr-3 h-4 w-4" />
-                {label}
-              </Link>
-            ))}
-            <div className="px-3 py-2 text-xs text-muted-foreground border-t mt-2 pt-2">
-              Logado como: {user?.name || user?.email}
-            </div>
-            <button
-              onClick={() => {
-                setIsMenuOpen(false);
-                signOut({ callbackUrl: "/login" });
-              }}
-              className="flex items-center text-sm px-3 py-3 rounded-md transition-colors hover:text-primary text-muted-foreground cursor-pointer w-full"
-            >
-              <LogOut className="mr-3 h-4 w-4" />
-              Sair
-            </button>
+            {isLoading ? (
+              <>
+                <div className="h-6 w-24 bg-muted animate-pulse rounded-md" />
+                <div className="h-6 w-20 bg-muted animate-pulse rounded-md" />
+                <div className="h-6 w-28 bg-muted animate-pulse rounded-md" />
+              </>
+            ) : (
+              <>
+                {navLinks.map(({ href, label, icon: Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={cn(
+                      "flex items-center px-3 py-3 text-sm transition-colors hover:text-primary rounded-md w-full",
+                      isActiveLink(href)
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    <Icon className="mr-3 h-4 w-4" />
+                    {label}
+                  </Link>
+                ))}
+
+                <div className="px-3 py-2 text-xs text-muted-foreground border-t mt-2 pt-2">
+                  Logado como: {user?.name || user?.email}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    signOut({ callbackUrl: "/login" });
+                  }}
+                  className="flex items-center text-sm px-3 py-3 rounded-md transition-colors hover:text-primary text-muted-foreground cursor-pointer w-full"
+                >
+                  <LogOut className="mr-3 h-4 w-4" />
+                  Sair
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
