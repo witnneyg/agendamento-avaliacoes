@@ -1,8 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import ProtectedLayout from "../protectedLayout";
 
-export default function CalendarLayout({ children }: { children: ReactNode }) {
-  return <ProtectedLayout>{children}</ProtectedLayout>;
+export default function DirecaoLayout({ children }: { children: ReactNode }) {
+  return <div>{children}</div>;
 }

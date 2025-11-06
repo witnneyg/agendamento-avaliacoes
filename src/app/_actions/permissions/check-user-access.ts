@@ -29,17 +29,18 @@ export async function checkUserAccess() {
       };
     }
 
-    const userRoles = user.roles.map((role) => role.name.toUpperCase());
-
-    const hasOnlyUserRole = userRoles.length === 1 && userRoles[0] === "USER";
-
-    if (hasOnlyUserRole) {
+    // VERIFICAÇÃO PRINCIPAL: Se não tem nenhuma role
+    if (!user.roles || user.roles.length === 0) {
       return {
         access: false,
         status: "PENDING_APPROVAL",
         message: "AGUARDANDO A AUTORIZAÇÃO PELO ADM",
       };
     }
+
+    const userRoles = user.roles.map((role) => role.name.toUpperCase());
+
+    // Remove a verificação da role USER já que você não usa mais
 
     const rolesThatNeedActivation = ["PROFESSOR"];
     const isProfessor = userRoles.some((role) =>
