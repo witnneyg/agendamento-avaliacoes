@@ -90,14 +90,26 @@ type DisciplineWithCourse = Discipline & {
   assignedTo?: string;
 };
 
-const teacherSchema = z.object({
-  userId: z.string().min(1, "Selecione um professor"),
-  courseIds: z.array(z.string()).min(1, "Selecione pelo menos um curso"),
-  disciplineIds: z
-    .array(z.string())
-    .min(1, "Selecione pelo menos uma disciplina"),
-  status: z.enum(["ACTIVE", "INACTIVE"]),
-});
+const teacherSchema = z
+  .object({
+    userId: z.string().min(1, "Selecione um professor"),
+    courseIds: z.array(z.string()),
+    disciplineIds: z.array(z.string()),
+    status: z.enum(["ACTIVE", "INACTIVE"]),
+  })
+  .refine(
+    (data) => {
+      if (data.status === "ACTIVE") {
+        return data.courseIds.length > 0 && data.disciplineIds.length > 0;
+      }
+      return true;
+    },
+    {
+      message:
+        "Selecione pelo menos um curso e uma disciplina para professores ativos",
+      path: ["courseIds"],
+    }
+  );
 
 type TeacherForm = z.infer<typeof teacherSchema>;
 
@@ -219,14 +231,22 @@ export function TeachersTab() {
     fetchData();
   }, []);
 
-  // useEffect para limpar seleções quando dados forem excluídos
   useEffect(() => {
-    // Limpa userId se o usuário não existir mais
+    const currentStatus = watch("status");
+
+    if (currentStatus === "INACTIVE") {
+      setValue("courseIds", []);
+      setValue("disciplineIds", []);
+      setAvailableDisciplines([]);
+      setExpandedCourses(new Set());
+    }
+  }, [watch("status"), setValue]);
+
+  useEffect(() => {
     if (selectedUserId && !users.some((user) => user.id === selectedUserId)) {
       setValue("userId", "");
     }
 
-    // Limpa cursos selecionados que não existem mais
     const validCourseIds = selectedCourseIds.filter((courseId) =>
       courses.some((course) => course.id === courseId)
     );
@@ -234,7 +254,6 @@ export function TeachersTab() {
       setValue("courseIds", validCourseIds);
     }
 
-    // Limpa disciplinas selecionadas que não existem mais
     const validDisciplineIds = selectedDisciplineIds.filter((disciplineId) =>
       availableDisciplines.some((discipline) => discipline.id === disciplineId)
     );
@@ -328,7 +347,16 @@ export function TeachersTab() {
         return;
       }
 
-      // Verifica se o usuário já é um professor
+      if (
+        data.status === "INACTIVE" &&
+        (data.courseIds.length > 0 || data.disciplineIds.length > 0)
+      ) {
+        alert(
+          "Professores inativos não podem ter cursos ou disciplinas vinculados. Os vínculos serão removidos automaticamente."
+        );
+        return;
+      }
+
       const existingTeacher = teachers.find(
         (teacher) => teacher.name === selectedUser.name
       );
@@ -336,7 +364,7 @@ export function TeachersTab() {
       const validCourseIds = data.courseIds.filter((courseId) =>
         courses.some((course) => course.id === courseId)
       );
-      if (validCourseIds.length === 0) {
+      if (validCourseIds.length === 0 && data.status === "ACTIVE") {
         alert("Nenhum curso válido selecionado");
         return;
       }
@@ -346,17 +374,12 @@ export function TeachersTab() {
           (discipline) => discipline.id === disciplineId
         )
       );
-      if (validDisciplineIds.length === 0) {
+      if (validDisciplineIds.length === 0 && data.status === "ACTIVE") {
         alert("Nenhuma disciplina válida selecionada");
         return;
       }
 
-      // REMOVA ESTA PARTE - não precisa combinar, o updateTeacher vai substituir
-      // let finalCourseIds = validCourseIds;
-      // let finalDisciplineIds = validDisciplineIds;
-
       const conflictedDisciplines = validDisciplineIds.filter(
-        // Use validDisciplineIds em vez de finalDisciplineIds
         (disciplineId) => {
           const assignmentInfo = getDisciplineAssignmentInfo(disciplineId);
           const teacherToUpdate = editingTeacher || existingTeacher;
@@ -386,8 +409,8 @@ export function TeachersTab() {
 
       const teacherData = {
         name: selectedUser.name || "Nome não informado",
-        courseIds: validCourseIds, // Use validCourseIds diretamente
-        disciplineIds: validDisciplineIds, // Use validDisciplineIds diretamente
+        courseIds: validCourseIds,
+        disciplineIds: validDisciplineIds,
         status: data.status,
       };
 
@@ -410,7 +433,6 @@ export function TeachersTab() {
         return;
       }
 
-      // Recarrega todos os dados para garantir sincronização
       const [teachersData, coursesData, usersData] = await Promise.all([
         getTeachers(),
         getCourses(),
@@ -458,7 +480,6 @@ export function TeachersTab() {
     try {
       await deleteTeacher(teacherId);
 
-      // Recarrega todos os dados para garantir que tudo está sincronizado
       const [teachersData, coursesData, usersData] = await Promise.all([
         getTeachers(),
         getCourses(),
@@ -623,7 +644,6 @@ export function TeachersTab() {
                   {editingTeacher ? "Professor" : "Selecionar Usuário"}
                 </Label>
 
-                {/* USUÁRIO SELECIONADO OU PROFESSOR EM EDIÇÃO */}
                 {(selectedUserId || editingTeacher) && (
                   <div className="mb-3 p-3 bg-primary/10 rounded-lg border border-primary">
                     <div className="flex items-center justify-between">
@@ -661,7 +681,6 @@ export function TeachersTab() {
                   </div>
                 )}
 
-                {/* BUSCA DE USUÁRIOS (APENAS PARA NOVO PROFESSOR) */}
                 {!editingTeacher && (
                   <div className="space-y-2">
                     <div className="relative">
@@ -680,7 +699,6 @@ export function TeachersTab() {
                       )}
                     </div>
 
-                    {/* RESULTADOS DA PESQUISA DE USUÁRIOS */}
                     {userSearchTerm && (
                       <div className="border rounded-lg p-2 max-h-32 overflow-y-auto">
                         {filteredUsers.length === 0 ? (
@@ -747,84 +765,90 @@ export function TeachersTab() {
                 )}
               </div>
 
+              {/* SEÇÃO DE CURSOS - MODIFICADA PARA STATUS INACTIVE */}
               <div className="space-y-3">
                 <Label>Cursos</Label>
 
-                {/* BUSCA SIMPLES DE CURSOS - APENAS PESQUISA E SELEÇÃO */}
-                <div className="space-y-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input
-                      placeholder="Digite o nome do curso..."
-                      value={courseSearchTerm}
-                      onChange={(e) => setCourseSearchTerm(e.target.value)}
-                      className="pl-10 pr-10"
-                    />
-                    {courseSearchTerm && (
-                      <X
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 cursor-pointer hover:text-foreground"
-                        onClick={clearCourseSearch}
+                {watch("status") === "INACTIVE" ? (
+                  <Alert className="bg-gray-50 border-gray-200">
+                    <AlertDescription className="text-gray-600">
+                      Professores inativos não podem ter cursos vinculados.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        placeholder="Digite o nome do curso..."
+                        value={courseSearchTerm}
+                        onChange={(e) => setCourseSearchTerm(e.target.value)}
+                        className="pl-10 pr-10"
                       />
-                    )}
-                  </div>
-
-                  {/* CURSOS SELECIONADOS */}
-                  {selectedCourseIds.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedCourseIds.map((courseId) => {
-                        const course = courses.find((c) => c.id === courseId);
-                        return course ? (
-                          <Badge
-                            key={courseId}
-                            variant="secondary"
-                            className="flex items-center gap-1 cursor-pointer hover:bg-muted/50 transition-colors"
-                            onClick={() => handleCourseSelect(course)}
-                          >
-                            {course.name}
-                            <X className="h-3 w-3" />
-                          </Badge>
-                        ) : null;
-                      })}
-                    </div>
-                  )}
-
-                  {/* RESULTADOS DA PESQUISA */}
-                  {courseSearchTerm && (
-                    <div className="border rounded-lg p-2 max-h-32 overflow-y-auto">
-                      {filteredCourses.length === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-2">
-                          Nenhum curso encontrado
-                        </p>
-                      ) : (
-                        filteredCourses.map((course) => {
-                          const isSelected = selectedCourseIds.includes(
-                            course.id
-                          );
-                          return (
-                            <div
-                              key={course.id}
-                              className={`p-2 rounded cursor-pointer transition-colors ${
-                                isSelected
-                                  ? "bg-primary/10 border border-primary"
-                                  : "hover:bg-muted/50"
-                              }`}
-                              onClick={() => handleCourseSelect(course)}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm">{course.name}</span>
-                                {isSelected && (
-                                  <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })
+                      {courseSearchTerm && (
+                        <X
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 cursor-pointer hover:text-foreground"
+                          onClick={clearCourseSearch}
+                        />
                       )}
                     </div>
-                  )}
-                </div>
+
+                    {selectedCourseIds.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedCourseIds.map((courseId) => {
+                          const course = courses.find((c) => c.id === courseId);
+                          return course ? (
+                            <Badge
+                              key={courseId}
+                              variant="secondary"
+                              className="flex items-center gap-1 cursor-pointer hover:bg-muted/50 transition-colors"
+                              onClick={() => handleCourseSelect(course)}
+                            >
+                              {course.name}
+                              <X className="h-3 w-3" />
+                            </Badge>
+                          ) : null;
+                        })}
+                      </div>
+                    )}
+
+                    {courseSearchTerm && (
+                      <div className="border rounded-lg p-2 max-h-32 overflow-y-auto">
+                        {filteredCourses.length === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-2">
+                            Nenhum curso encontrado
+                          </p>
+                        ) : (
+                          filteredCourses.map((course) => {
+                            const isSelected = selectedCourseIds.includes(
+                              course.id
+                            );
+                            return (
+                              <div
+                                key={course.id}
+                                className={`p-2 rounded cursor-pointer transition-colors ${
+                                  isSelected
+                                    ? "bg-primary/10 border border-primary"
+                                    : "hover:bg-muted/50"
+                                }`}
+                                onClick={() => handleCourseSelect(course)}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">{course.name}</span>
+                                  {isSelected && (
+                                    <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                      <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {errors.courseIds && (
                   <p className="text-sm text-red-500">
@@ -833,134 +857,152 @@ export function TeachersTab() {
                 )}
               </div>
 
+              {/* SEÇÃO DE DISCIPLINAS - MODIFICADA PARA STATUS INACTIVE */}
               <div className="space-y-3">
                 <Label>Disciplinas</Label>
 
-                <Alert className="mb-4">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    Cada disciplina só pode ser atribuída a um professor.
-                    Disciplinas já atribuídas estarão desabilitadas.
-                  </AlertDescription>
-                </Alert>
+                {watch("status") === "INACTIVE" ? (
+                  <Alert className="bg-gray-50 border-gray-200">
+                    <AlertDescription className="text-gray-600">
+                      Professores inativos não podem ter disciplinas vinculadas.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <div>
+                    <Alert className="mb-4">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        Cada disciplina só pode ser atribuída a um professor.
+                        Disciplinas já atribuídas estarão desabilitadas.
+                      </AlertDescription>
+                    </Alert>
 
-                <div className="border rounded-lg p-4 space-y-4 max-h-96 overflow-y-auto">
-                  {availableDisciplines.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      Selecione pelo menos um curso para ver as disciplinas
-                      disponíveis
-                    </p>
-                  ) : (
-                    Object.entries(sortedDisciplinesByCourse).map(
-                      ([courseName, disciplines]) => {
-                        const isExpanded = expandedCourses.has(courseName);
-                        const availableDisciplines = disciplines.filter(
-                          (discipline) =>
-                            !discipline.isAssigned ||
-                            (editingTeacher &&
-                              discipline.assignedTo === editingTeacher.name)
-                        );
-                        const courseDisciplineIds = availableDisciplines.map(
-                          (d) => d.id
-                        );
-                        const allSelected = courseDisciplineIds.every((id) =>
-                          selectedDisciplineIds.includes(id)
-                        );
-                        const someSelected = courseDisciplineIds.some((id) =>
-                          selectedDisciplineIds.includes(id)
-                        );
+                    <div className="border rounded-lg p-4 space-y-4 max-h-96 overflow-y-auto">
+                      {availableDisciplines.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          {selectedCourseIds.length === 0
+                            ? "Selecione pelo menos um curso para ver as disciplinas disponíveis"
+                            : "Nenhuma disciplina disponível para os cursos selecionados"}
+                        </p>
+                      ) : (
+                        Object.entries(sortedDisciplinesByCourse).map(
+                          ([courseName, disciplines]) => {
+                            const isExpanded = expandedCourses.has(courseName);
+                            const availableDisciplines = disciplines.filter(
+                              (discipline) =>
+                                !discipline.isAssigned ||
+                                (editingTeacher &&
+                                  discipline.assignedTo === editingTeacher.name)
+                            );
+                            const courseDisciplineIds =
+                              availableDisciplines.map((d) => d.id);
+                            const allSelected = courseDisciplineIds.every(
+                              (id) => selectedDisciplineIds.includes(id)
+                            );
+                            const someSelected = courseDisciplineIds.some(
+                              (id) => selectedDisciplineIds.includes(id)
+                            );
 
-                        return (
-                          <div key={courseName} className="space-y-2">
-                            <div
-                              className="flex items-center justify-between p-2 bg-muted/30 rounded-lg cursor-pointer"
-                              onClick={() => toggleCourseExpansion(courseName)}
-                            >
-                              <div className="flex items-center gap-2">
-                                <Checkbox
-                                  checked={allSelected}
-                                  onCheckedChange={() =>
-                                    selectAllDisciplinesInCourse(courseName)
+                            return (
+                              <div key={courseName} className="space-y-2">
+                                <div
+                                  className="flex items-center justify-between p-2 bg-muted/30 rounded-lg cursor-pointer"
+                                  onClick={() =>
+                                    toggleCourseExpansion(courseName)
                                   }
-                                  onClick={(e) => e.stopPropagation()}
-                                  disabled={availableDisciplines.length === 0}
-                                />
-                                <span className="font-medium text-sm">
-                                  {courseName}
-                                </span>
-                                <Badge variant="outline" className="text-xs">
-                                  {availableDisciplines.length} de{" "}
-                                  {disciplines.length} disponíveis
-                                </Badge>
-                              </div>
-                              {isExpanded ? (
-                                <ChevronUp className="h-4 w-4" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4" />
-                              )}
-                            </div>
-
-                            {isExpanded && (
-                              <div className="ml-6 space-y-2 border-l-2 border-muted pl-4">
-                                {disciplines.map((discipline) => (
-                                  <div
-                                    key={discipline.id}
-                                    className={`flex items-center space-x-2 py-1 ${
-                                      discipline.isAssigned &&
-                                      (!editingTeacher ||
-                                        discipline.assignedTo !==
-                                          editingTeacher.name)
-                                        ? "opacity-50"
-                                        : ""
-                                    }`}
-                                  >
+                                >
+                                  <div className="flex items-center gap-2">
                                     <Checkbox
-                                      id={`discipline-${discipline.id}`}
-                                      checked={selectedDisciplineIds.includes(
-                                        discipline.id
-                                      )}
-                                      onCheckedChange={(checked) =>
-                                        handleDisciplineToggle(
-                                          discipline.id,
-                                          checked as boolean
-                                        )
+                                      checked={allSelected}
+                                      onCheckedChange={() =>
+                                        selectAllDisciplinesInCourse(courseName)
                                       }
+                                      onClick={(e) => e.stopPropagation()}
                                       disabled={
-                                        discipline.isAssigned &&
-                                        (!editingTeacher ||
-                                          discipline.assignedTo !==
-                                            editingTeacher.name)
+                                        availableDisciplines.length === 0
                                       }
                                     />
-                                    <Label
-                                      htmlFor={`discipline-${discipline.id}`}
-                                      className="text-sm font-normal cursor-pointer flex-1"
+                                    <span className="font-medium text-sm">
+                                      {courseName}
+                                    </span>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
                                     >
-                                      <div className="flex items-center justify-between">
-                                        <span>{discipline.name}</span>
-                                        {discipline.isAssigned && (
-                                          <Badge
-                                            variant="outline"
-                                            className="text-xs ml-2"
-                                          >
-                                            {discipline.assignedTo ===
-                                            editingTeacher?.name
-                                              ? "Sua disciplina"
-                                              : `Prof: ${discipline.assignedTo}`}
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    </Label>
+                                      {availableDisciplines.length} de{" "}
+                                      {disciplines.length} disponíveis
+                                    </Badge>
                                   </div>
-                                ))}
+                                  {isExpanded ? (
+                                    <ChevronUp className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronDown className="h-4 w-4" />
+                                  )}
+                                </div>
+
+                                {isExpanded && (
+                                  <div className="ml-6 space-y-2 border-l-2 border-muted pl-4">
+                                    {disciplines.map((discipline) => (
+                                      <div
+                                        key={discipline.id}
+                                        className={`flex items-center space-x-2 py-1 ${
+                                          discipline.isAssigned &&
+                                          (!editingTeacher ||
+                                            discipline.assignedTo !==
+                                              editingTeacher.name)
+                                            ? "opacity-50"
+                                            : ""
+                                        }`}
+                                      >
+                                        <Checkbox
+                                          id={`discipline-${discipline.id}`}
+                                          checked={selectedDisciplineIds.includes(
+                                            discipline.id
+                                          )}
+                                          onCheckedChange={(checked) =>
+                                            handleDisciplineToggle(
+                                              discipline.id,
+                                              checked as boolean
+                                            )
+                                          }
+                                          disabled={
+                                            discipline.isAssigned &&
+                                            (!editingTeacher ||
+                                              discipline.assignedTo !==
+                                                editingTeacher.name)
+                                          }
+                                        />
+                                        <Label
+                                          htmlFor={`discipline-${discipline.id}`}
+                                          className="text-sm font-normal cursor-pointer flex-1"
+                                        >
+                                          <div className="flex items-center justify-between">
+                                            <span>{discipline.name}</span>
+                                            {discipline.isAssigned && (
+                                              <Badge
+                                                variant="outline"
+                                                className="text-xs ml-2"
+                                              >
+                                                {discipline.assignedTo ===
+                                                editingTeacher?.name
+                                                  ? "Sua disciplina"
+                                                  : `Prof: ${discipline.assignedTo}`}
+                                              </Badge>
+                                            )}
+                                          </div>
+                                        </Label>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        );
-                      }
-                    )
-                  )}
-                </div>
+                            );
+                          }
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
                 {errors.disciplineIds && (
                   <p className="text-sm text-red-500">
                     {errors.disciplineIds.message}
@@ -968,21 +1010,37 @@ export function TeachersTab() {
                 )}
               </div>
 
+              {/* SEÇÃO DE STATUS - COM ALERTA PARA INACTIVE */}
               <div className="space-y-3">
                 <Label>Status do Professor</Label>
                 <Controller
                   name="status"
                   control={control}
                   render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ACTIVE">Ativo</SelectItem>
-                        <SelectItem value="INACTIVE">Inativo</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ACTIVE">Ativo</SelectItem>
+                          <SelectItem value="INACTIVE">Inativo</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {field.value === "INACTIVE" && (
+                        <Alert className="bg-amber-50 border-amber-200">
+                          <AlertTriangle className="h-4 w-4 text-amber-600" />
+                          <AlertDescription className="text-amber-800">
+                            Professores inativos são automaticamente
+                            desvinculados de todos os cursos e disciplinas.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
                   )}
                 />
               </div>
@@ -1093,7 +1151,9 @@ export function TeachersTab() {
                           ))
                         ) : (
                           <span className="text-muted-foreground">
-                            Nenhum curso
+                            {teacher.status === "INACTIVE"
+                              ? "Desvinculado (Inativo)"
+                              : "Nenhum curso"}
                           </span>
                         )}
                       </div>
@@ -1112,7 +1172,9 @@ export function TeachersTab() {
                           ))
                         ) : (
                           <span className="text-muted-foreground">
-                            Nenhuma disciplina
+                            {teacher.status === "INACTIVE"
+                              ? "Desvinculado (Inativo)"
+                              : "Nenhuma disciplina"}
                           </span>
                         )}
                       </div>

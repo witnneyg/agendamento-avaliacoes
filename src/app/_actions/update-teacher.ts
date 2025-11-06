@@ -19,20 +19,38 @@ export type TeacherWithRelations = Teacher & {
 export async function updateTeacher(
   data: UpdateTeacherInput
 ): Promise<TeacherWithRelations> {
+  if (data.status === "INACTIVE") {
+    return db.teacher.update({
+      where: { id: data.id },
+      data: {
+        name: data.name,
+        status: data.status,
+        courses: {
+          set: [],
+        },
+        disciplines: {
+          set: [],
+        },
+      },
+      include: {
+        courses: true,
+        disciplines: true,
+      },
+    });
+  }
+
   return db.teacher.update({
     where: { id: data.id },
     data: {
       name: data.name,
       status: data.status,
       courses: {
-        set: [], // LIMPA os cursos existentes
-        connect: data.courseIds.map((courseId) => ({ id: courseId })), // CONECTA os novos cursos
+        set: data.courseIds.map((courseId) => ({ id: courseId })),
       },
       disciplines: {
-        set: [], // LIMPA as disciplinas existentes
-        connect: data.disciplineIds.map((disciplineId) => ({
+        set: data.disciplineIds.map((disciplineId) => ({
           id: disciplineId,
-        })), // CONECTA as novas disciplinas
+        })),
       },
     },
     include: {
