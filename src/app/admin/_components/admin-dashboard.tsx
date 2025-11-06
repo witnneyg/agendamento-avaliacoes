@@ -59,7 +59,6 @@ import { createRole } from "@/app/_actions/permissions/create-role";
 import { PermissionsSection } from "./permissions";
 import { updateUserRole } from "@/app/_actions/permissions/update-user-role";
 import { deleteRole } from "@/app/_actions/permissions/delete-role";
-import { deleteUser } from "@/app/_actions/delete-user";
 import { getUser } from "@/app/_actions/getUser";
 
 type Role = {
@@ -94,8 +93,6 @@ export default function AdminDashboard() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [removeRoleConfirmOpen, setRemoveRoleConfirmOpen] = useState(false);
   const [roleToRemove, setRoleToRemove] = useState<{
     userId: string;
@@ -323,29 +320,6 @@ export default function AdminDashboard() {
     return matchesSearch && matchesRole;
   });
 
-  const handleDeleteUser = (user: User) => {
-    setUserToDelete(user);
-    setDeleteConfirmOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!userToDelete) return;
-
-    try {
-      await deleteUser(userToDelete.id);
-
-      setUsers((prevUsers) =>
-        prevUsers.filter((u) => u.id !== userToDelete.id)
-      );
-      setUserToDelete(null);
-      setDeleteConfirmOpen(false);
-
-      console.log(`Usuário ${userToDelete.name} excluído com sucesso`);
-    } catch (error) {
-      console.error("Erro ao excluir usuário:", error);
-    }
-  };
-
   const confirmDeleteRole = async () => {
     if (!roleToDelete) return;
 
@@ -368,35 +342,12 @@ export default function AdminDashboard() {
     setDeleteRoleConfirmOpen(false);
   };
 
-  const cancelDelete = () => {
-    setUserToDelete(null);
-    setDeleteConfirmOpen(false);
-  };
-
   const canDeleteRole = (role: Role) => {
     const usersWithRole = users.filter((user) =>
       user.roles.some((userRole) => userRole.id === role.id)
     );
 
     return usersWithRole.length === 0;
-  };
-
-  const canDeleteUser = (user: User) => {
-    if (currentUser && user.id === currentUser) {
-      return false;
-    }
-
-    const userIsAdmin = user.roles.some((role) => role.name === "ADMIN");
-    if (userIsAdmin) {
-      const adminUsers = users.filter((u) =>
-        u.roles.some((role) => role.name === "ADMIN")
-      );
-      if (adminUsers.length <= 1) {
-        return false;
-      }
-    }
-
-    return true;
   };
 
   if (loading) {
@@ -580,9 +531,6 @@ export default function AdminDashboard() {
                           <TableHead className="text-foreground font-semibold">
                             Roles
                           </TableHead>
-                          <TableHead className="text-foreground font-semibold text-right">
-                            Ações
-                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -679,22 +627,6 @@ export default function AdminDashboard() {
                                 </DropdownMenu>
                               </div>
                             </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteUser(user)}
-                                disabled={!canDeleteUser(user)}
-                                className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive cursor-pointer"
-                                title={
-                                  canDeleteUser(user)
-                                    ? "Excluir usuário"
-                                    : "Não é possível excluir este usuário"
-                                }
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -730,20 +662,6 @@ export default function AdminDashboard() {
                                   </Badge>
                                 )}
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteUser(user)}
-                                disabled={!canDeleteUser(user)}
-                                className="h-8 w-8 p-0 ml-2 hover:bg-destructive/10 hover:text-destructive"
-                                title={
-                                  canDeleteUser(user)
-                                    ? "Excluir usuário"
-                                    : "Não é possível excluir este usuário"
-                                }
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
                             </div>
 
                             <div className="space-y-2">
@@ -847,54 +765,6 @@ export default function AdminDashboard() {
                   )}
                 </CardContent>
               </Card>
-
-              <Dialog
-                open={deleteConfirmOpen}
-                onOpenChange={setDeleteConfirmOpen}
-              >
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Confirmar Exclusão</DialogTitle>
-                    <DialogDescription>
-                      {userToDelete && !canDeleteUser(userToDelete) ? (
-                        <span className="text-destructive">
-                          Não é possível excluir este usuário.
-                          {userToDelete.roles.some(
-                            (role) => role.name === "ADMIN"
-                          ) &&
-                            users.filter((u) =>
-                              u.roles.some((role) => role.name === "ADMIN")
-                            ).length <= 1 &&
-                            " É o único administrador do sistema."}
-                          {currentUser &&
-                            userToDelete.id === currentUser &&
-                            " Você não pode excluir sua própria conta."}
-                        </span>
-                      ) : (
-                        <>
-                          Tem certeza que deseja excluir o usuário{" "}
-                          <strong>{userToDelete?.name}</strong>? Esta ação não
-                          pode ser desfeita.
-                        </>
-                      )}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={cancelDelete}>
-                      Cancelar
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={confirmDelete}
-                      disabled={
-                        userToDelete ? !canDeleteUser(userToDelete) : false
-                      }
-                    >
-                      Sim, Excluir
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
 
               <Dialog
                 open={removeRoleConfirmOpen}

@@ -23,17 +23,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
   Table,
   TableBody,
   TableCell,
@@ -53,7 +42,6 @@ import {
 import {
   Plus,
   Edit,
-  Trash2,
   Loader2,
   Search,
   X,
@@ -67,7 +55,6 @@ import {
 import { getTeachers } from "@/app/_actions/get-teacher";
 import { getDisciplinesByCourseId } from "@/app/_actions/get-discipline-by-course-id";
 import { createTeacher } from "@/app/_actions/create-teacher";
-import { deleteTeacher } from "@/app/_actions/delete-teacher";
 import { getUsers } from "@/app/_actions/get-users";
 import type {
   Course,
@@ -123,7 +110,6 @@ export function TeachersTab() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] =
     useState<TeacherWithRelations | null>(null);
-  const [loadingDeleteId, setLoadingDeleteId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [teacherSearchTerm, setTeacherSearchTerm] = useState("");
@@ -473,25 +459,6 @@ export function TeachersTab() {
 
     const coursesToExpand = new Set(teacher.courses.map((c) => c.name));
     setExpandedCourses(coursesToExpand);
-  };
-
-  const handleDelete = async (teacherId: string) => {
-    setLoadingDeleteId(teacherId);
-    try {
-      await deleteTeacher(teacherId);
-
-      const [teachersData, coursesData, usersData] = await Promise.all([
-        getTeachers(),
-        getCourses(),
-        getUsers(),
-      ]);
-
-      setTeachers(teachersData as any);
-      setCourses(coursesData.sort((a, b) => a.name.localeCompare(b.name)));
-      setUsers(usersData);
-    } finally {
-      setLoadingDeleteId(null);
-    }
   };
 
   const handleCourseSelect = (course: Course) => {
@@ -1199,60 +1166,10 @@ export function TeachersTab() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleEdit(teacher)}
-                          disabled={
-                            isSubmitting || loadingDeleteId === teacher.id
-                          }
+                          disabled={isSubmitting}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-red-500 hover:text-red-600"
-                              disabled={
-                                isSubmitting || loadingDeleteId === teacher.id
-                              }
-                            >
-                              {loadingDeleteId === teacher.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </AlertDialogTrigger>
-
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                Confirmar Exclusão
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Tem certeza que deseja excluir este professor?
-                                Esta ação não pode ser desfeita.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                className="bg-red-500 hover:bg-red-600"
-                                onClick={() => handleDelete(teacher.id)}
-                                disabled={loadingDeleteId === teacher.id}
-                              >
-                                {loadingDeleteId === teacher.id ? (
-                                  <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Excluindo...
-                                  </>
-                                ) : (
-                                  "Excluir"
-                                )}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>
