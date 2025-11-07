@@ -61,6 +61,7 @@ import type {
   Discipline,
   Prisma,
   User as UserType,
+  Role,
 } from "@prisma/client";
 import { translateTeacherStatus } from "@/utils/translate-teacher-status";
 import { updateTeacher } from "../_actions/update-teacher";
@@ -69,6 +70,10 @@ import { getCourses } from "../_actions/get-coursers";
 
 type TeacherWithRelations = Prisma.TeacherGetPayload<{
   include: { courses: true; disciplines: true };
+}>;
+
+type UserWithRoles = Prisma.UserGetPayload<{
+  include: { roles: true };
 }>;
 
 type DisciplineWithCourse = Discipline & {
@@ -102,7 +107,7 @@ type TeacherForm = z.infer<typeof teacherSchema>;
 
 export function TeachersTab() {
   const [teachers, setTeachers] = useState<TeacherWithRelations[]>([]);
-  const [users, setUsers] = useState<UserType[]>([]);
+  const [users, setUsers] = useState<UserWithRoles[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [availableDisciplines, setAvailableDisciplines] = useState<
     DisciplineWithCourse[]
@@ -156,11 +161,20 @@ export function TeachersTab() {
     )
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(userSearchTerm.toLowerCase())
-  );
+  // Filtra apenas usuários com role PROFESSOR
+  const filteredUsers = users
+    .filter((user) => {
+      const hasProfessorRole = user.roles.some(
+        (role) => role.name === "PROFESSOR" || role.name === "professor"
+      );
+
+      const matchesSearch =
+        user.name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(userSearchTerm.toLowerCase());
+
+      return hasProfessorRole && matchesSearch;
+    })
+    .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 
   const disciplinesByCourse = availableDisciplines.reduce(
     (acc, discipline) => {
@@ -209,7 +223,7 @@ export function TeachersTab() {
         const coursesData = await getCourses();
         setCourses(coursesData.sort((a, b) => a.name.localeCompare(b.name)));
         const usersData = await getUsers();
-        setUsers(usersData);
+        setUsers(usersData as UserWithRoles[]);
       } finally {
         setIsLoading(false);
       }
@@ -333,6 +347,11 @@ export function TeachersTab() {
         return;
       }
 
+      // Verifica se o usuário tem a role PROFESSOR
+      const hasProfessorRole = selectedUser.roles.some(
+        (role) => role.name === "PROFESSOR" || role.name === "professor"
+      );
+
       if (
         data.status === "INACTIVE" &&
         (data.courseIds.length > 0 || data.disciplineIds.length > 0)
@@ -427,7 +446,7 @@ export function TeachersTab() {
 
       setTeachers(teachersData as any);
       setCourses(coursesData.sort((a, b) => a.name.localeCompare(b.name)));
-      setUsers(usersData);
+      setUsers(usersData as UserWithRoles[]);
 
       reset();
       setEditingTeacher(null);
@@ -562,6 +581,12 @@ export function TeachersTab() {
     return teachers.some((teacher) => teacher.name === user.name);
   };
 
+  const hasProfessorRole = (user: UserWithRoles) => {
+    return user.roles.some(
+      (role) => role.name === "PROFESSOR" || role.name === "professor"
+    );
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -653,7 +678,7 @@ export function TeachersTab() {
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
-                        placeholder="Digite o nome ou email do usuário..."
+                        placeholder="Buscar usuários com perfil de professor..."
                         value={userSearchTerm}
                         onChange={(e) => setUserSearchTerm(e.target.value)}
                         className="pl-10 pr-10"
@@ -669,13 +694,18 @@ export function TeachersTab() {
                     {userSearchTerm && (
                       <div className="border rounded-lg p-2 max-h-32 overflow-y-auto">
                         {filteredUsers.length === 0 ? (
-                          <p className="text-sm text-muted-foreground text-center py-2">
-                            Nenhum usuário encontrado
-                          </p>
+                          <div className="text-center py-2">
+                            <p className="text-sm text-muted-foreground">
+                              {users.length === 0
+                                ? "Nenhum usuário encontrado"
+                                : "Nenhum usuário com perfil de professor encontrado"}
+                            </p>
+                          </div>
                         ) : (
                           filteredUsers.map((user) => {
                             const isSelected = selectedUserId === user.id;
                             const isTeacher = isUserAlreadyTeacher(user.id);
+                            const isProfessor = hasProfessorRole(user);
 
                             return (
                               <div
@@ -697,12 +727,21 @@ export function TeachersTab() {
                                         <span className="text-sm font-medium">
                                           {user.name}
                                         </span>
+                                        {/* Badge indicando que é professor */}
+                                        {isProfessor && (
+                                          <Badge
+                                            variant="default"
+                                            className="text-xs bg-green-500"
+                                          >
+                                            Professor
+                                          </Badge>
+                                        )}
                                         {isTeacher && (
                                           <Badge
                                             variant="outline"
                                             className="text-xs"
                                           >
-                                            Professor
+                                            Já é docente
                                           </Badge>
                                         )}
                                       </div>
