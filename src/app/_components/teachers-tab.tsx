@@ -736,14 +736,6 @@ export function TeachersTab() {
                                             Professor
                                           </Badge>
                                         )}
-                                        {isTeacher && (
-                                          <Badge
-                                            variant="outline"
-                                            className="text-xs"
-                                          >
-                                            Já é docente
-                                          </Badge>
-                                        )}
                                       </div>
                                       <span className="text-xs text-muted-foreground">
                                         {user.email}

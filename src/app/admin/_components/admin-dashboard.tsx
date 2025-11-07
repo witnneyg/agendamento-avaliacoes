@@ -50,6 +50,7 @@ import {
   Settings,
   Loader2,
   Shield,
+  UserX,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NavBar } from "@/app/_components/navbar";
@@ -107,6 +108,12 @@ export default function AdminDashboard() {
   const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
   const [deletingRole, setDeletingRole] = useState(false);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [removeAllRolesConfirmOpen, setRemoveAllRolesConfirmOpen] =
+    useState(false);
+  const [userToRemoveAllRoles, setUserToRemoveAllRoles] = useState<{
+    userId: string;
+    userName: string;
+  } | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -201,10 +208,6 @@ export default function AdminDashboard() {
         );
         return;
       }
-
-      if (currentRoles.length <= 1) {
-        return;
-      }
     }
 
     let newRoleIds: string[];
@@ -244,6 +247,53 @@ export default function AdminDashboard() {
       setUsers(refreshedUsers);
     } finally {
       setUpdatingUser(null);
+    }
+  };
+
+  const handleRemoveAllRoles = (userId: string) => {
+    const user = users.find((u) => u.id === userId);
+    if (!user) return;
+
+    setUserToRemoveAllRoles({
+      userId,
+      userName: user.name || "Usuário",
+    });
+    setRemoveAllRolesConfirmOpen(true);
+  };
+
+  const confirmRemoveAllRoles = async () => {
+    if (!userToRemoveAllRoles) return;
+
+    const { userId } = userToRemoveAllRoles;
+    const user = users.find((u) => u.id === userId);
+
+    if (user?.teacher?.status === "ACTIVE") {
+      alert("Não é possível remover todas as roles de um professor ativo");
+      setRemoveAllRolesConfirmOpen(false);
+      setUserToRemoveAllRoles(null);
+      return;
+    }
+
+    try {
+      setUpdatingUser(userId);
+      const updatedUser = await updateUserRole(userId, []);
+
+      setUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === userId
+            ? {
+                ...u,
+                roles: updatedUser.roles,
+              }
+            : u
+        )
+      );
+    } catch (error) {
+      console.error("Erro ao remover todas as roles do usuário:", error);
+    } finally {
+      setUpdatingUser(null);
+      setRemoveAllRolesConfirmOpen(false);
+      setUserToRemoveAllRoles(null);
     }
   };
 
@@ -295,8 +345,6 @@ export default function AdminDashboard() {
     const user = users.find((u) => u.id === userId);
     if (!user) return false;
 
-    if (user.roles.length <= 1) return false;
-
     const roleToRemove = roles.find((r) => r.id === roleId);
 
     if (
@@ -315,7 +363,10 @@ export default function AdminDashboard() {
       user.email?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesRole =
-      roleFilter === "ALL" || user.roles.some((role) => role.id === roleFilter);
+      roleFilter === "ALL" ||
+      (roleFilter === "NO_ROLE"
+        ? user.roles.length === 0
+        : user.roles.some((role) => role.id === roleFilter));
 
     return matchesSearch && matchesRole;
   });
@@ -504,6 +555,7 @@ export default function AdminDashboard() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ALL">Todas as Roles</SelectItem>
+                        <SelectItem value="NO_ROLE">Sem Role</SelectItem>
                         {roles.map((role) => (
                           <SelectItem
                             key={role.id}
@@ -531,6 +583,9 @@ export default function AdminDashboard() {
                           <TableHead className="text-foreground font-semibold">
                             Roles
                           </TableHead>
+                          <TableHead className="text-foreground font-semibold text-right">
+                            Ações
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -549,46 +604,58 @@ export default function AdminDashboard() {
                             </TableCell>
                             <TableCell>
                               <div className="flex flex-wrap gap-1">
-                                {user.roles.map((role) => (
-                                  <div
-                                    key={role.id}
-                                    className="flex items-center"
+                                {user.roles.length === 0 ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs text-muted-foreground"
                                   >
-                                    <Badge
-                                      variant={getRoleBadgeVariant(role.name)}
-                                      className="text-xs pr-1"
-                                      title={
-                                        role.name === "PROFESSOR" &&
-                                        user.teacher?.status === "ACTIVE"
-                                          ? "Não é possível remover a role de professor enquanto o professor estiver ativo"
-                                          : undefined
-                                      }
+                                    Sem role
+                                  </Badge>
+                                ) : (
+                                  user.roles.map((role) => (
+                                    <div
+                                      key={role.id}
+                                      className="flex items-center"
                                     >
-                                      {updatingUser === user.id ? (
-                                        <Loader2 className="h-3 w-3 animate-spin" />
-                                      ) : (
-                                        <>
-                                          {role.name}
-                                          {canRemoveRole(user.id, role.id) && (
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleRemoveRole(
-                                                  user.id,
-                                                  role.id
-                                                );
-                                              }}
-                                              className="ml-1 hover:bg-black/20 rounded-full p-0.5 transition-colors"
-                                              title={`Remover role ${role.name}`}
-                                            >
-                                              <X className="h-2.5 w-2.5" />
-                                            </button>
-                                          )}
-                                        </>
-                                      )}
-                                    </Badge>
-                                  </div>
-                                ))}
+                                      <Badge
+                                        variant={getRoleBadgeVariant(role.name)}
+                                        className="text-xs pr-1"
+                                        title={
+                                          role.name === "PROFESSOR" &&
+                                          user.teacher?.status === "ACTIVE"
+                                            ? "Não é possível remover a role de professor enquanto o professor estiver ativo"
+                                            : undefined
+                                        }
+                                      >
+                                        {updatingUser === user.id ? (
+                                          <Loader2 className="h-3 w-3 animate-spin" />
+                                        ) : (
+                                          <>
+                                            {role.name}
+                                            {canRemoveRole(
+                                              user.id,
+                                              role.id
+                                            ) && (
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleRemoveRole(
+                                                    user.id,
+                                                    role.id
+                                                  );
+                                                }}
+                                                className="ml-1 hover:bg-black/20 rounded-full p-0.5 transition-colors"
+                                                title={`Remover role ${role.name}`}
+                                              >
+                                                <X className="h-2.5 w-2.5" />
+                                              </button>
+                                            )}
+                                          </>
+                                        )}
+                                      </Badge>
+                                    </div>
+                                  ))
+                                )}
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button
@@ -627,6 +694,27 @@ export default function AdminDashboard() {
                                 </DropdownMenu>
                               </div>
                             </TableCell>
+                            <TableCell className="text-right">
+                              {user.roles.length > 0 && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveAllRoles(user.id)}
+                                  disabled={
+                                    updatingUser === user.id ||
+                                    user.teacher?.status === "ACTIVE"
+                                  }
+                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive cursor-pointer"
+                                  title={
+                                    user.teacher?.status === "ACTIVE"
+                                      ? "Não é possível remover todas as roles de um professor ativo"
+                                      : "Remover todas as roles"
+                                  }
+                                >
+                                  <UserX className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -662,6 +750,25 @@ export default function AdminDashboard() {
                                   </Badge>
                                 )}
                               </div>
+                              {user.roles.length > 0 && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveAllRoles(user.id)}
+                                  disabled={
+                                    updatingUser === user.id ||
+                                    user.teacher?.status === "ACTIVE"
+                                  }
+                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive cursor-pointer"
+                                  title={
+                                    user.teacher?.status === "ACTIVE"
+                                      ? "Não é possível remover todas as roles de um professor ativo"
+                                      : "Remover todas as roles"
+                                  }
+                                >
+                                  <UserX className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
 
                             <div className="space-y-2">
@@ -669,46 +776,58 @@ export default function AdminDashboard() {
                                 Roles
                               </p>
                               <div className="flex flex-wrap gap-2">
-                                {user.roles.map((role) => (
-                                  <div
-                                    key={role.id}
-                                    className="flex items-center"
+                                {user.roles.length === 0 ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs text-muted-foreground"
                                   >
-                                    <Badge
-                                      variant={getRoleBadgeVariant(role.name)}
-                                      className="text-xs pr-1"
-                                      title={
-                                        role.name === "PROFESSOR" &&
-                                        user.teacher?.status === "ACTIVE"
-                                          ? "Não é possível remover a role de professor enquanto o professor estiver ativo"
-                                          : undefined
-                                      }
+                                    Sem role
+                                  </Badge>
+                                ) : (
+                                  user.roles.map((role) => (
+                                    <div
+                                      key={role.id}
+                                      className="flex items-center"
                                     >
-                                      {updatingUser === user.id ? (
-                                        <Loader2 className="h-3 w-3 animate-spin" />
-                                      ) : (
-                                        <>
-                                          {role.name}
-                                          {canRemoveRole(user.id, role.id) && (
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleRemoveRole(
-                                                  user.id,
-                                                  role.id
-                                                );
-                                              }}
-                                              className="ml-1 hover:bg-black/20 rounded-full p-0.5 transition-colors"
-                                              title={`Remover role ${role.name}`}
-                                            >
-                                              <X className="h-2.5 w-2.5" />
-                                            </button>
-                                          )}
-                                        </>
-                                      )}
-                                    </Badge>
-                                  </div>
-                                ))}
+                                      <Badge
+                                        variant={getRoleBadgeVariant(role.name)}
+                                        className="text-xs pr-1"
+                                        title={
+                                          role.name === "PROFESSOR" &&
+                                          user.teacher?.status === "ACTIVE"
+                                            ? "Não é possível remover a role de professor enquanto o professor estiver ativo"
+                                            : undefined
+                                        }
+                                      >
+                                        {updatingUser === user.id ? (
+                                          <Loader2 className="h-3 w-3 animate-spin" />
+                                        ) : (
+                                          <>
+                                            {role.name}
+                                            {canRemoveRole(
+                                              user.id,
+                                              role.id
+                                            ) && (
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleRemoveRole(
+                                                    user.id,
+                                                    role.id
+                                                  );
+                                                }}
+                                                className="ml-1 hover:bg-black/20 rounded-full p-0.5 transition-colors"
+                                                title={`Remover role ${role.name}`}
+                                              >
+                                                <X className="h-2.5 w-2.5" />
+                                              </button>
+                                            )}
+                                          </>
+                                        )}
+                                      </Badge>
+                                    </div>
+                                  ))
+                                )}
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button
@@ -792,6 +911,47 @@ export default function AdminDashboard() {
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         "Sim, Remover"
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog
+                open={removeAllRolesConfirmOpen}
+                onOpenChange={setRemoveAllRolesConfirmOpen}
+              >
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>
+                      Confirmar Remoção de Todas as Roles
+                    </DialogTitle>
+                    <DialogDescription>
+                      Tem certeza que deseja remover{" "}
+                      <strong>todas as roles</strong> do usuário{" "}
+                      <strong>{userToRemoveAllRoles?.userName}</strong>?
+                      <br />
+                      <span className="text-destructive">
+                        O usuário ficará sem nenhum perfil no sistema.
+                      </span>
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setRemoveAllRolesConfirmOpen(false)}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={confirmRemoveAllRoles}
+                      disabled={updatingUser === userToRemoveAllRoles?.userId}
+                    >
+                      {updatingUser === userToRemoveAllRoles?.userId ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Sim, Remover Todas"
                       )}
                     </Button>
                   </DialogFooter>
