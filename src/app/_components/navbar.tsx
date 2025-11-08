@@ -81,7 +81,7 @@ export function NavBar() {
       return [...baseLinks, secretariaLink, direcaoLink, adminLink];
     }
 
-    if (hasRole("DIRETOR") || hasRole("DIREÇÃO")) {
+    if (hasRole("DIRETOR") || hasRole("DIRECAO")) {
       return [...baseLinks, direcaoLink];
     }
 
