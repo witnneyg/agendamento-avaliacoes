@@ -100,7 +100,7 @@ export default function DisciplinesTab() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
+  const [refreshCounter, setRefreshCounter] = useState(0);
   const {
     control,
     handleSubmit,
@@ -135,7 +135,7 @@ export default function DisciplinesTab() {
       }
     }
     fetchData();
-  }, []);
+  }, [refreshCounter]);
 
   useEffect(() => {
     async function fetchSemesters() {

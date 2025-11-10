@@ -119,20 +119,16 @@ export function CoursesTab() {
       };
 
       if (editingCourse) {
-        const updatedCourse = await updateCourse({
+        await updateCourse({
           id: editingCourse.id,
           ...courseData,
         });
-
-        setCourses((prev) =>
-          prev.map((course) =>
-            course.id === updatedCourse.id ? updatedCourse : course
-          )
-        );
       } else {
-        const newCourse = await createCourse(courseData);
-        setCourses((prev) => [...prev, newCourse]);
+        await createCourse(courseData);
       }
+
+      const refreshedCourses = await getCourses();
+      setCourses(refreshedCourses);
 
       reset();
       setEditingCourse(null);
@@ -166,9 +162,10 @@ export function CoursesTab() {
     setIsDeleting(true);
     try {
       await deleteCourse(courseToDelete);
-      setCourses((prev) =>
-        prev.filter((course) => course.id !== courseToDelete)
-      );
+
+      const refreshedCourses = await getCourses();
+      setCourses(refreshedCourses);
+
       setCourseToDelete(null);
     } catch (error) {
       console.error("Erro ao deletar curso:", error);
