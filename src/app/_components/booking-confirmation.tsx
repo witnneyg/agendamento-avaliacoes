@@ -24,33 +24,28 @@ interface BookingConfirmationProps {
   onScheduleAnother: () => void;
 }
 
-const formatSemesterName = (semesterName: string): string => {
-  const cleanName = semesterName
-    .replace(/^\d+°?\s*/, "")
-    .replace(/\s*\d+°?$/, "")
-    .trim();
-
+const formatSemesterNumber = (semesterName: string): string => {
   const numberMatch = semesterName.match(/^(\d+)/);
   if (numberMatch) {
-    return `${numberMatch[1]}° ${cleanName}`;
+    return `${numberMatch[1]}° período`;
   }
 
   if (semesterName.match(/Primeiro|primeiro|1/i)) {
-    return `1° ${cleanName}`;
+    return "1° período";
   } else if (semesterName.match(/Segundo|segundo|2/i)) {
-    return `2° ${cleanName}`;
+    return "2° período";
   } else if (semesterName.match(/Terceiro|terceiro|3/i)) {
-    return `3° ${cleanName}`;
+    return "3° período";
   } else if (semesterName.match(/Quarto|quarto|4/i)) {
-    return `4° ${cleanName}`;
+    return "4° período";
   } else if (semesterName.match(/Quinto|quinto|5/i)) {
-    return `5° ${cleanName}`;
+    return "5° período";
   } else if (semesterName.match(/Sexto|sexto|6/i)) {
-    return `6° ${cleanName}`;
+    return "6° período";
   } else if (semesterName.match(/Sétimo|sétimo|7/i)) {
-    return `7° ${cleanName}`;
+    return "7° período";
   } else if (semesterName.match(/Oitavo|oitavo|8/i)) {
-    return `8° ${cleanName}`;
+    return "8° período";
   }
 
   return semesterName;
@@ -82,7 +77,8 @@ export function BookingConfirmation({
     fetchData();
   }, []);
 
-  const formattedSemesterName = formatSemesterName(semester.name);
+  const formattedSemesterNumber = formatSemesterNumber(semester.name);
+
   return (
     <div className="flex flex-col items-center space-y-6 py-4">
       <div className="flex flex-col items-center text-center">
@@ -106,7 +102,7 @@ export function BookingConfirmation({
         </div>
         <div className="flex justify-between">
           <span className="font-medium">Período:</span>
-          <span>{formattedSemesterName}</span>
+          <span>{formattedSemesterNumber}</span>
         </div>
         <div className="flex justify-between">
           <span className="font-medium">Disciplina:</span>

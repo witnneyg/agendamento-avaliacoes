@@ -212,7 +212,7 @@ export function Scheduling() {
           <DisciplineSelector
             classId={selectedClass.id}
             semesterId={selectedSemester.id}
-            teacherId={teacherId} // ADICIONE ESTA LINHA
+            teacherId={teacherId}
             onSelectDiscipline={handleDisciplineSelect}
             onBack={() => setStep("class")}
           />

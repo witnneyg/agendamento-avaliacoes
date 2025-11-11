@@ -29,7 +29,6 @@ export async function checkUserAccess() {
       };
     }
 
-    // VERIFICAÇÃO PRINCIPAL: Se não tem nenhuma role
     if (!user.roles || user.roles.length === 0) {
       return {
         access: false,
@@ -40,14 +39,24 @@ export async function checkUserAccess() {
 
     const userRoles = user.roles.map((role) => role.name.toUpperCase());
 
-    // Remove a verificação da role USER já que você não usa mais
+    const isAdmin = userRoles.includes("ADMIN");
+    if (isAdmin) {
+      return {
+        access: true,
+        user: {
+          name: user.name,
+          email: user.email,
+          roles: userRoles,
+        },
+      };
+    }
 
     const rolesThatNeedActivation = ["PROFESSOR"];
-    const isProfessor = userRoles.some((role) =>
+    const needsActivation = userRoles.some((role) =>
       rolesThatNeedActivation.includes(role)
     );
 
-    if (isProfessor) {
+    if (needsActivation) {
       const teacherProfile = await db.teacher.findFirst({
         where: {
           name: user.name || "",

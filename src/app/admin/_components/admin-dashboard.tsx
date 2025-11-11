@@ -204,7 +204,7 @@ export default function AdminDashboard() {
         user.teacher?.status === "ACTIVE"
       ) {
         alert(
-          "Não é possível remover a role de professor enquanto o professor estiver com status ATIVO"
+          "Não é possível remover o acesso de professor enquanto o professor estiver com status ATIVO"
         );
         return;
       }
@@ -289,7 +289,7 @@ export default function AdminDashboard() {
         )
       );
     } catch (error) {
-      console.error("Erro ao remover todas as roles do usuário:", error);
+      console.error("Erro ao remover todos os acessos do usuário:", error);
     } finally {
       setUpdatingUser(null);
       setRemoveAllRolesConfirmOpen(false);
@@ -311,7 +311,7 @@ export default function AdminDashboard() {
     if (!canRemoveRole(userId, roleId)) {
       if (role.name === "PROFESSOR" && user.teacher?.status === "ACTIVE") {
         alert(
-          "Não é possível remover a role de professor enquanto o professor estiver com status ATIVO"
+          "Não é possível remover o acesso de professor enquanto o professor estiver com status ATIVO"
         );
       }
       return;
@@ -463,15 +463,17 @@ export default function AdminDashboard() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Shield className="h-5 w-5" />
-                    Gerenciar Roles
+                    Gerenciar Acessos
                   </CardTitle>
                   <CardDescription>
-                    Crie novas roles ou exclua roles existentes do sistema
+                    Crie novos acessos ou exclua acessos existentes do sistema
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Nome da Role</label>
+                    <label className="text-sm font-medium">
+                      Nome do Acesso
+                    </label>
                     <Input
                       placeholder="Ex: COORDENADOR"
                       value={newRoleName}
@@ -489,13 +491,13 @@ export default function AdminDashboard() {
                       ) : (
                         <Plus className="h-4 w-4 mr-2" />
                       )}
-                      {creatingRole ? "Criando..." : "Criar Role"}
+                      {creatingRole ? "Criando..." : "Criar Acesso"}
                     </Button>
                   </div>
 
                   <div className="mt-6">
                     <h4 className="text-sm font-medium mb-3">
-                      Roles do Sistema
+                      Acessos do Sistema
                     </h4>
                     <div className="space-y-2">
                       {roles.map((role) => (
@@ -554,8 +556,8 @@ export default function AdminDashboard() {
                         <SelectValue placeholder="Filtrar por role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ALL">Todas as Roles</SelectItem>
-                        <SelectItem value="NO_ROLE">Sem Role</SelectItem>
+                        <SelectItem value="ALL">Todas os Acessos</SelectItem>
+                        <SelectItem value="NO_ROLE">Sem Acessos</SelectItem>
                         {roles.map((role) => (
                           <SelectItem
                             key={role.id}
@@ -569,7 +571,6 @@ export default function AdminDashboard() {
                     </Select>
                   </div>
 
-                  {/* Tabela para desktop */}
                   <div className="hidden md:block rounded-md border border-border overflow-hidden">
                     <Table>
                       <TableHeader>
@@ -581,7 +582,7 @@ export default function AdminDashboard() {
                             Email
                           </TableHead>
                           <TableHead className="text-foreground font-semibold">
-                            Roles
+                            Acessos
                           </TableHead>
                           <TableHead className="text-foreground font-semibold text-right">
                             Ações
@@ -609,7 +610,7 @@ export default function AdminDashboard() {
                                     variant="outline"
                                     className="text-xs text-muted-foreground"
                                   >
-                                    Sem role
+                                    Sem acesso
                                   </Badge>
                                 ) : (
                                   user.roles.map((role) => (
@@ -623,7 +624,7 @@ export default function AdminDashboard() {
                                         title={
                                           role.name === "PROFESSOR" &&
                                           user.teacher?.status === "ACTIVE"
-                                            ? "Não é possível remover a role de professor enquanto o professor estiver ativo"
+                                            ? "Não é possível remover o acesso de professor enquanto o professor estiver ativo"
                                             : undefined
                                         }
                                       >
@@ -662,7 +663,7 @@ export default function AdminDashboard() {
                                       variant="ghost"
                                       size="sm"
                                       className="h-6 w-6 p-0 ml-1 cursor-pointer"
-                                      title="Adicionar role"
+                                      title="Adicionar acesso"
                                       disabled={updatingUser === user.id}
                                     >
                                       {updatingUser === user.id ? (
@@ -707,8 +708,8 @@ export default function AdminDashboard() {
                                   className="h-8 w-8 p-0 text-destructive hover:text-destructive cursor-pointer"
                                   title={
                                     user.teacher?.status === "ACTIVE"
-                                      ? "Não é possível remover todas as roles de um professor ativo"
-                                      : "Remover todas as roles"
+                                      ? "Não é possível remover todos os acessos de um professor ativo"
+                                      : "Remover todas os acessos"
                                   }
                                 >
                                   <UserX className="h-4 w-4" />
@@ -762,8 +763,8 @@ export default function AdminDashboard() {
                                   className="h-8 w-8 p-0 text-destructive hover:text-destructive cursor-pointer"
                                   title={
                                     user.teacher?.status === "ACTIVE"
-                                      ? "Não é possível remover todas as roles de um professor ativo"
-                                      : "Remover todas as roles"
+                                      ? "Não é possível remover todos os acessos de um professor ativo"
+                                      : "Remover todos os acessos"
                                   }
                                 >
                                   <UserX className="h-4 w-4" />
@@ -773,7 +774,7 @@ export default function AdminDashboard() {
 
                             <div className="space-y-2">
                               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                                Roles
+                                Acessos
                               </p>
                               <div className="flex flex-wrap gap-2">
                                 {user.roles.length === 0 ? (
@@ -781,7 +782,7 @@ export default function AdminDashboard() {
                                     variant="outline"
                                     className="text-xs text-muted-foreground"
                                   >
-                                    Sem role
+                                    Sem acesso
                                   </Badge>
                                 ) : (
                                   user.roles.map((role) => (
@@ -795,7 +796,7 @@ export default function AdminDashboard() {
                                         title={
                                           role.name === "PROFESSOR" &&
                                           user.teacher?.status === "ACTIVE"
-                                            ? "Não é possível remover a role de professor enquanto o professor estiver ativo"
+                                            ? "Não é possível remover o acesso de professor enquanto o professor estiver ativo"
                                             : undefined
                                         }
                                       >
@@ -834,7 +835,7 @@ export default function AdminDashboard() {
                                       variant="outline"
                                       size="sm"
                                       className="h-6 px-2 text-xs bg-transparent"
-                                      title="Adicionar role"
+                                      title="Adicionar acesso"
                                       disabled={updatingUser === user.id}
                                     >
                                       {updatingUser === user.id ? (
@@ -891,9 +892,9 @@ export default function AdminDashboard() {
               >
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle>Confirmar Remoção de Role</DialogTitle>
+                    <DialogTitle>Confirmar Remoção de Acesso</DialogTitle>
                     <DialogDescription>
-                      Tem certeza que deseja remover a role{" "}
+                      Tem certeza que deseja remover o acesso{" "}
                       <strong>{roleToRemove?.roleName}</strong> do usuário{" "}
                       <strong>{roleToRemove?.userName}</strong>?
                     </DialogDescription>
@@ -924,11 +925,11 @@ export default function AdminDashboard() {
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
                     <DialogTitle>
-                      Confirmar Remoção de Todas as Roles
+                      Confirmar Remoção de Todas os Acessos
                     </DialogTitle>
                     <DialogDescription>
                       Tem certeza que deseja remover{" "}
-                      <strong>todas as roles</strong> do usuário{" "}
+                      <strong>todos os acessos</strong> do usuário{" "}
                       <strong>{userToRemoveAllRoles?.userName}</strong>?
                       <br />
                       <span className="text-destructive">
@@ -964,9 +965,9 @@ export default function AdminDashboard() {
               >
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle>Confirmar Exclusão de Role</DialogTitle>
+                    <DialogTitle>Confirmar Exclusão de Acesso</DialogTitle>
                     <DialogDescription>
-                      Tem certeza que deseja excluir a role{" "}
+                      Tem certeza que deseja excluir o acesso{" "}
                       <strong>{roleToDelete?.name}</strong>?
                       <br />
                       <span className="text-destructive">

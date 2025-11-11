@@ -144,7 +144,6 @@ const generateTimeSlotsAndCheckAvailability = (
           return existingTimeSlot === slot;
         });
 
-        // Marca como horário atual, mas NÃO desabilita
         const isCurrentTimeSlot =
           currentTimeSlots?.includes(slot) &&
           originalAppointmentDate &&
@@ -153,7 +152,7 @@ const generateTimeSlotsAndCheckAvailability = (
 
         return {
           time: slot,
-          available: !isTaken || isCurrentTimeSlot, // Permite horários atuais
+          available: !isTaken || isCurrentTimeSlot,
           isCurrentTimeSlot,
         };
       }),
@@ -228,7 +227,7 @@ export const EditSchedulingModal = ({
     resolver: zodResolver(editSchema),
     defaultValues: {
       date: new Date(appointment.date),
-      time: extractCurrentTimeSlots(appointment), // Inicializa com os horários atuais
+      time: extractCurrentTimeSlots(appointment),
     },
   });
 
@@ -335,7 +334,6 @@ export const EditSchedulingModal = ({
       return alert("Selecione pelo menos um horário.");
     }
 
-    // Validação adicional: não permitir desmarcar todos os horários atuais na mesma data
     if (
       isSameDay(originalAppointmentDate, data.date) &&
       data.time.length === 0
@@ -502,10 +500,11 @@ export const EditSchedulingModal = ({
               {format(originalAppointmentDate, "dd/MM/yyyy")}
             </p>
             <p className="text-sm text-blue-600">
-              <strong>Horários atuais:</strong> {currentTimeSlots.join(", ")}
+              <strong>Horários reservados:</strong>{" "}
+              {currentTimeSlots.join(", ")}
             </p>
             <p className="text-sm text-blue-600">
-              <strong>Horários necessários:</strong> {requiredSlotsCount}
+              <strong>Quantidade de Horários :</strong> {requiredSlotsCount}
             </p>
             {isLoading && (
               <p className="text-sm text-blue-600">
@@ -669,7 +668,7 @@ export const EditSchedulingModal = ({
                                             slot.time
                                           ) && (
                                             <span className="text-xs ml-2 text-blue-600">
-                                              (Horário Atual)
+                                              (Não selecinado)
                                             </span>
                                           )}
                                         {slot.isCurrentTimeSlot &&

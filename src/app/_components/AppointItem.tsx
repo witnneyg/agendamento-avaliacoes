@@ -35,6 +35,36 @@ const getPeriodLabel = (period: string) => {
   }
 };
 
+const extractSemesterNumber = (semesterName: string): string => {
+  // Extrai o número do período usando regex
+  const numberMatch = semesterName.match(/^(\d+)/);
+  if (numberMatch) {
+    return `${numberMatch[1]}° período`;
+  }
+
+  // Verifica números por extenso
+  if (semesterName.match(/Primeiro|primeiro|1/i)) {
+    return "1° período";
+  } else if (semesterName.match(/Segundo|segundo|2/i)) {
+    return "2° período";
+  } else if (semesterName.match(/Terceiro|terceiro|3/i)) {
+    return "3° período";
+  } else if (semesterName.match(/Quarto|quarto|4/i)) {
+    return "4° período";
+  } else if (semesterName.match(/Quinto|quinto|5/i)) {
+    return "5° período";
+  } else if (semesterName.match(/Sexto|sexto|6/i)) {
+    return "6° período";
+  } else if (semesterName.match(/Sétimo|sétimo|7/i)) {
+    return "7° período";
+  } else if (semesterName.match(/Oitavo|oitavo|8/i)) {
+    return "8° período";
+  }
+
+  // Se não encontrar um número padrão, retorna o nome original
+  return semesterName;
+};
+
 const periodOrder = ["MORNING", "AFTERNOON", "EVENING"];
 
 const extractTimeSlots = (appointment: SchedulingWithRelations) => {
@@ -89,7 +119,7 @@ export const AppointmentItem = ({
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isAlertOpen, setIsAlertOpen] = useState(false); // Estado para controlar o AlertDialog principal
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
 
   const isOwner = appointment.userId === userSession?.id;
   const timeSlots = extractTimeSlots(appointment);
@@ -211,11 +241,7 @@ export const AppointmentItem = ({
 
             <div className="flex gap-2 items-center">
               <p className="font-medium">Período:</p>
-              {appointment.course.periods
-                .slice()
-                .sort((a, b) => periodOrder.indexOf(a) - periodOrder.indexOf(b))
-                .map((p) => getPeriodLabel(p))
-                .join(", ")}
+              {extractSemesterNumber(appointment.semester.name)}
             </div>
 
             <div className="flex gap-2 items-center">

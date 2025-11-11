@@ -146,6 +146,20 @@ export function TeachersTab() {
   const selectedDisciplineIds = watch("disciplineIds");
   const selectedUserId = watch("userId");
 
+  // Função para limpar completamente o formulário
+  const clearForm = () => {
+    reset({
+      userId: "",
+      courseIds: [],
+      disciplineIds: [],
+      status: "ACTIVE",
+    });
+    setEditingTeacher(null);
+    setCourseSearchTerm("");
+    setUserSearchTerm("");
+    setExpandedCourses(new Set());
+  };
+
   const filteredTeachers = teachers.filter((teacher) => {
     const matchesSearch = teacher.name
       .toLowerCase()
@@ -448,13 +462,9 @@ export function TeachersTab() {
       setCourses(coursesData.sort((a, b) => a.name.localeCompare(b.name)));
       setUsers(usersData as UserWithRoles[]);
 
-      reset();
-      setEditingTeacher(null);
+      clearForm(); // Limpa o formulário após sucesso
       setIsDialogOpen(false);
       setTeacherSearchTerm("");
-      setCourseSearchTerm("");
-      setUserSearchTerm("");
-      setExpandedCourses(new Set());
     } catch (error) {
       console.error("Erro ao salvar professor:", error);
       alert("Erro ao salvar professor. Tente novamente.");
@@ -602,21 +612,14 @@ export function TeachersTab() {
           onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) {
-              reset({
-                userId: "",
-                courseIds: [],
-                disciplineIds: [],
-                status: "ACTIVE",
-              });
-              setEditingTeacher(null);
-              setCourseSearchTerm("");
-              setUserSearchTerm("");
-              setExpandedCourses(new Set());
+              clearForm(); // Limpa o formulário quando o dialog fecha
             }
           }}
         >
           <DialogTrigger asChild>
-            <Button>
+            <Button
+              onClick={clearForm} // LIMPA O FORMULÁRIO AO CLICAR EM "ADICIONAR PROFESSOR"
+            >
               <Plus className="mr-2 h-4 w-4" />
               {editingTeacher ? "Editar Professor" : "Adicionar Professor"}
             </Button>
@@ -727,7 +730,6 @@ export function TeachersTab() {
                                         <span className="text-sm font-medium">
                                           {user.name}
                                         </span>
-                                        {/* Badge indicando que é professor */}
                                         {isProfessor && (
                                           <Badge
                                             variant="default"
