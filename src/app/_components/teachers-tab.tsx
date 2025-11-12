@@ -462,7 +462,7 @@ export function TeachersTab() {
       setCourses(coursesData.sort((a, b) => a.name.localeCompare(b.name)));
       setUsers(usersData as UserWithRoles[]);
 
-      clearForm(); // Limpa o formulário após sucesso
+      clearForm();
       setIsDialogOpen(false);
       setTeacherSearchTerm("");
     } catch (error) {

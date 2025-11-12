@@ -19,7 +19,36 @@ export type TeacherWithRelations = Teacher & {
 export async function updateTeacher(
   data: UpdateTeacherInput
 ): Promise<TeacherWithRelations> {
+  const currentTeacher = await db.teacher.findUnique({
+    where: { id: data.id },
+    select: { name: true },
+  });
+
+  if (!currentTeacher) {
+    throw new Error("Professor não encontrado");
+  }
+
   if (data.status === "INACTIVE") {
+    const user = await db.user.findFirst({
+      where: {
+        name: currentTeacher.name,
+      },
+      include: {
+        roles: true,
+      },
+    });
+
+    if (user) {
+      await db.user.update({
+        where: { id: user.id },
+        data: {
+          roles: {
+            set: [],
+          },
+        },
+      });
+    }
+
     return db.teacher.update({
       where: { id: data.id },
       data: {
