@@ -668,7 +668,7 @@ export const EditSchedulingModal = ({
                                             slot.time
                                           ) && (
                                             <span className="text-xs ml-2 text-blue-600">
-                                              (Não selecinado)
+                                              (Não selecionado)
                                             </span>
                                           )}
                                         {slot.isCurrentTimeSlot &&

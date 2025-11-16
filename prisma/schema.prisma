@@ -83,7 +83,6 @@ model Class {
   semesterId  String
   semester    Semester     @relation(fields: [semesterId], references: [id])
 
-  // disciplines Discipline[] 
   schedulings Scheduling[] 
 
   createdAt DateTime @default(now())
@@ -96,9 +95,6 @@ model Discipline {
 
   semesterId  String
   semester    Semester   @relation(fields: [semesterId], references: [id])
-
-  // classId     String?
-  // class       Class?     @relation(fields: [classId], references: [id])
 
   teachers    Teacher[]  @relation("DisciplineTeachers")
   courses     Course[]   @relation("CourseDisciplines")
@@ -134,7 +130,6 @@ model Scheduling {
   classId   String?
   class     Class?   @relation(fields: [classId], references: [id])
 
-  // Campo JSON para armazenar detalhes adicionais
   details   Json
 
   createdAt DateTime @default(now())

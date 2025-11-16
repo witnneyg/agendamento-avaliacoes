@@ -408,6 +408,10 @@ export function CoursesTab() {
             <AlertDialogDescription>
               Tem certeza que deseja excluir este curso? Esta ação não pode ser
               desfeita.
+              <br />
+              <br />
+              <strong>Atenção:</strong> Todas as turmas, disciplinas vinculados
+              a este curso também serão excluídos permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
