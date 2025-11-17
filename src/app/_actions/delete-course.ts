@@ -4,104 +4,130 @@ import { db } from "@/lib/prisma";
 
 export async function deleteCourse(courseId: string) {
   try {
-    return await db.$transaction(async (tx) => {
-      const course = await tx.course.findUnique({
-        where: { id: courseId },
-        include: {
-          semesters: {
-            include: {
-              disciplines: {
-                include: {
-                  teachers: true,
-                },
+    // Primeiro, verifica se o curso existe
+    const course = await db.course.findUnique({
+      where: { id: courseId },
+      include: {
+        semesters: {
+          include: {
+            disciplines: {
+              include: {
+                teachers: true,
               },
-              classes: true,
             },
+            classes: true,
           },
-          teachers: true,
-          disciplines: true,
-          classes: true,
         },
-      });
+        teachers: true,
+        disciplines: true,
+        classes: true,
+      },
+    });
 
-      if (!course) {
-        throw new Error("Curso não encontrado");
-      }
+    if (!course) {
+      throw new Error("Curso não encontrado");
+    }
 
-      const semesterIds = course.semesters.map((s) => s.id);
-      const disciplineIds = course.semesters.flatMap((s) =>
-        s.disciplines.map((d) => d.id)
-      );
-      const classIds = [
-        ...course.classes.map((c) => c.id),
-        ...course.semesters.flatMap((s) => s.classes.map((c) => c.id)),
-      ];
+    // Coleta todos os IDs relacionados
+    const semesterIds = course.semesters.map((s) => s.id);
+    const disciplineIds = course.semesters.flatMap((s) =>
+      s.disciplines.map((d) => d.id)
+    );
+    const classIds = [
+      ...course.classes.map((c) => c.id),
+      ...course.semesters.flatMap((s) => s.classes.map((c) => c.id)),
+    ];
 
-      // Remove agendamentos
-      await tx.scheduling.deleteMany({
-        where: {
-          OR: [
-            { courseId },
-            { semesterId: { in: semesterIds } },
-            { disciplineId: { in: disciplineIds } },
-            { classId: { in: classIds } },
-          ],
-        },
-      });
+    // Divide as operações em transações menores
+    // 1. Remove agendamentos primeiro
+    await db.scheduling.deleteMany({
+      where: {
+        OR: [
+          { courseId },
+          { semesterId: { in: semesterIds } },
+          { disciplineId: { in: disciplineIds } },
+          { classId: { in: classIds } },
+        ],
+      },
+    });
 
-      // Remove relações many-to-many entre disciplinas e professores
+    // 2. Para relações many-to-many, desconecta professores das disciplinas
+    if (disciplineIds.length > 0) {
+      // Para relações many-to-many, precisamos atualizar cada disciplina individualmente
       for (const disciplineId of disciplineIds) {
-        await tx.discipline.update({
+        await db.discipline.update({
           where: { id: disciplineId },
           data: {
             teachers: {
-              set: [],
+              set: [], // Isso desconecta todos os professores
             },
           },
         });
       }
+    }
 
-      // Remove disciplinas
-      await tx.discipline.deleteMany({
+    // 3. Remove disciplinas
+    if (disciplineIds.length > 0) {
+      await db.discipline.deleteMany({
         where: { id: { in: disciplineIds } },
       });
+    }
 
-      // Remove turmas
-      await tx.class.deleteMany({
+    // 4. Remove turmas
+    if (classIds.length > 0) {
+      await db.class.deleteMany({
         where: { id: { in: classIds } },
       });
+    }
 
-      // Remove semestres
-      await tx.semester.deleteMany({
+    // 5. Remove semestres
+    if (semesterIds.length > 0) {
+      await db.semester.deleteMany({
         where: { id: { in: semesterIds } },
       });
+    }
 
-      // Remove relações many-to-many do curso
-      await tx.course.update({
-        where: { id: courseId },
-        data: {
-          teachers: {
-            set: [],
-          },
-          disciplines: {
-            set: [],
-          },
+    // 6. Remove relações many-to-many do curso
+    await db.course.update({
+      where: { id: courseId },
+      data: {
+        teachers: {
+          set: [], // Desconecta todos os professores
         },
-      });
-
-      // Remove o curso
-      await tx.course.delete({
-        where: { id: courseId },
-      });
-
-      return { success: true };
+        disciplines: {
+          set: [], // Desconecta todas as disciplinas
+        },
+      },
     });
+
+    // 7. Finalmente remove o curso
+    await db.course.delete({
+      where: { id: courseId },
+    });
+
+    return { success: true };
   } catch (error) {
-    console.error("Erro ao deletar curso:", error);
-    throw new Error(
-      error instanceof Error
-        ? `Erro ao deletar curso: ${error.message}`
-        : "Erro desconhecido ao deletar curso"
-    );
+    console.error("Erro detalhado ao deletar curso:", error);
+
+    // Mensagens de erro mais específicas
+    if (error instanceof Error) {
+      if (
+        error.message.includes("timeout") ||
+        error.message.includes("time out")
+      ) {
+        throw new Error("A operação demorou muito tempo. Tente novamente.");
+      }
+      if (
+        error.message.includes("foreign key") ||
+        error.message.includes("constraint")
+      ) {
+        throw new Error(
+          "Não foi possível excluir o curso devido a vínculos existentes. Tente novamente ou contate o suporte."
+        );
+      }
+      throw new Error(`Erro ao deletar curso: ${error.message}`);
+    }
+
+    throw new Error("Erro desconhecido ao deletar curso");
   }
 }
