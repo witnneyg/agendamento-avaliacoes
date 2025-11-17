@@ -428,8 +428,9 @@ export function CoursesTab() {
               desfeita.
               <br />
               <br />
-              <strong>Atenção:</strong> Todas as turmas, disciplinas vinculados
-              a este curso também serão excluídos permanentemente.
+              <strong>Atenção:</strong> Todas as turmas, disciplinas e
+              agendamentos vinculados a este curso também serão excluídos
+              permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
