@@ -531,6 +531,11 @@ export default function DisciplinesTab() {
                               <AlertDialogDescription>
                                 Tem certeza que deseja excluir esta disciplina?
                                 Esta ação não pode ser desfeita.
+                                <br />
+                                <br />
+                                <strong>Atenção:</strong> Todos os agendamentos
+                                vinculados a esta disciplina também serão
+                                excluídos permanentemente.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
