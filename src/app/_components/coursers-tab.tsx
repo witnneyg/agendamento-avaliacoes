@@ -100,7 +100,13 @@ export function CoursesTab() {
       setIsLoading(true);
       try {
         const data = await getCourses();
-        setCourses(data);
+
+        // Ordena os cursos em ordem alfabética crescente
+        const sortedCourses = [...data].sort((a, b) =>
+          a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" })
+        );
+
+        setCourses(sortedCourses);
       } finally {
         setIsLoading(false);
       }
@@ -128,7 +134,13 @@ export function CoursesTab() {
       }
 
       const refreshedCourses = await getCourses();
-      setCourses(refreshedCourses);
+
+      // Ordena os cursos atualizados também
+      const sortedCourses = [...refreshedCourses].sort((a, b) =>
+        a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" })
+      );
+
+      setCourses(sortedCourses);
 
       reset();
       setEditingCourse(null);
@@ -164,7 +176,13 @@ export function CoursesTab() {
       await deleteCourse(courseToDelete);
 
       const refreshedCourses = await getCourses();
-      setCourses(refreshedCourses);
+
+      // Ordena os cursos após a deleção também
+      const sortedCourses = [...refreshedCourses].sort((a, b) =>
+        a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" })
+      );
+
+      setCourses(sortedCourses);
 
       setCourseToDelete(null);
     } catch (error) {
