@@ -37,6 +37,7 @@ export async function deleteCourse(courseId: string) {
         ...course.semesters.flatMap((s) => s.classes.map((c) => c.id)),
       ];
 
+      // Remove agendamentos
       await tx.scheduling.deleteMany({
         where: {
           OR: [
@@ -48,28 +49,7 @@ export async function deleteCourse(courseId: string) {
         },
       });
 
-      for (const teacher of course.teachers) {
-        await tx.teacher.update({
-          where: { id: teacher.id },
-          data: {
-            courses: {
-              disconnect: { id: courseId },
-            },
-          },
-        });
-      }
-
-      for (const discipline of course.disciplines) {
-        await tx.discipline.update({
-          where: { id: discipline.id },
-          data: {
-            courses: {
-              disconnect: { id: courseId },
-            },
-          },
-        });
-      }
-
+      // Remove relações many-to-many entre disciplinas e professores
       for (const disciplineId of disciplineIds) {
         await tx.discipline.update({
           where: { id: disciplineId },
@@ -81,18 +61,35 @@ export async function deleteCourse(courseId: string) {
         });
       }
 
+      // Remove disciplinas
       await tx.discipline.deleteMany({
         where: { id: { in: disciplineIds } },
       });
 
+      // Remove turmas
       await tx.class.deleteMany({
         where: { id: { in: classIds } },
       });
 
+      // Remove semestres
       await tx.semester.deleteMany({
         where: { id: { in: semesterIds } },
       });
 
+      // Remove relações many-to-many do curso
+      await tx.course.update({
+        where: { id: courseId },
+        data: {
+          teachers: {
+            set: [],
+          },
+          disciplines: {
+            set: [],
+          },
+        },
+      });
+
+      // Remove o curso
       await tx.course.delete({
         where: { id: courseId },
       });
