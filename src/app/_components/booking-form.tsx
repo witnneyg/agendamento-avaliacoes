@@ -3,7 +3,7 @@
 import type React from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { ChevronLeft, AlertTriangle, User } from "lucide-react";
+import { ChevronLeft, AlertTriangle, User, Ban } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,14 +16,7 @@ import { ptBR } from "date-fns/locale";
 import { getDisciplineById } from "../_actions/get-discipline-by-id";
 import { getTranslatedPeriods } from "../_helpers/getOrderedPeriods";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useSession } from "next-auth/react";
-
-interface Teacher {
-  name: string;
-  id: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { getUser } from "../_actions/getUser";
 
 interface BookingFormProps {
   onSubmit: (details: {
@@ -46,6 +39,20 @@ const bookingSchema = z.object({
 });
 
 type BookingSchema = z.infer<typeof bookingSchema>;
+
+const canUserSchedule = (userRoles: any[] | undefined): boolean => {
+  if (!userRoles || userRoles.length === 0) return false;
+
+  const roleNames = userRoles.map((role) => role.name);
+  return roleNames.some((roleName) => roleName !== "SECRETARIA");
+};
+
+const hasOnlySecretariaRole = (userRoles: any[] | undefined): boolean => {
+  if (!userRoles || userRoles.length === 0) return false;
+
+  const roleNames = userRoles.map((role) => role.name);
+  return roleNames.length === 1 && roleNames[0] === "SECRETARIA";
+};
 
 export const generateTimeSlotsAndCheckAvailability = (
   date: Date | undefined,
@@ -192,6 +199,7 @@ export function BookingForm({
   classId,
 }: BookingFormProps) {
   const [schedulingTimes, setSchedulingTimes] = useState<Scheduling[]>([]);
+  const [user, setUser] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [disciplineData, setDisciplineData] = useState<{
     dayPeriods: Period[];
@@ -200,9 +208,19 @@ export function BookingForm({
     hasConflict: boolean;
     existingCount: number;
   }>({ hasConflict: false, existingCount: 0 });
+  const [isCheckingUser, setIsCheckingUser] = useState(true);
 
-  const { data: session } = useSession();
-  const user = session?.user;
+  useEffect(() => {
+    async function fetchData() {
+      setIsCheckingUser(true);
+      const data = await getUser();
+      setUser(data);
+      setIsCheckingUser(false);
+    }
+    fetchData();
+  }, []);
+
+  const userCanSchedule = user?.roles ? canUserSchedule(user.roles) : false;
 
   const {
     handleSubmit,
@@ -285,7 +303,6 @@ export function BookingForm({
         const [hour, minute] = time.split(" - ")[0].split(":").map(Number);
         return hour * 60 + minute;
       };
-
       return getStartHour(a) - getStartHour(b);
     });
 
@@ -306,7 +323,6 @@ export function BookingForm({
         console.error(error);
       }
     }
-
     fetchSchedulingTimes();
   }, [semesterId]);
 
@@ -330,6 +346,25 @@ export function BookingForm({
     schedulingTimes,
     disciplineData?.dayPeriods || []
   );
+
+  if (isCheckingUser) {
+    return (
+      <>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onBack}
+          className="self-start mb-2"
+        >
+          <ChevronLeft className="mr-2 h-4 w-4" />
+          Voltar para disciplinas
+        </Button>
+        <div className="text-center py-8">
+          <p>Carregando horários...</p>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -429,7 +464,6 @@ export function BookingForm({
                 name="time"
                 render={({ field }) => {
                   const selectedTimes = field.value || [];
-
                   const toggleTime = (slotTime: string) => {
                     if (selectedTimes.includes(slotTime)) {
                       field.onChange(
@@ -504,7 +538,9 @@ export function BookingForm({
                 className="w-full cursor-pointer mt-2"
                 disabled={!selectedDate}
               >
-                Confirmar Agendamento
+                {userCanSchedule
+                  ? "Confirmar Agendamento"
+                  : "Testar Agendamento (Bloqueado para SECRETARIA)"}
               </Button>
             </form>
           </>

@@ -10,7 +10,7 @@ import { SettingsTab } from "../_components/settings-tab";
 import { NavBar } from "../_components/navbar";
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState("courses");
+  const [activeTab, setActiveTab] = useState("classes");
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -33,10 +33,10 @@ export default function AdminPage() {
             onValueChange={setActiveTab}
             className="space-y-4"
           >
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="courses" className="cursor-pointer">
+            <TabsList className="grid w-full grid-cols-3">
+              {/* <TabsTrigger value="courses" className="cursor-pointer">
                 Cursos
-              </TabsTrigger>
+              </TabsTrigger> */}
               <TabsTrigger value="classes" className="cursor-pointer">
                 Turmas
               </TabsTrigger>
@@ -51,9 +51,9 @@ export default function AdminPage() {
               </TabsTrigger> */}
             </TabsList>
 
-            <TabsContent value="courses">
+            {/* <TabsContent value="courses">
               <CoursesTab />
-            </TabsContent>
+            </TabsContent> */}
             <TabsContent value="classes">
               <ClassesTab />
             </TabsContent>

@@ -441,22 +441,22 @@ export default function AdminDashboard() {
           </div>
 
           <Tabs defaultValue="users" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            {/* <TabsList className="grid w-full grid-cols-1">
               <TabsTrigger
                 value="users"
-                className="flex items-center gap-2 cursor-pointer"
+                className="flex items-center gap-2 cursor-pointer w-full"
               >
                 <Users className="h-4" />
                 Gerenciar Usuários
-              </TabsTrigger>
-              <TabsTrigger
+              </TabsTrigger> */}
+            {/* <TabsTrigger
                 value="permissions"
                 className="flex items-center gap-2 cursor-pointer"
               >
                 <Settings className="h-4" />
                 Gerenciar Permissões
-              </TabsTrigger>
-            </TabsList>
+              </TabsTrigger> */}
+            {/* </TabsList> */}
 
             <TabsContent value="users" className="space-y-6">
               <Card>
@@ -509,9 +509,6 @@ export default function AdminDashboard() {
                             <Badge variant={getRoleBadgeVariant(role.name)}>
                               {role.name}
                             </Badge>
-                            <span className="text-sm text-muted-foreground">
-                              {role.permissions.length} permissões
-                            </span>
                           </div>
                           <Button
                             variant="ghost"

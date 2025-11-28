@@ -1,99 +1,97 @@
-import { Permission } from "./types";
-import { UserRole } from "./types";
+// import { User } from "@prisma/client";
 
-export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
-  admin: [
-    "users.create",
-    "users.read",
-    "users.update",
-    "users.delete",
-    "courses.create",
-    "courses.read",
-    "courses.update",
-    "courses.delete",
-    "subjects.create",
-    "subjects.read",
-    "subjects.update",
-    "subjects.delete",
-    "evaluations.create",
-    "evaluations.read",
-    "evaluations.update",
-    "evaluations.delete",
-    "reports.read",
-    "reports.export",
-    "system.settings",
-  ],
-  direcao: [
-    "users.read",
-    "users.update",
-    "courses.read",
-    "courses.update",
-    "subjects.read",
-    "subjects.update",
-    "evaluations.read",
-    "evaluations.update",
-    "reports.read",
-    "reports.export",
-  ],
-  professor: [
-    "users.read",
-    "subjects.read",
-    "evaluations.create",
-    "evaluations.read",
-    "evaluations.update",
-    "reports.read",
-  ],
-  secretaria: [
-    "users.read",
-    "courses.read",
-    "subjects.read",
-    "evaluations.read",
-    "reports.read",
-  ],
-};
+// export type UserWithRoles = User & {
+//   roles: Array<{
+//     name: string;
+//   }>;
+// };
 
-export const PERMISSION_LABELS: Record<Permission, string> = {
-  "users.create": "Criar usuários",
-  "users.read": "Visualizar usuários",
-  "users.update": "Editar usuários",
-  "users.delete": "Excluir usuários",
-  "courses.create": "Criar cursos",
-  "courses.read": "Visualizar cursos",
-  "courses.update": "Editar cursos",
-  "courses.delete": "Excluir cursos",
-  "subjects.create": "Criar disciplinas",
-  "subjects.read": "Visualizar disciplinas",
-  "subjects.update": "Editar disciplinas",
-  "subjects.delete": "Excluir disciplinas",
-  "evaluations.create": "Criar avaliações",
-  "evaluations.read": "Visualizar avaliações",
-  "evaluations.update": "Editar avaliações",
-  "evaluations.delete": "Excluir avaliações",
-  "reports.read": "Visualizar relatórios",
-  "reports.export": "Exportar relatórios",
-  "system.settings": "Configurações do sistema",
-};
+// interface PolicyStatement {
+//   actions: string[];
+//   resource: string;
+//   condition?: (user: UserWithRoles, resource: any) => boolean;
+// }
 
-export const ROLE_LABELS: Record<UserRole, string> = {
-  admin: "Administrador",
-  direcao: "Direção",
-  professor: "Professor",
-  secretaria: "Secretaria",
-};
+// const policies: Record<string, PolicyStatement[]> = {
+//   teacher: [
+//     {
+//       actions: ["read", "create"],
+//       resource: "scheduling",
+//     },
+//     {
+//       actions: ["read"],
+//       resource: "calendar",
+//     },
+//   ],
+//   director: [
+//     {
+//       actions: ["read", "manage"],
+//       resource: "reports",
+//     },
+//   ],
+//   secretaria: [
+//     {
+//       actions: ["read", "create", "update"],
+//       resource: "course",
+//     },
+//     {
+//       actions: ["create", "read", "update", "delete"],
+//       resource: "discipline",
+//     },
+//     {
+//       actions: ["create", "read", "update", "delete"],
+//       resource: "class",
+//     },
+//     {
+//       actions: ["create", "read", "update", "delete"],
+//       resource: "teacher",
+//     },
+//     {
+//       actions: ["create", "read", "update", "delete"],
+//       resource: "scheduling",
+//     },
+//     {
+//       actions: ["read"],
+//       resource: "calendar",
+//     },
+//   ],
+//   admin: [
+//     {
+//       actions: ["create", "read", "update", "delete", "manage"],
+//       resource: "all",
+//     },
+//   ],
+// };
 
-export function hasPermission(
-  userRole: UserRole,
-  permission: Permission,
-  customPermissions?: Record<UserRole, Permission[]>
-): boolean {
-  const permissions = customPermissions || DEFAULT_ROLE_PERMISSIONS;
-  return permissions[userRole]?.includes(permission) || false;
-}
+// export function hasPermission(
+//   user: UserWithRoles | null | undefined,
+//   action: string,
+//   resource?: string
+// ): boolean {
+//   if (!user) return false;
 
-export function getRolePermissions(
-  role: UserRole,
-  customPermissions?: Record<UserRole, Permission[]>
-): Permission[] {
-  const permissions = customPermissions || DEFAULT_ROLE_PERMISSIONS;
-  return permissions[role] || [];
-}
+//   const userPolicies: PolicyStatement[] = [];
+
+//   for (const role of user.roles) {
+//     const roleName = role.name.toLowerCase();
+
+//     const rolePolicies = policies[roleName];
+//     if (rolePolicies) {
+//       userPolicies.push(...rolePolicies);
+//     }
+//   }
+
+//   for (const policy of userPolicies) {
+//     const resourceMatches =
+//       policy.resource === "all" || policy.resource === resource;
+
+//     if (policy.actions.includes(action) && resourceMatches) {
+//       if (policy.condition) {
+//         return policy.condition(user, resource);
+//       }
+//       return true;
+//     }
+//   }
+
+//   return false;
+// }
