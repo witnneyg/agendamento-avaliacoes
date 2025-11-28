@@ -49,7 +49,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2, Search, Filter, X } from "lucide-react";
 
 import { getSemesterByCourse } from "@/app/_actions/get-semester-by-course-selected";
 import { getDisciplinesBySemester } from "@/app/_actions/get-disciplines-by-semester";
@@ -76,6 +76,9 @@ type ClassForm = z.infer<typeof classSchema>;
 
 export function ClassesTab() {
   const [classes, setClasses] = useState<ClassesWithRelations[]>([]);
+  const [filteredClasses, setFilteredClasses] = useState<
+    ClassesWithRelations[]
+  >([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineWithRelations[]>([]);
@@ -88,6 +91,10 @@ export function ClassesTab() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCourseFilter, setSelectedCourseFilter] = useState("");
+  const [selectedSemesterFilter, setSelectedSemesterFilter] = useState("");
 
   const {
     control,
@@ -116,6 +123,7 @@ export function ClassesTab() {
         setCourses(coursesData);
         const classesData = await getClasses();
         setClasses(classesData);
+        setFilteredClasses(classesData);
       } finally {
         setIsLoading(false);
       }
@@ -123,7 +131,30 @@ export function ClassesTab() {
     fetchData();
   }, []);
 
-  // useEffect simplificado - sem setValue dentro
+  useEffect(() => {
+    let filtered = classes;
+
+    if (searchTerm) {
+      filtered = filtered.filter((cls) =>
+        cls.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (selectedCourseFilter) {
+      filtered = filtered.filter(
+        (cls) => cls.course.id === selectedCourseFilter
+      );
+    }
+
+    if (selectedSemesterFilter) {
+      filtered = filtered.filter(
+        (cls) => cls.semester.id === selectedSemesterFilter
+      );
+    }
+
+    setFilteredClasses(filtered);
+  }, [classes, searchTerm, selectedCourseFilter, selectedSemesterFilter]);
+
   useEffect(() => {
     if (!selectedCourseId) {
       setSemesters([]);
@@ -136,7 +167,7 @@ export function ClassesTab() {
     }
 
     fetchSemesters();
-  }, [selectedCourseId]); // Apenas selectedCourseId como dependência
+  }, [selectedCourseId]);
 
   useEffect(() => {
     if (!selectedSemesterId) {
@@ -215,6 +246,21 @@ export function ClassesTab() {
   const handleCancelDelete = () => {
     setClassToDelete(null);
   };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedCourseFilter("");
+    setSelectedSemesterFilter("");
+  };
+
+  const uniqueSemesters = Array.from(
+    new Set(classes.map((cls) => cls.semester.id))
+  )
+    .map((id) => {
+      const cls = classes.find((cls) => cls.semester.id === id);
+      return cls?.semester;
+    })
+    .filter(Boolean) as Semester[];
 
   return (
     <div className="space-y-4">
@@ -346,14 +392,130 @@ export function ClassesTab() {
 
       <Card>
         <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtros
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="search">Buscar por nome</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="search"
+                  placeholder="Digite o nome da turma..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+                {searchTerm && (
+                  <X
+                    className="absolute right-3 top-3 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground"
+                    onClick={() => setSearchTerm("")}
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="courseFilter">Filtrar por curso</Label>
+              <Select
+                value={selectedCourseFilter}
+                onValueChange={setSelectedCourseFilter}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os cursos" />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.map((curso) => (
+                    <SelectItem key={curso.id} value={curso.id}>
+                      {curso.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="semesterFilter">Filtrar por período</Label>
+              <Select
+                value={selectedSemesterFilter}
+                onValueChange={setSelectedSemesterFilter}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os períodos" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueSemesters.map((semestre) => (
+                    <SelectItem key={semestre.id} value={semestre.id}>
+                      {semestre.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Botão limpar filtros */}
+            <div className="space-y-2">
+              <Label className="opacity-0">Limpar</Label>
+              <Button
+                variant="outline"
+                onClick={clearFilters}
+                className="w-full cursor-pointer"
+                disabled={
+                  !searchTerm &&
+                  !selectedCourseFilter &&
+                  !selectedSemesterFilter
+                }
+              >
+                <X className="mr-2 h-4 w-4" />
+                Limpar Filtros
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-4 text-sm text-muted-foreground">
+            {filteredClasses.length} de {classes.length} turmas encontradas
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Todas as Turmas</CardTitle>
-          <CardDescription>{classes.length} turmas cadastradas</CardDescription>
+          <CardDescription>
+            {filteredClasses.length} turmas{" "}
+            {searchTerm || selectedCourseFilter || selectedSemesterFilter
+              ? "filtradas"
+              : "cadastradas"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin" />
               <span className="ml-2">Carregando turmas...</span>
+            </div>
+          ) : filteredClasses.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">
+                {classes.length === 0
+                  ? "Nenhuma turma cadastrada ainda."
+                  : "Nenhuma turma encontrada com os filtros aplicados."}
+              </p>
+              {(searchTerm ||
+                selectedCourseFilter ||
+                selectedSemesterFilter) && (
+                <Button
+                  variant="outline"
+                  onClick={clearFilters}
+                  className="mt-4 cursor-pointer"
+                >
+                  Limpar filtros
+                </Button>
+              )}
             </div>
           ) : (
             <Table>
@@ -367,7 +529,7 @@ export function ClassesTab() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {classes.map((cls) => (
+                {filteredClasses.map((cls) => (
                   <TableRow key={cls.id}>
                     <TableCell>{cls.name}</TableCell>
                     <TableCell>{cls.course.name}</TableCell>

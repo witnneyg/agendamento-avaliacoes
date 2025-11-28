@@ -49,7 +49,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2, Search, Filter, X } from "lucide-react";
 import type { Class, Course, Period, Prisma, Semester } from "@prisma/client";
 
 import { getDisciplines } from "@/app/_actions/get-disciplines";
@@ -88,6 +88,9 @@ const periodOrder: Period[] = ["MORNING", "AFTERNOON", "EVENING"];
 
 export default function DisciplinesTab() {
   const [disciplinas, setDisciplinas] = useState<DisciplineWithRelations[]>([]);
+  const [filteredDisciplinas, setFilteredDisciplinas] = useState<
+    DisciplineWithRelations[]
+  >([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [semesters, setSemesters] = useState<Semester[]>([]);
@@ -101,6 +104,11 @@ export default function DisciplinesTab() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshCounter, setRefreshCounter] = useState(0);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCourseFilter, setSelectedCourseFilter] = useState("");
+  const [selectedSemesterFilter, setSelectedSemesterFilter] = useState("");
+
   const {
     control,
     handleSubmit,
@@ -127,6 +135,7 @@ export default function DisciplinesTab() {
       try {
         const disciplinesData = await getDisciplines();
         setDisciplinas(disciplinesData as any);
+        setFilteredDisciplinas(disciplinesData as any);
 
         const coursesData = await getCourses();
         setCourses(coursesData);
@@ -160,6 +169,30 @@ export default function DisciplinesTab() {
     }
     fetchClasses();
   }, [selectedSemesterId]);
+
+  useEffect(() => {
+    let filtered = disciplinas;
+
+    if (searchTerm) {
+      filtered = filtered.filter((disciplina) =>
+        disciplina.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (selectedCourseFilter) {
+      filtered = filtered.filter((disciplina) =>
+        disciplina.courses.some((course) => course.id === selectedCourseFilter)
+      );
+    }
+
+    if (selectedSemesterFilter) {
+      filtered = filtered.filter(
+        (disciplina) => disciplina.semester.id === selectedSemesterFilter
+      );
+    }
+
+    setFilteredDisciplinas(filtered);
+  }, [disciplinas, searchTerm, selectedCourseFilter, selectedSemesterFilter]);
 
   const onSubmit = async (data: DisciplineFormData) => {
     if (isSubmitting) return;
@@ -239,6 +272,21 @@ export default function DisciplinesTab() {
   const handleCancelDelete = () => {
     setDisciplinaParaDeletar(null);
   };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedCourseFilter("");
+    setSelectedSemesterFilter("");
+  };
+
+  const uniqueSemesters = Array.from(
+    new Set(disciplinas.map((d) => d.semester.id))
+  )
+    .map((id) => {
+      const disciplina = disciplinas.find((d) => d.semester.id === id);
+      return disciplina?.semester;
+    })
+    .filter(Boolean) as Semester[];
 
   return (
     <div className="space-y-4">
@@ -453,9 +501,105 @@ export default function DisciplinesTab() {
 
       <Card>
         <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtros
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="search">Buscar por nome</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="search"
+                  placeholder="Digite o nome da disciplina..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+                {searchTerm && (
+                  <X
+                    className="absolute right-3 top-3 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground"
+                    onClick={() => setSearchTerm("")}
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="courseFilter">Filtrar por curso</Label>
+              <Select
+                value={selectedCourseFilter}
+                onValueChange={setSelectedCourseFilter}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os cursos" />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.map((curso) => (
+                    <SelectItem key={curso.id} value={curso.id}>
+                      {curso.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="semesterFilter">Filtrar por período</Label>
+              <Select
+                value={selectedSemesterFilter}
+                onValueChange={setSelectedSemesterFilter}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os períodos" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueSemesters.map((semestre) => (
+                    <SelectItem key={semestre.id} value={semestre.id}>
+                      {semestre.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="opacity-0">Limpar</Label>
+              <Button
+                variant="outline"
+                onClick={clearFilters}
+                className="w-full cursor-pointer"
+                disabled={
+                  !searchTerm &&
+                  !selectedCourseFilter &&
+                  !selectedSemesterFilter
+                }
+              >
+                <X className="mr-2 h-4 w-4" />
+                Limpar Filtros
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-4 text-sm text-muted-foreground">
+            {filteredDisciplinas.length} de {disciplinas.length} disciplinas
+            encontradas
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Todas as Disciplinas</CardTitle>
           <CardDescription>
-            {disciplinas.length} disciplinas cadastradas em todos os cursos
+            {filteredDisciplinas.length} disciplinas{" "}
+            {searchTerm || selectedCourseFilter || selectedSemesterFilter
+              ? "filtradas"
+              : "cadastradas"}{" "}
+            em todos os cursos
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -463,6 +607,25 @@ export default function DisciplinesTab() {
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin" />
               <span className="ml-2">Carregando disciplinas...</span>
+            </div>
+          ) : filteredDisciplinas.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">
+                {disciplinas.length === 0
+                  ? "Nenhuma disciplina cadastrada ainda."
+                  : "Nenhuma disciplina encontrada com os filtros aplicados."}
+              </p>
+              {(searchTerm ||
+                selectedCourseFilter ||
+                selectedSemesterFilter) && (
+                <Button
+                  variant="outline"
+                  onClick={clearFilters}
+                  className="mt-4 cursor-pointer"
+                >
+                  Limpar filtros
+                </Button>
+              )}
             </div>
           ) : (
             <Table>
@@ -476,7 +639,7 @@ export default function DisciplinesTab() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {disciplinas.map((disciplina) => (
+                {filteredDisciplinas.map((disciplina) => (
                   <TableRow key={disciplina.id}>
                     <TableCell className="font-medium">
                       {disciplina.name}
