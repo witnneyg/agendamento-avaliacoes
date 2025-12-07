@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getSemesterByCourse } from "../_actions/get-semester-by-course-selected";
+import { getSemestersByCourseForTeacher } from "../_actions/semesters/get-semesters-by-course-for-teacher";
 
 export interface Semester {
   id: string;
@@ -14,23 +14,27 @@ export interface Semester {
 
 interface SemesterSelectorProps {
   courseId: string;
+  teacherId: string;
   onSelectSemester: (semester: Semester) => void;
   onBack: () => void;
 }
 
 export function SemesterSelector({
   courseId,
+  teacherId,
   onSelectSemester,
   onBack,
 }: SemesterSelectorProps) {
   const [semesterByCourse, setSemesterByCourse] = useState<Semester[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  console.log({ semesterByCourse });
+
   useEffect(() => {
     async function fetch() {
       setIsLoading(true);
       try {
-        const data = await getSemesterByCourse(courseId);
+        const data = await getSemestersByCourseForTeacher(courseId, teacherId);
         setSemesterByCourse(data);
       } finally {
         setIsLoading(false);

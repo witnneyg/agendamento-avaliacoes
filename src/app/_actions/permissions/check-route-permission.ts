@@ -17,6 +17,8 @@ const sessionCache = new Map();
 export async function checkRoutePermission(pathname: string): Promise<boolean> {
   try {
     const session = await getServerSession(authOptions);
+
+    console.log({ session });
     if (!session?.user?.email) {
       return false;
     }

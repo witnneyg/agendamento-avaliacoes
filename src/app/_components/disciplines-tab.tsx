@@ -52,13 +52,13 @@ import {
 import { Plus, Edit, Trash2, Loader2, Search, Filter, X } from "lucide-react";
 import type { Class, Course, Period, Prisma, Semester } from "@prisma/client";
 
-import { getDisciplines } from "@/app/_actions/get-disciplines";
-import { createDiscipline } from "@/app/_actions/create-discipline";
-import { getClassBySemesterId } from "@/app/_actions/get-class-by-semester-id";
-import { getSemesterByCourse } from "@/app/_actions/get-semester-by-course-selected";
-import { deleteDiscipline } from "../_actions/delete-discipline";
-import { updateDiscipline } from "../_actions/update-discipline";
-import { getCourses } from "../_actions/get-coursers";
+import { getDisciplines } from "@/app/_actions/discipline/get-disciplines";
+import { createDiscipline } from "@/app/_actions/discipline/create-discipline";
+import { getClassBySemesterId } from "@/app/_actions/classes/get-class-by-semester-id";
+import { getSemesterByCourse } from "@/app/_actions/semesters/get-semester-by-course-selected";
+import { deleteDiscipline } from "../_actions/discipline/delete-discipline";
+import { updateDiscipline } from "../_actions/discipline/update-discipline";
+import { getCourses } from "../_actions/coursers/get-coursers";
 
 const disciplineSchema = z.object({
   name: z.string().min(1, "O nome da disciplina é obrigatório"),
@@ -225,8 +225,6 @@ export default function DisciplinesTab() {
       setEditingDiscispline(null);
       setIsDialogOpen(false);
     } catch (error) {
-      console.error("Erro ao salvar disciplina:", error);
-      alert("Erro ao salvar disciplina. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }

@@ -12,7 +12,6 @@ export async function getUserCourses() {
       throw new Error("Usuário não logado");
     }
 
-    // Buscar o usuário com suas roles
     const user = await db.user.findUnique({
       where: { email: session.user.email },
       include: {
@@ -27,7 +26,6 @@ export async function getUserCourses() {
     const isProfessor = user.roles.some((role) => role.name === "PROFESSOR");
 
     if (isProfessor) {
-      // Buscar teacher pelo nome do usuário
       const teacher = await db.teacher.findFirst({
         where: {
           name: user.name || user.email?.split("@")[0] || "",
@@ -46,7 +44,6 @@ export async function getUserCourses() {
 
       return teacher?.courses || [];
     } else {
-      // Se não for professor, buscar todos os cursos ativos
       const courses = await db.course.findMany({
         where: {
           status: "ACTIVE",
@@ -56,7 +53,6 @@ export async function getUserCourses() {
       return courses;
     }
   } catch (error) {
-    console.error("Erro ao buscar cursos:", error);
-    return [];
+    throw new Error("Falha ao buscar cursos");
   }
 }

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOut } from "next-auth/react";
-import { getUser } from "../_actions/getUser";
+import { getUser } from "../_actions/user/getUser";
 
 interface UserWithRoles {
   id: string;
@@ -106,7 +106,6 @@ export function NavBar() {
   return (
     <nav className="border-b bg-background">
       <div className="container mx-auto flex h-16 items-center px-4 justify-between">
-        {/* Logo */}
         <Link
           href="/"
           className="font-semibold hover:text-primary/70 flex-shrink-0"
@@ -114,10 +113,8 @@ export function NavBar() {
           UniCerrado
         </Link>
 
-        {/* Desktop menu */}
         <div className="hidden md:flex space-x-1 lg:space-x-4">
           {isLoading ? (
-            // Skeleton de carregamento
             <>
               <div className="h-6 w-20 bg-muted animate-pulse rounded-md" />
               <div className="h-6 w-24 bg-muted animate-pulse rounded-md" />
@@ -142,7 +139,6 @@ export function NavBar() {
           )}
         </div>
 
-        {/* Botão de sair */}
         <div className="hidden md:flex items-center space-x-4">
           {isLoading ? (
             <div className="h-6 w-14 bg-muted animate-pulse rounded-md" />
@@ -157,7 +153,6 @@ export function NavBar() {
           )}
         </div>
 
-        {/* Botão do menu mobile */}
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className="md:hidden p-2 rounded-md hover:bg-accent"
@@ -170,7 +165,6 @@ export function NavBar() {
         </button>
       </div>
 
-      {/* Menu mobile */}
       {isMenuOpen && (
         <div className="md:hidden border-t bg-background">
           <div className="container mx-auto px-4 py-2 space-y-1">

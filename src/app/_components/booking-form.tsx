@@ -3,20 +3,20 @@
 import type React from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { ChevronLeft, AlertTriangle, User, Ban } from "lucide-react";
+import { ChevronLeft, AlertTriangle, User } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { format, isSameDay } from "date-fns";
 import { Scheduling, Period } from "@prisma/client";
-import { getSchedulingBySemester } from "../_actions/get-scheduling-by-semesterId";
+import { getSchedulingBySemester } from "../_actions/scheduling/get-scheduling-by-semesterId";
 import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
-import { getDisciplineById } from "../_actions/get-discipline-by-id";
+import { getDisciplineById } from "../_actions/discipline/get-discipline-by-id";
 import { getTranslatedPeriods } from "../_helpers/getOrderedPeriods";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { getUser } from "../_actions/getUser";
+import { getUser } from "../_actions/user/getUser";
 
 interface BookingFormProps {
   onSubmit: (details: {
@@ -45,13 +45,6 @@ const canUserSchedule = (userRoles: any[] | undefined): boolean => {
 
   const roleNames = userRoles.map((role) => role.name);
   return roleNames.some((roleName) => roleName !== "SECRETARIA");
-};
-
-const hasOnlySecretariaRole = (userRoles: any[] | undefined): boolean => {
-  if (!userRoles || userRoles.length === 0) return false;
-
-  const roleNames = userRoles.map((role) => role.name);
-  return roleNames.length === 1 && roleNames[0] === "SECRETARIA";
 };
 
 export const generateTimeSlotsAndCheckAvailability = (
@@ -102,8 +95,6 @@ export const generateTimeSlotsAndCheckAvailability = (
     .filter(([period]) => dayPeriods.includes(period as Period))
     .map(([period, slots]) => {
       const availableSlots = slots.map((slot) => {
-        const [startStr, endStr] = slot.split(" - ");
-
         const isTaken = scheduledTimes.some((scheduling) => {
           try {
             const schedulingDate = new Date(scheduling.date);
@@ -179,7 +170,6 @@ const checkExistingAppointments = (
         scheduling.disciplineId === disciplineId
       );
     } catch (error) {
-      console.error("Erro ao verificar conflito:", error);
       return false;
     }
   });
@@ -242,8 +232,6 @@ export function BookingForm({
       setValue("teacherId", user.id);
     }
   }, [user, setValue]);
-
-  const watchedDate = watch("date");
 
   useEffect(() => {
     async function fetchDisciplineData() {

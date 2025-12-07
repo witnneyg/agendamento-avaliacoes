@@ -5,7 +5,6 @@ import type React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft } from "lucide-react";
-import { useEffect } from "react";
 import { Period } from "@prisma/client";
 
 export interface TimePeriod {

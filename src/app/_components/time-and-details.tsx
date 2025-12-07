@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import { Scheduling } from "@prisma/client";
-import { getSchedulingById } from "../_actions/get-scheduling-by-id";
+import { getSchedulingById } from "../_actions/scheduling/get-scheduling-by-id";
 import { isSameDay, format } from "date-fns";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getTeacherByCourse } from "../_actions/get-teacher-by-disciplines";
+import { getTeacherByCourse } from "../_actions/teacher/get-teacher-by-disciplines";
 import { sendSchedulingEmail } from "../_actions/send-scheduling-email";
 
 interface Teacher {
@@ -175,7 +175,6 @@ export function TimeAndDetailsForm({
         Voltar
       </Button>
 
-      {/* Seleção de horário */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {timeSlots.map((slot, index) => (
           <Controller
@@ -210,7 +209,6 @@ export function TimeAndDetailsForm({
         <p className="text-red-500 text-sm">{errors.time.message}</p>
       )}
 
-      {/* Nome */}
       <div className="space-y-2">
         <Label htmlFor="name">Nome completo</Label>
         <Controller
@@ -239,7 +237,6 @@ export function TimeAndDetailsForm({
         )}
       </div>
 
-      {/* Email */}
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input
@@ -253,7 +250,6 @@ export function TimeAndDetailsForm({
         )}
       </div>
 
-      {/* Telefone */}
       <div className="space-y-2">
         <Label htmlFor="phone">Telefone</Label>
         <Input
@@ -267,7 +263,6 @@ export function TimeAndDetailsForm({
         )}
       </div>
 
-      {/* Notas */}
       <div className="space-y-2">
         <Label htmlFor="notes">Notas adicionais (Opcional)</Label>
         <Textarea id="notes" rows={3} {...register("notes")} />

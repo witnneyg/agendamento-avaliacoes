@@ -54,13 +54,13 @@ import {
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NavBar } from "@/app/_components/navbar";
-import { getUsers } from "@/app/_actions/get-users";
+import { getUsers } from "@/app/_actions/user/get-users";
 import { getRoles } from "@/app/_actions/permissions/get-roles";
 import { createRole } from "@/app/_actions/permissions/create-role";
 import { PermissionsSection } from "./permissions";
 import { updateUserRole } from "@/app/_actions/permissions/update-user-role";
 import { deleteRole } from "@/app/_actions/permissions/delete-role";
-import { getUser } from "@/app/_actions/getUser";
+import { getUser } from "@/app/_actions/user/getUser";
 
 type Role = {
   id: string;
@@ -441,22 +441,22 @@ export default function AdminDashboard() {
           </div>
 
           <Tabs defaultValue="users" className="w-full">
-            {/* <TabsList className="grid w-full grid-cols-1">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger
                 value="users"
                 className="flex items-center gap-2 cursor-pointer w-full"
               >
                 <Users className="h-4" />
                 Gerenciar Usuários
-              </TabsTrigger> */}
-            {/* <TabsTrigger
+              </TabsTrigger>
+              <TabsTrigger
                 value="permissions"
                 className="flex items-center gap-2 cursor-pointer"
               >
                 <Settings className="h-4" />
                 Gerenciar Permissões
-              </TabsTrigger> */}
-            {/* </TabsList> */}
+              </TabsTrigger>
+            </TabsList>
 
             <TabsContent value="users" className="space-y-6">
               <Card>
@@ -719,7 +719,6 @@ export default function AdminDashboard() {
                     </Table>
                   </div>
 
-                  {/* Cards para mobile */}
                   <div className="md:hidden space-y-3">
                     {filteredUsers.map((user) => (
                       <Card key={user.id} className="border border-border">

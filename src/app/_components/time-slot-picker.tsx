@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import { Period, Scheduling } from "@prisma/client";
 import { useEffect, useState } from "react";
-import { getSchedulingById } from "../_actions/get-scheduling-by-id";
+import { getSchedulingById } from "../_actions/scheduling/get-scheduling-by-id";
 import { format, isSameDay } from "date-fns";
 interface TimeSlotPickerProps {
   date: Date;

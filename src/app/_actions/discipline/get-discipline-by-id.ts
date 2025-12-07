@@ -1,4 +1,3 @@
-// _actions/get-discipline-by-id.ts
 "use server";
 
 import { db } from "@/lib/prisma";

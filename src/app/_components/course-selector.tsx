@@ -8,9 +8,9 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getIconByName } from "../_helpers/getIconByName";
 import { Period } from "@prisma/client";
-import { getUser } from "../_actions/getUser";
-import { getTeacherByUserId } from "../_actions/get-teacher-by-user-id";
-import { getTeacherCourses } from "../_actions/get-teacher-courses";
+import { getUser } from "../_actions/user/getUser";
+import { getTeacherByUserId } from "../_actions/teacher/get-teacher-by-user-id";
+import { getTeacherCourses } from "../_actions/teacher/get-teacher-courses";
 
 export interface Course {
   id: string;

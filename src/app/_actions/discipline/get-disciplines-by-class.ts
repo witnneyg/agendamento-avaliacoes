@@ -17,7 +17,6 @@ export async function getDisciplinesByClass(
               status: "ACTIVE",
             },
             include: {
-              // Incluir TODOS os professores da disciplina
               teachers: {
                 where: {
                   status: "ACTIVE",
@@ -38,7 +37,6 @@ export async function getDisciplinesByClass(
     return [];
   }
 
-  // Filtra disciplinas compatíveis com os períodos do curso
   const compatibleDisciplines = classData.semester.disciplines.filter(
     (discipline) =>
       discipline.dayPeriods.some((period) =>
@@ -46,7 +44,6 @@ export async function getDisciplinesByClass(
       )
   );
 
-  // Se teacherId for fornecido, filtra apenas as disciplinas desse professor
   if (teacherId) {
     const teacherDisciplines = compatibleDisciplines.filter((discipline) =>
       discipline.teachers.some((teacher) => teacher.id === teacherId)

@@ -1,4 +1,3 @@
-// _actions/update-course.ts
 "use server";
 
 import { db } from "@/lib/prisma";

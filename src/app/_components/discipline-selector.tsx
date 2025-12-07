@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getDisciplinesByClass } from "../_actions/get-disciplines-by-class";
+import { getDisciplinesByClass } from "../_actions/discipline/get-disciplines-by-class";
 import { Discipline } from "@prisma/client";
 import { getOrderedPeriods } from "../_helpers/getOrderedPeriods";
 

@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getClassesByCourse } from "../_actions/get-class-by-course-id";
 import { Class } from "@prisma/client";
-import { getClassBySemesterId } from "../_actions/get-class-by-semester-id";
+import { getClassBySemesterId } from "../_actions/classes/get-class-by-semester-id";
 
 interface ClassSelectorProps {
   semesterId: string;

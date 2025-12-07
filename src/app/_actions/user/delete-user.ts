@@ -42,12 +42,6 @@ export async function deleteUser(userId: string) {
       message: `Usuário "${existingUser.name}" excluído com sucesso`,
     };
   } catch (error) {
-    console.error("Erro ao excluir usuário:", error);
-
-    if (error instanceof Error) {
-      throw new Error(`Falha ao excluir o usuário: ${error.message}`);
-    }
-
     throw new Error("Falha ao excluir o usuário");
   }
 }

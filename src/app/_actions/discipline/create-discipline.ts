@@ -8,7 +8,6 @@ interface CreateTeacherInput {
   courseId: string;
   semesterId: string;
   dayPeriods: Period[];
-  // classId: string;
 }
 
 export async function createDiscipline({
@@ -16,7 +15,6 @@ export async function createDiscipline({
   courseId,
   semesterId,
   dayPeriods,
-  // classId,
 }: CreateTeacherInput) {
   return db.discipline.create({
     data: {
@@ -29,14 +27,10 @@ export async function createDiscipline({
         connect: { id: semesterId },
       },
       dayPeriods: dayPeriods,
-      // class: {
-      //   connect: { id: classId },
-      // },
     },
     include: {
       courses: true,
       semester: true,
-      // class: true,
     },
   });
 }

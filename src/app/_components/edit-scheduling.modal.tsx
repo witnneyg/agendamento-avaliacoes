@@ -19,8 +19,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { updateScheduling } from "../_actions/update-scheduling";
-import { getScheduling } from "../_actions/get-scheduling";
+import { updateScheduling } from "../_actions/scheduling/update-scheduling";
+import { getScheduling } from "../_actions/scheduling/get-scheduling";
 
 interface EditSchedulingModalProps {
   appointment: any;
@@ -109,7 +109,6 @@ const generateTimeSlotsAndCheckAvailability = (
       period: period as Period,
       slots: slots.map((slot) => {
         const isTaken = scheduledTimes.some((scheduling) => {
-          // SEMPRE permite editar o agendamento atual
           if (scheduling.id === currentAppointmentId) {
             return false;
           }
@@ -170,7 +169,6 @@ const hasEnoughAvailableSlots = (
 ): boolean => {
   if (!date) return false;
 
-  // Se for a mesma data, sempre permite (usuário pode estar apenas trocando horários)
   if (originalAppointmentDate && isSameDay(originalAppointmentDate, date)) {
     return true;
   }
@@ -230,8 +228,6 @@ export const EditSchedulingModal = ({
       time: extractCurrentTimeSlots(appointment),
     },
   });
-
-  const watchedDate = watch("date");
 
   const updateTimeSlots = () => {
     if (!selectedDate || scheduledTimes.length === 0) return;
@@ -324,7 +320,6 @@ export const EditSchedulingModal = ({
     setSelectedDate(date);
     if (date) {
       setValue("date", date);
-      // Limpa os horários selecionados ao mudar de data
       setValue("time", []);
     }
   };

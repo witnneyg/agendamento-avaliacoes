@@ -13,13 +13,13 @@ import { BookingForm } from "./booking-form";
 import { BookingConfirmation } from "./booking-confirmation";
 import { DisciplineSelector } from "./discipline-selector";
 import { Semester, SemesterSelector } from "./semester-selector";
-import { createScheduling } from "../_actions/create-schedule";
+import { createScheduling } from "../_actions/scheduling/create-schedule";
 import { TimePeriod } from "./time-period.selector";
-import { getUser } from "../_actions/getUser";
+import { getUser } from "../_actions/user/getUser";
 import { Class, Discipline, User } from "@prisma/client";
-import { ClassSelector } from "./class-selector";
+import { ClassSelector } from "./classes-selector";
 import { sendSchedulingEmail } from "../_actions/send-scheduling-email";
-import { getTeacherByUserId } from "../_actions/get-teacher-by-user-id";
+import { getTeacherByUserId } from "../_actions/teacher/get-teacher-by-user-id";
 
 type Step =
   | "course"
@@ -193,11 +193,12 @@ export function Scheduling() {
             teacherId={teacherId}
           />
         )}
-        {step === "period" && selectedCourse && (
+        {step === "period" && selectedCourse && teacherId && (
           <SemesterSelector
             courseId={selectedCourse.id}
             onSelectSemester={handleSelectSemester}
             onBack={() => setStep("course")}
+            teacherId={teacherId}
           />
         )}
         {step === "class" && selectedSemester && (

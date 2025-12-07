@@ -1,4 +1,3 @@
-// app/_actions/get-classes.ts
 "use server";
 
 import { db } from "@/lib/prisma";
@@ -8,7 +7,6 @@ export async function getClasses() {
     include: {
       course: true,
       semester: true,
-      // disciplines: true,
     },
     orderBy: { createdAt: "desc" },
   });

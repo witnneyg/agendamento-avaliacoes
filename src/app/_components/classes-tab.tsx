@@ -51,16 +51,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Edit, Trash2, Loader2, Search, Filter, X } from "lucide-react";
 
-import { getSemesterByCourse } from "@/app/_actions/get-semester-by-course-selected";
-import { getDisciplinesBySemester } from "@/app/_actions/get-disciplines-by-semester";
-import { createClasses } from "@/app/_actions/create-classes";
-import { getClasses } from "@/app/_actions/get-classes";
-import { deleteClass } from "@/app/_actions/delete-classes";
+import { getDisciplinesBySemester } from "@/app/_actions/discipline/get-disciplines-by-semester";
+import { createClasses } from "@/app/_actions/classes/create-classes";
+import { getClasses } from "@/app/_actions/classes/get-classes";
+import { deleteClass } from "@/app/_actions/classes/delete-classes";
 
 import type { Course, Prisma, Semester } from "@prisma/client";
 import type { DisciplineWithRelations } from "./disciplines-tab";
-import { updateClass } from "../_actions/update-classes";
-import { getCourses } from "../_actions/get-coursers";
+import { updateClass } from "../_actions/classes/update-classes";
+import { getCourses } from "../_actions/coursers/get-coursers";
+import { getSemesterByCourse } from "../_actions/semesters/get-semester-by-course-selected";
 
 export type ClassesWithRelations = Prisma.ClassGetPayload<{
   include: { course: true; semester: true };
@@ -81,7 +81,6 @@ export function ClassesTab() {
   >([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [semesters, setSemesters] = useState<Semester[]>([]);
-  const [disciplines, setDisciplines] = useState<DisciplineWithRelations[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<ClassesWithRelations | null>(
     null
@@ -168,21 +167,6 @@ export function ClassesTab() {
 
     fetchSemesters();
   }, [selectedCourseId]);
-
-  useEffect(() => {
-    if (!selectedSemesterId) {
-      setDisciplines([]);
-      return;
-    }
-
-    async function fetchDisciplines() {
-      const disciplinesData =
-        await getDisciplinesBySemester(selectedSemesterId);
-      setDisciplines(disciplinesData as any);
-    }
-
-    fetchDisciplines();
-  }, [selectedSemesterId]);
 
   const onSubmit = async (data: ClassForm) => {
     if (isSubmitting) return;

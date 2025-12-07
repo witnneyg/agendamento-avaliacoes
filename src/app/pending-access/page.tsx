@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Shield, Clock, Loader2, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { checkUserAccess } from "../_actions/permissions/check-user-access";
 
 export default function PendingAccessPage() {

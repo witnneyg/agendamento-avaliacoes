@@ -5,8 +5,8 @@ import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { createCourse } from "@/app/_actions/create-course";
-import { deleteCourse } from "@/app/_actions/delete-course";
+import { createCourse } from "@/app/_actions/coursers/create-course";
+import { deleteCourse } from "@/app/_actions/coursers/delete-course";
 import type { Course } from "@prisma/client";
 
 import { Button } from "@/components/ui/button";
@@ -43,8 +43,8 @@ import {
 } from "@/components/ui/select";
 
 import { Plus, Edit, Trash2, Clock, Calendar, Loader2 } from "lucide-react";
-import { updateCourse } from "../_actions/update-course";
-import { getCourses } from "../_actions/get-coursers";
+import { updateCourse } from "../_actions/coursers/update-course";
+import { getCourses } from "../_actions/coursers/get-coursers";
 
 type Period = "MORNING" | "AFTERNOON" | "EVENING";
 
@@ -101,7 +101,6 @@ export function CoursesTab() {
       try {
         const data = await getCourses();
 
-        // Ordena os cursos em ordem alfabética crescente
         const sortedCourses = [...data].sort((a, b) =>
           a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" })
         );
@@ -135,7 +134,6 @@ export function CoursesTab() {
 
       const refreshedCourses = await getCourses();
 
-      // Ordena os cursos atualizados também
       const sortedCourses = [...refreshedCourses].sort((a, b) =>
         a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" })
       );
@@ -177,7 +175,6 @@ export function CoursesTab() {
 
       const refreshedCourses = await getCourses();
 
-      // Ordena os cursos após a deleção também
       const sortedCourses = [...refreshedCourses].sort((a, b) =>
         a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" })
       );

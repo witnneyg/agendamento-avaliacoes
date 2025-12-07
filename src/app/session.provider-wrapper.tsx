@@ -111,7 +111,6 @@ function AccessController({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
-  // Loading
   if (status === "loading" || !accessChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">

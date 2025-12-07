@@ -32,7 +32,6 @@ export async function getTeacherCourses(teacherId: string) {
 
     return teacher.courses;
   } catch (error) {
-    console.error("Erro ao buscar cursos do professor:", error);
     throw new Error("Erro ao carregar cursos do professor");
   }
 }

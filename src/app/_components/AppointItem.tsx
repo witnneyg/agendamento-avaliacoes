@@ -22,27 +22,12 @@ import {
 } from "../calendar/page";
 import { EditSchedulingModal } from "./edit-scheduling.modal";
 
-const getPeriodLabel = (period: string) => {
-  switch (period) {
-    case "MORNING":
-      return "Matutino";
-    case "AFTERNOON":
-      return "Vespertino";
-    case "EVENING":
-      return "Noturno";
-    default:
-      return period;
-  }
-};
-
 const extractSemesterNumber = (semesterName: string): string => {
-  // Extrai o número do período usando regex
   const numberMatch = semesterName.match(/^(\d+)/);
   if (numberMatch) {
     return `${numberMatch[1]}° período`;
   }
 
-  // Verifica números por extenso
   if (semesterName.match(/Primeiro|primeiro|1/i)) {
     return "1° período";
   } else if (semesterName.match(/Segundo|segundo|2/i)) {
@@ -60,12 +45,8 @@ const extractSemesterNumber = (semesterName: string): string => {
   } else if (semesterName.match(/Oitavo|oitavo|8/i)) {
     return "8° período";
   }
-
-  // Se não encontrar um número padrão, retorna o nome original
   return semesterName;
 };
-
-const periodOrder = ["MORNING", "AFTERNOON", "EVENING"];
 
 const extractTimeSlots = (appointment: SchedulingWithRelations) => {
   try {
@@ -92,7 +73,6 @@ const extractTimeSlots = (appointment: SchedulingWithRelations) => {
         .padStart(2, "0")}:${endTime.getMinutes().toString().padStart(2, "0")}`,
     ];
   } catch (error) {
-    console.error("Erro ao extrair horários:", error);
     return [];
   }
 };
@@ -280,7 +260,6 @@ export const AppointmentItem = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Diálogo de exclusão */}
       <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
@@ -319,7 +298,6 @@ export const AppointmentItem = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Modal de edição */}
       <EditSchedulingModal
         appointment={appointment}
         isOpen={isEditOpen}

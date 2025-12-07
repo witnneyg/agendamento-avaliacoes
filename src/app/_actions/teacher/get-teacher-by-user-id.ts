@@ -25,7 +25,6 @@ export async function getTeacherByUserId(userId: string) {
 
     return teacher;
   } catch (error) {
-    console.error("Erro ao buscar professor:", error);
     return null;
   }
 }

@@ -1,4 +1,3 @@
-// app/_actions/update-discipline.ts
 "use server";
 
 import { db } from "@/lib/prisma";
@@ -14,7 +13,6 @@ interface UpdateDisciplineData {
 
 export async function updateDiscipline(data: UpdateDisciplineData) {
   try {
-    // Verificar se a disciplina existe
     const existingDiscipline = await db.discipline.findUnique({
       where: { id: data.id },
       include: {
@@ -26,17 +24,15 @@ export async function updateDiscipline(data: UpdateDisciplineData) {
       throw new Error("Disciplina não encontrada");
     }
 
-    // Atualizar a disciplina
     const updatedDiscipline = await db.discipline.update({
       where: { id: data.id },
       data: {
         name: data.name,
         semesterId: data.semesterId,
         dayPeriods: data.dayPeriods,
-        // Atualizar a relação com cursos
         courses: {
-          set: [], // Remove todos os cursos atuais
-          connect: [{ id: data.courseId }], // Conecta o novo curso
+          set: [],
+          connect: [{ id: data.courseId }],
         },
       },
       include: {

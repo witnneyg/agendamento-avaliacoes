@@ -32,7 +32,6 @@ export async function getUsers() {
 
     return usersWithTeachers;
   } catch (error) {
-    console.error("Erro ao buscar usuários:", error);
     throw new Error("Falha ao carregar usuários");
   }
 }

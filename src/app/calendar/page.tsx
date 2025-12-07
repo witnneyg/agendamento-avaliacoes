@@ -15,20 +15,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
 import { NavBar } from "../_components/navbar";
 import { ptBR } from "date-fns/locale";
-import { getUserCourses } from "../_actions/get-user-courses";
-import { getScheduling } from "../_actions/get-scheduling";
-import { deleteSchedule } from "../_actions/delete-schedule";
+import { getUserCourses } from "../_actions/user/get-user-courses";
+import { getScheduling } from "../_actions/scheduling/get-scheduling";
+import { deleteSchedule } from "../_actions/scheduling/delete-schedule";
 import type {
   Scheduling,
   Course,
@@ -37,7 +31,7 @@ import type {
   User,
   Class,
 } from "@prisma/client";
-import { getUser } from "../_actions/getUser";
+import { getUser } from "../_actions/user/getUser";
 import { AppointmentItem } from "../_components/AppointItem";
 import { getDepartmentColor } from "@/utils/getDepartamentColor";
 
@@ -100,8 +94,7 @@ export default function CalendarPage() {
   >({});
   const [user, setUser] = useState<UserWithoutEmailVerified | null>(null);
   const [view, setView] = useState<"week" | "day" | "fortnight">("week");
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Estado para controlar sidebar
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const router = useRouter();
 
   const daysToShow = view === "week" ? 7 : view === "day" ? 1 : 14;
@@ -304,7 +297,6 @@ export default function CalendarPage() {
     <div className="min-h-screen flex flex-col">
       <NavBar />
       <div className="flex flex-1">
-        {/* Sidebar Desktop com toggle */}
         <aside
           className={cn(
             "border-r p-4 flex-col overflow-y-auto bg-background transition-all duration-300 ease-in-out",

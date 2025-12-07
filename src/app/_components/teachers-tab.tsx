@@ -52,21 +52,20 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-import { getTeachers } from "@/app/_actions/get-teacher";
-import { getDisciplinesByCourseId } from "@/app/_actions/get-discipline-by-course-id";
-import { createTeacher } from "@/app/_actions/create-teacher";
-import { getUsers } from "@/app/_actions/get-users";
+import { getTeachers } from "@/app/_actions/teacher/get-teacher";
+import { getDisciplinesByCourseId } from "@/app/_actions/discipline/get-discipline-by-course-id";
+import { createTeacher } from "@/app/_actions/teacher/create-teacher";
+import { getUsers } from "@/app/_actions/user/get-users";
 import type {
   Course,
   Discipline,
   Prisma,
   User as UserType,
-  Role,
 } from "@prisma/client";
 import { translateTeacherStatus } from "@/utils/translate-teacher-status";
-import { updateTeacher } from "../_actions/update-teacher";
+import { updateTeacher } from "../_actions/teacher/update-teacher";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { getCourses } from "../_actions/get-coursers";
+import { getCourses } from "../_actions/coursers/get-coursers";
 
 type TeacherWithRelations = Prisma.TeacherGetPayload<{
   include: { courses: true; disciplines: true };
@@ -146,7 +145,6 @@ export function TeachersTab() {
   const selectedDisciplineIds = watch("disciplineIds");
   const selectedUserId = watch("userId");
 
-  // Função para limpar completamente o formulário
   const clearForm = () => {
     reset({
       userId: "",
@@ -175,7 +173,6 @@ export function TeachersTab() {
     )
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  // Filtra apenas usuários com role PROFESSOR
   const filteredUsers = users
     .filter((user) => {
       const hasProfessorRole = user.roles.some(
@@ -1010,7 +1007,6 @@ export function TeachersTab() {
                 )}
               </div>
 
-              {/* SEÇÃO DE STATUS - COM ALERTA PARA INACTIVE */}
               <div className="space-y-3">
                 <Label>Status do Professor</Label>
                 <Controller

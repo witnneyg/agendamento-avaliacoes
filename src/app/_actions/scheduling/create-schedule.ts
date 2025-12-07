@@ -3,8 +3,6 @@
 import { db } from "@/lib/prisma";
 
 export async function createScheduling(data: any) {
-  // Verificar conflitos para todo o período do agendamento
-
   const hasConflict = await db.scheduling.findFirst({
     where: {
       date: data.date,
@@ -18,7 +16,6 @@ export async function createScheduling(data: any) {
           endTime: { gt: data.startTime },
         },
       ],
-      // Não verificar o próprio agendamento se estiver editando
       ...(data.id && { id: { not: data.id } }),
     },
   });
@@ -43,8 +40,6 @@ export async function createScheduling(data: any) {
       details: data.details,
     },
   });
-
-  console.log({ scheduling });
 
   return scheduling;
 }

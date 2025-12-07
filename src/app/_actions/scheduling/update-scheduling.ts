@@ -25,7 +25,6 @@ export async function updateScheduling({
   updatedAppointments,
 }: UpdateSchedulingInput) {
   try {
-    // 1. Verificar se o agendamento existe
     const existingAppointment = await db.scheduling.findUnique({
       where: { id: appointmentId },
     });
@@ -34,7 +33,6 @@ export async function updateScheduling({
       return { success: false, error: "Agendamento não encontrado" };
     }
 
-    // 2. Atualizar o agendamento existente
     const updatedAppointment = await db.scheduling.update({
       where: { id: appointmentId },
       data: {

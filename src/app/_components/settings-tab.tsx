@@ -32,9 +32,7 @@ export function SettingsTab() {
   });
 
   const handleSave = () => {
-    // Em um aplicativo real, isso salvaria no backend
     console.log("Configurações salvas:", settings);
-    // Mostrar mensagem de sucesso
   };
 
   return (
