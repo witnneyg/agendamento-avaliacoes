@@ -135,7 +135,7 @@ export default function AdminDashboard() {
           getRoles(),
         ]);
 
-        const formattedUsers: User[] = usersData.map((user: any) => {
+        const formattedUsers: User[] = usersData!.map((user: any) => {
           const userRoles = Array.isArray(user.roles) ? user.roles : [];
 
           return {
@@ -251,7 +251,7 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error("Erro ao atualizar roles do usuário:", error);
       const [usersData] = await Promise.all([getUsers()]);
-      const refreshedUsers: User[] = usersData.map((user: any) => ({
+      const refreshedUsers: User[] = usersData!.map((user: any) => ({
         id: user.id,
         name: user.name,
         email: user.email,

@@ -32,12 +32,10 @@ export function CourseSelector({
 }: CourseSelectorProps) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchCourses() {
       setIsLoading(true);
-      setError(null);
       try {
         if (!teacherId && !filterByUser) {
           setCourses([]);
@@ -47,12 +45,12 @@ export function CourseSelector({
         let coursesData: Course[] = [];
 
         if (teacherId) {
-          coursesData = await getTeacherCourses(teacherId);
+          const data = await getTeacherCourses(teacherId);
+          coursesData = data || [];
         } else if (filterByUser) {
           const userData = await getUser();
 
           if (!userData) {
-            setError("Usuário não encontrado");
             setCourses([]);
             return;
           }
@@ -60,18 +58,19 @@ export function CourseSelector({
           const teacherData = await getTeacherByUserId(userData.id);
 
           if (!teacherData) {
-            setError("Professor não encontrado para este usuário");
             setCourses([]);
             return;
           }
 
-          coursesData = await getTeacherCourses(teacherData.id);
+          const data = await getTeacherCourses(teacherData.id);
+          coursesData = data || [];
         }
 
-        setCourses(coursesData || []);
+        setCourses(coursesData);
       } catch (error) {
-        console.error("Erro ao carregar cursos:", error);
-        setError("Erro ao carregar cursos. Tente novamente.");
+        if (error instanceof Error) {
+          throw new Error(error.message);
+        }
         setCourses([]);
       } finally {
         setIsLoading(false);
@@ -91,17 +90,6 @@ export function CourseSelector({
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-6 w-6 animate-spin" />
         <span className="ml-2">{loadingMessage}</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-8">
-        <div className="bg-destructive/10 p-4 rounded-lg max-w-md mx-auto">
-          <p className="text-destructive font-medium mb-2">Erro</p>
-          <p className="text-sm text-muted-foreground">{error}</p>
-        </div>
       </div>
     );
   }
