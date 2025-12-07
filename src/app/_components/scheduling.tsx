@@ -14,7 +14,6 @@ import { BookingConfirmation } from "./booking-confirmation";
 import { DisciplineSelector } from "./discipline-selector";
 import { Semester, SemesterSelector } from "./semester-selector";
 import { createScheduling } from "../_actions/scheduling/create-schedule";
-import { TimePeriod } from "./time-period.selector";
 import { getUser } from "../_actions/user/getUser";
 import { Class, Discipline, User } from "@prisma/client";
 import { ClassSelector } from "./classes-selector";

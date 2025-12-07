@@ -51,6 +51,7 @@ import {
   Loader2,
   Shield,
   UserX,
+  AlertCircle,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NavBar } from "@/app/_components/navbar";
@@ -87,6 +88,11 @@ type User = {
   } | null;
 };
 
+type CurrentUserType = {
+  id: string;
+  roles: Role[];
+} | null;
+
 export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
@@ -107,7 +113,7 @@ export default function AdminDashboard() {
   const [deleteRoleConfirmOpen, setDeleteRoleConfirmOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
   const [deletingRole, setDeletingRole] = useState(false);
-  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUserType>(null);
   const [removeAllRolesConfirmOpen, setRemoveAllRolesConfirmOpen] =
     useState(false);
   const [userToRemoveAllRoles, setUserToRemoveAllRoles] = useState<{
@@ -122,7 +128,10 @@ export default function AdminDashboard() {
         setError(null);
 
         const currentUserData = await getUser();
-        setCurrentUser(currentUserData.id);
+        setCurrentUser({
+          id: currentUserData.id,
+          roles: currentUserData.roles || [],
+        });
 
         const [usersData, rolesData] = await Promise.all([
           getUsers(),
@@ -155,6 +164,10 @@ export default function AdminDashboard() {
 
     fetchData();
   }, []);
+
+  const isAdmin = currentUser?.roles?.some(
+    (role) => role.name === "ADMIN" || role.name === "DIRECAO"
+  );
 
   const getRoleBadgeVariant = (roleName: string) => {
     const variantMap: {
@@ -190,6 +203,11 @@ export default function AdminDashboard() {
   };
 
   const handleRoleToggle = async (userId: string, roleId: string) => {
+    if (!isAdmin) {
+      alert("Apenas administradores podem gerenciar acessos de usuários.");
+      return;
+    }
+
     const user = users.find((u) => u.id === userId);
     if (!user) return;
 
@@ -251,6 +269,11 @@ export default function AdminDashboard() {
   };
 
   const handleRemoveAllRoles = (userId: string) => {
+    if (!isAdmin) {
+      alert("Apenas administradores podem remover acessos de usuários.");
+      return;
+    }
+
     const user = users.find((u) => u.id === userId);
     if (!user) return;
 
@@ -298,11 +321,21 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteRoleClick = (role: Role) => {
+    if (!isAdmin) {
+      alert("Apenas administradores podem excluir acessos do sistema.");
+      return;
+    }
+
     setRoleToDelete(role);
     setDeleteRoleConfirmOpen(true);
   };
 
   const handleRemoveRole = (userId: string, roleId: string) => {
+    if (!isAdmin) {
+      alert("Apenas administradores podem remover acessos de usuários.");
+      return;
+    }
+
     const user = users.find((u) => u.id === userId);
     const role = roles.find((r) => r.id === roleId);
 
@@ -433,9 +466,6 @@ export default function AdminDashboard() {
                 <h1 className="text-xl sm:text-3xl font-bold text-foreground">
                   Gerenciamento de Usuários
                 </h1>
-                <p className="text-sm sm:text-base text-muted-foreground">
-                  {users.length} usuário(s) encontrado(s)
-                </p>
               </div>
             </div>
           </div>
@@ -463,7 +493,7 @@ export default function AdminDashboard() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Shield className="h-5 w-5" />
-                    Gerenciar Acessos
+                    Gerenciar Acessos do Sistema
                   </CardTitle>
                   <CardDescription>
                     Crie novos acessos ou exclua acessos existentes do sistema
