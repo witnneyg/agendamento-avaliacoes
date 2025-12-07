@@ -9,13 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { UserCheck, Clock, Loader2, RefreshCw } from "lucide-react";
+import { UserCheck, Clock, Loader2 } from "lucide-react";
 import { checkUserAccess } from "../_actions/permissions/check-user-access";
 
 export default function PendingActivationPage() {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(false);
-  const [lastChecked, setLastChecked] = useState<Date | null>(null);
 
   useEffect(() => {
     checkStatus();
@@ -54,26 +53,12 @@ export default function PendingActivationPage() {
           return;
         }
       }
-
-      setLastChecked(new Date());
     } catch (error) {
       console.error("Erro ao verificar status:", error);
     } finally {
       setIsChecking(false);
     }
   }
-
-  async function handleManualRefresh() {
-    await checkStatus();
-  }
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-100 p-4">

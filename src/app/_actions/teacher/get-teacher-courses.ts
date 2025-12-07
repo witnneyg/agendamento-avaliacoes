@@ -32,6 +32,8 @@ export async function getTeacherCourses(teacherId: string) {
 
     return teacher.courses;
   } catch (error) {
-    throw new Error("Erro ao carregar cursos do professor");
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
   }
 }

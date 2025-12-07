@@ -25,6 +25,8 @@ export async function getTeacherByUserId(userId: string) {
 
     return teacher;
   } catch (error) {
-    return null;
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
   }
 }

@@ -7,7 +7,7 @@ import { Course } from "./course-selector";
 import { Semester } from "./semester-selector";
 import { ptBR } from "date-fns/locale";
 import { useRouter } from "next/navigation";
-import { Class, Discipline, User } from "@prisma/client";
+import { Class, Discipline } from "@prisma/client";
 import { getUser } from "../_actions/user/getUser";
 import { useEffect, useState } from "react";
 

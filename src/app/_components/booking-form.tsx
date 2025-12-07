@@ -130,8 +130,9 @@ export const generateTimeSlotsAndCheckAvailability = (
             const existingTimeSlot = `${schedulingStartTime} - ${schedulingEndTime}`;
             return existingTimeSlot === slot;
           } catch (error) {
-            console.error("Erro ao verificar horário ocupado:", error);
-            return false;
+            if (error instanceof Error) {
+              throw new Error(error.message);
+            }
           }
         });
 
@@ -170,7 +171,9 @@ const checkExistingAppointments = (
         scheduling.disciplineId === disciplineId
       );
     } catch (error) {
-      return false;
+      if (error instanceof Error) {
+        throw new Error(error.message);
+      }
     }
   });
 
@@ -239,7 +242,9 @@ export function BookingForm({
         const data = await getDisciplineById(disciplineId);
         setDisciplineData(data);
       } catch (error) {
-        console.error("Erro ao carregar dados da disciplina:", error);
+        if (error instanceof Error) {
+          throw new Error(error.message);
+        }
       }
     }
 
@@ -308,7 +313,9 @@ export function BookingForm({
         const data = await getSchedulingBySemester(semesterId);
         setSchedulingTimes(data);
       } catch (error) {
-        console.error(error);
+        if (error instanceof Error) {
+          throw new Error(error.message);
+        }
       }
     }
     fetchSchedulingTimes();

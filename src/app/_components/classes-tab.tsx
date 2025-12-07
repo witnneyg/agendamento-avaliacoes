@@ -51,13 +51,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Edit, Trash2, Loader2, Search, Filter, X } from "lucide-react";
 
-import { getDisciplinesBySemester } from "@/app/_actions/discipline/get-disciplines-by-semester";
 import { createClasses } from "@/app/_actions/classes/create-classes";
 import { getClasses } from "@/app/_actions/classes/get-classes";
 import { deleteClass } from "@/app/_actions/classes/delete-classes";
 
 import type { Course, Prisma, Semester } from "@prisma/client";
-import type { DisciplineWithRelations } from "./disciplines-tab";
 import { updateClass } from "../_actions/classes/update-classes";
 import { getCourses } from "../_actions/coursers/get-coursers";
 import { getSemesterByCourse } from "../_actions/semesters/get-semester-by-course-selected";
@@ -99,7 +97,6 @@ export function ClassesTab() {
     control,
     handleSubmit,
     watch,
-    setValue,
     reset,
     formState: { errors },
   } = useForm<ClassForm>({
@@ -112,7 +109,6 @@ export function ClassesTab() {
   });
 
   const selectedCourseId = watch("courseId");
-  const selectedSemesterId = watch("semesterId");
 
   useEffect(() => {
     async function fetchData() {

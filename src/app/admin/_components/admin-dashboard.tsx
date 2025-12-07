@@ -51,7 +51,6 @@ import {
   Loader2,
   Shield,
   UserX,
-  AlertCircle,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NavBar } from "@/app/_components/navbar";
@@ -99,7 +98,6 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [removeRoleConfirmOpen, setRemoveRoleConfirmOpen] = useState(false);
   const [roleToRemove, setRoleToRemove] = useState<{
     userId: string;
@@ -125,7 +123,6 @@ export default function AdminDashboard() {
     async function fetchData() {
       try {
         setLoading(true);
-        setError(null);
 
         const currentUserData = await getUser();
         setCurrentUser({
@@ -155,8 +152,9 @@ export default function AdminDashboard() {
         setUsers(formattedUsers);
         setRoles(rolesData);
       } catch (error) {
-        console.error("Erro ao buscar dados:", error);
-        setError("Erro ao carregar dados. Tente novamente.");
+        if (error instanceof Error) {
+          throw new Error(error.message);
+        }
       } finally {
         setLoading(false);
       }

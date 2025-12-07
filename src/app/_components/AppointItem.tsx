@@ -73,7 +73,9 @@ const extractTimeSlots = (appointment: SchedulingWithRelations) => {
         .padStart(2, "0")}:${endTime.getMinutes().toString().padStart(2, "0")}`,
     ];
   } catch (error) {
-    return [];
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
   }
 };
 
@@ -85,7 +87,6 @@ interface AppointmentItemProps {
     updatedAppointments: Partial<SchedulingWithRelations>[]
   ) => void;
   onAppointmentDeleted?: (deletedId: string) => void;
-  onRefreshAppointments?: () => Promise<void>;
 }
 
 export const AppointmentItem = ({
@@ -94,7 +95,6 @@ export const AppointmentItem = ({
   userSession,
   onAppointmentUpdated,
   onAppointmentDeleted,
-  onRefreshAppointments,
 }: AppointmentItemProps) => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);

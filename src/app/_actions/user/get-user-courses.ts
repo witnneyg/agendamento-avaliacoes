@@ -53,6 +53,8 @@ export async function getUserCourses() {
       return courses;
     }
   } catch (error) {
-    throw new Error("Falha ao buscar cursos");
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
   }
 }

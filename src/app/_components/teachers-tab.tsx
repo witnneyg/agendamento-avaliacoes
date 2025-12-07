@@ -56,12 +56,7 @@ import { getTeachers } from "@/app/_actions/teacher/get-teacher";
 import { getDisciplinesByCourseId } from "@/app/_actions/discipline/get-discipline-by-course-id";
 import { createTeacher } from "@/app/_actions/teacher/create-teacher";
 import { getUsers } from "@/app/_actions/user/get-users";
-import type {
-  Course,
-  Discipline,
-  Prisma,
-  User as UserType,
-} from "@prisma/client";
+import type { Course, Discipline, Prisma } from "@prisma/client";
 import { translateTeacherStatus } from "@/utils/translate-teacher-status";
 import { updateTeacher } from "../_actions/teacher/update-teacher";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -357,11 +352,6 @@ export function TeachersTab() {
         alert("Usuário selecionado não encontrado");
         return;
       }
-
-      // Verifica se o usuário tem a role PROFESSOR
-      const hasProfessorRole = selectedUser.roles.some(
-        (role) => role.name === "PROFESSOR" || role.name === "professor"
-      );
 
       if (
         data.status === "INACTIVE" &&
@@ -894,9 +884,6 @@ export function TeachersTab() {
                             const courseDisciplineIds =
                               availableDisciplines.map((d) => d.id);
                             const allSelected = courseDisciplineIds.every(
-                              (id) => selectedDisciplineIds.includes(id)
-                            );
-                            const someSelected = courseDisciplineIds.some(
                               (id) => selectedDisciplineIds.includes(id)
                             );
 

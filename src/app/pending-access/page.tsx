@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Shield, Clock, Loader2, RefreshCw } from "lucide-react";
+import { Shield, Clock, Loader2 } from "lucide-react";
 import { checkUserAccess } from "../_actions/permissions/check-user-access";
 
 export default function PendingAccessPage() {
@@ -50,10 +50,6 @@ export default function PendingAccessPage() {
     } finally {
       setIsChecking(false);
     }
-  }
-
-  async function handleManualRefresh() {
-    await checkStatus();
   }
 
   return (

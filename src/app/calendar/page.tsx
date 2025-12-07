@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { format, startOfWeek, addDays, isSameDay } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, Filter, Menu, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Menu, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -192,9 +192,11 @@ export default function CalendarPage() {
       const coursesData = await getUserCourses();
       const schedulingData = await getScheduling();
       setSchedulingCourses(schedulingData as any);
-      setAcademicCourses(coursesData);
+      setAcademicCourses(coursesData as any);
 
-      const savedDepartments = loadVisibleDepartmentsFromStorage(coursesData);
+      const savedDepartments = loadVisibleDepartmentsFromStorage(
+        coursesData as any
+      );
       setVisibleDepartments(savedDepartments);
     }
 

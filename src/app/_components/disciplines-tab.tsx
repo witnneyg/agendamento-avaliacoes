@@ -92,7 +92,6 @@ export default function DisciplinesTab() {
     DisciplineWithRelations[]
   >([]);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDiscpline, setEditingDiscispline] =
@@ -103,7 +102,7 @@ export default function DisciplinesTab() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [refreshCounter, setRefreshCounter] = useState(0);
+  let refreshCounter = 0;
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCourseFilter, setSelectedCourseFilter] = useState("");
@@ -127,7 +126,6 @@ export default function DisciplinesTab() {
   });
 
   const selectedCourseId = watch("courseId");
-  const selectedSemesterId = watch("semesterId");
 
   useEffect(() => {
     async function fetchData() {
@@ -157,18 +155,6 @@ export default function DisciplinesTab() {
     }
     fetchSemesters();
   }, [selectedCourseId]);
-
-  useEffect(() => {
-    async function fetchClasses() {
-      if (!selectedSemesterId) {
-        setClasses([]);
-        return;
-      }
-      const classesData = await getClassBySemesterId(selectedSemesterId);
-      setClasses(classesData);
-    }
-    fetchClasses();
-  }, [selectedSemesterId]);
 
   useEffect(() => {
     let filtered = disciplinas;
@@ -225,6 +211,9 @@ export default function DisciplinesTab() {
       setEditingDiscispline(null);
       setIsDialogOpen(false);
     } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(error.message);
+      }
     } finally {
       setIsSubmitting(false);
     }

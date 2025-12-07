@@ -6,7 +6,6 @@ import { TeachersTab } from "../_components/teachers-tab";
 import { CoursesTab } from "../_components/coursers-tab";
 import DisciplinesTab from "../_components/disciplines-tab";
 import { ClassesTab } from "../_components/classes-tab";
-import { SettingsTab } from "../_components/settings-tab";
 import { NavBar } from "../_components/navbar";
 
 export default function AdminPage() {
