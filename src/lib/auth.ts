@@ -4,14 +4,13 @@ import EmailProvider from "next-auth/providers/email";
 import { db } from "./prisma";
 import { resend } from "@/app/api/email/config";
 import GoogleProvider from "next-auth/providers/google";
-import { signIn } from "next-auth/react";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
   providers: [
     EmailProvider({
       maxAge: 15 * 60,
-      async sendVerificationRequest({ identifier: email, url }) {
+      async sendVerificationRequest({ identifier: url }) {
         try {
           await resend.emails.send({
             from: `${process.env.EMAIL_FROM_EMAIL}`,
@@ -46,7 +45,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
 
-    async signIn({ user, account, profile }) {
+    async signIn({ account, profile }) {
       if (account?.provider === "google") {
         const email = profile?.email;
         if (
