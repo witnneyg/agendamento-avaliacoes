@@ -220,7 +220,6 @@ export function BookingForm({
     control,
     formState: { errors },
     setValue,
-    watch,
     resetField,
   } = useForm<BookingSchema>({
     resolver: zodResolver(bookingSchema),

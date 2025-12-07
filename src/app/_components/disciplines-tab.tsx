@@ -50,11 +50,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Edit, Trash2, Loader2, Search, Filter, X } from "lucide-react";
-import type { Class, Course, Period, Prisma, Semester } from "@prisma/client";
+import type { Course, Period, Prisma, Semester } from "@prisma/client";
 
 import { getDisciplines } from "@/app/_actions/discipline/get-disciplines";
 import { createDiscipline } from "@/app/_actions/discipline/create-discipline";
-import { getClassBySemesterId } from "@/app/_actions/classes/get-class-by-semester-id";
 import { getSemesterByCourse } from "@/app/_actions/semesters/get-semester-by-course-selected";
 import { deleteDiscipline } from "../_actions/discipline/delete-discipline";
 import { updateDiscipline } from "../_actions/discipline/update-discipline";
@@ -102,7 +101,6 @@ export default function DisciplinesTab() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  let refreshCounter = 0;
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCourseFilter, setSelectedCourseFilter] = useState("");
@@ -113,7 +111,6 @@ export default function DisciplinesTab() {
     handleSubmit,
     reset,
     watch,
-    setValue,
     formState: { errors },
   } = useForm<DisciplineFormData>({
     resolver: zodResolver(disciplineSchema),
@@ -142,7 +139,7 @@ export default function DisciplinesTab() {
       }
     }
     fetchData();
-  }, [refreshCounter]);
+  }, []);
 
   useEffect(() => {
     async function fetchSemesters() {
