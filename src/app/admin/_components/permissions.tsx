@@ -34,20 +34,15 @@ export function PermissionsSection() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [newPermissionName, setNewPermissionName] = useState("");
   const [creatingPermission, setCreatingPermission] = useState(false);
   const [updatingRole, setUpdatingRole] = useState<string | null>(null);
-  const [deletingPermissions, setDeletingPermissions] = useState<Set<string>>(
-    new Set()
-  );
 
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
-        setError(null);
 
         const [rolesData, permissionsData] = await Promise.all([
           getRoles(),
@@ -61,8 +56,9 @@ export function PermissionsSection() {
           setSelectedRole(rolesData[0].id);
         }
       } catch (error) {
-        console.error("Erro ao buscar dados:", error);
-        setError("Erro ao carregar dados. Tente novamente.");
+        if (error instanceof Error) {
+          throw new Error(error.message);
+        }
       } finally {
         setLoading(false);
       }
@@ -82,7 +78,9 @@ export function PermissionsSection() {
 
       setNewPermissionName("");
     } catch (error) {
-      console.error("Erro ao criar permissão:", error);
+      if (error instanceof Error) {
+        throw new Error(error.message);
+      }
     } finally {
       setCreatingPermission(false);
     }
@@ -159,8 +157,6 @@ export function PermissionsSection() {
     }
 
     try {
-      setDeletingPermissions((prev) => new Set(prev).add(permissionId));
-
       const result = await deletePermission(permissionId);
 
       if (result.success) {
@@ -181,12 +177,6 @@ export function PermissionsSection() {
     } catch (error) {
       console.error("Erro ao excluir permissão:", error);
       alert("Erro ao excluir permissão");
-    } finally {
-      setDeletingPermissions((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(permissionId);
-        return newSet;
-      });
     }
   };
 
