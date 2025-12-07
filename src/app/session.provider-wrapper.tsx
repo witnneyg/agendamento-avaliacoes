@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { ReactNode, useEffect, useState, useCallback } from "react";
 import { Loader2 } from "lucide-react";
 import { checkUserAccess } from "./_actions/permissions/check-user-access";
+import { getUser } from "./_actions/user/getUser";
 
 export function SessionProviderWrapper({ children }: { children: ReactNode }) {
   return (
@@ -16,11 +17,18 @@ export function SessionProviderWrapper({ children }: { children: ReactNode }) {
 
 const accessCache = new Map();
 
+const routePermissions: Record<string, string[]> = {
+  "/secretaria": ["SECRETARIA", "ADMIN"],
+  "/direcao": ["DIRETOR", "DIRECAO", "ADMIN"],
+  "/admin": ["ADMIN"],
+};
+
 function AccessController({ children }: { children: ReactNode }) {
   const { status, data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
   const [accessChecked, setAccessChecked] = useState(false);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
 
   const publicRoutes = [
     "/pending-access",
@@ -33,6 +41,19 @@ function AccessController({ children }: { children: ReactNode }) {
   const isPublicRoute = publicRoutes.some((route) =>
     pathname?.startsWith(route)
   );
+
+  const hasPermissionForRoute = (path: string, roles: string[]): boolean => {
+    const routeKey = Object.keys(routePermissions).find((route) =>
+      path.startsWith(route)
+    );
+
+    if (!routeKey) {
+      return true;
+    }
+
+    const requiredRoles = routePermissions[routeKey];
+    return roles.some((role) => requiredRoles.includes(role));
+  };
 
   const verifyAccess = useCallback(async () => {
     const cacheKey = `${session?.user?.email}-${pathname}`;
@@ -48,27 +69,37 @@ function AccessController({ children }: { children: ReactNode }) {
     }
 
     try {
-      const result = await checkUserAccess();
+      const accessResult = await checkUserAccess();
 
-      accessCache.set(cacheKey, result);
+      const userData = await getUser();
+      const userRolesList =
+        (userData as any)?.roles?.map((role: any) => role.name) || [];
+      setUserRoles(userRolesList);
+
+      accessCache.set(cacheKey, { ...accessResult, userRoles: userRolesList });
       setTimeout(() => accessCache.delete(cacheKey), 2 * 60 * 1000);
 
-      if (result.redirect) {
-        router.push(result.redirect);
+      if (accessResult.redirect) {
+        router.push(accessResult.redirect);
         return;
       }
 
-      if (!result.access) {
-        if (result.status === "PENDING_APPROVAL") {
+      if (!accessResult.access) {
+        if (accessResult.status === "PENDING_APPROVAL") {
           router.push("/pending-access");
           return;
         }
 
-        if (result.status === "PENDING_ACTIVATION") {
+        if (accessResult.status === "PENDING_ACTIVATION") {
           router.push("/pending-activation");
           return;
         }
 
+        router.push("/unauthorized");
+        return;
+      }
+
+      if (!hasPermissionForRoute(pathname, userRolesList)) {
         router.push("/unauthorized");
         return;
       }
@@ -106,6 +137,14 @@ function AccessController({ children }: { children: ReactNode }) {
       verifyAccess();
     }
   }, [status, session, isPublicRoute, accessChecked, verifyAccess]);
+
+  useEffect(() => {
+    if (status === "authenticated" && pathname && userRoles.length > 0) {
+      if (!hasPermissionForRoute(pathname, userRoles) && !isPublicRoute) {
+        router.push("/unauthorized");
+      }
+    }
+  }, [pathname, userRoles, status, isPublicRoute, router]);
 
   if (isPublicRoute || (status === "authenticated" && accessChecked)) {
     return <>{children}</>;
