@@ -14,7 +14,6 @@ export async function getUsersWithDirectorRole() {
       },
       include: {
         roles: true,
-        // NÃO inclui director porque não há relação direta
       },
       orderBy: {
         name: "asc",

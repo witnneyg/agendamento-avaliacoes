@@ -47,11 +47,11 @@ import {
 import type { Course, Director, Prisma } from "@prisma/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getCourses } from "../_actions/coursers/get-coursers";
-import { getUsersWithDirectorRole } from "../_actions/get-users-with-director-role";
-import { getDirectorCourses } from "../_actions/get-director-courses";
-import { getOrCreateDirector } from "../_actions/get-or-create-director";
-import { assignDirectorToCourses } from "../_actions/assignment-diretor-to-coursers";
-import { removeDirectorFromCourses } from "../_actions/remove-director-from-coursers";
+import { getUsersWithDirectorRole } from "../_actions/director/get-users-with-director-role";
+import { getDirectorCourses } from "../_actions/director/get-director-courses";
+import { getOrCreateDirector } from "../_actions/director/get-or-create-director";
+import { assignDirectorToCourses } from "../_actions/director/assignment-diretor-to-coursers";
+import { removeDirectorFromCourses } from "../_actions/director/remove-director-from-coursers";
 
 type UserWithRoles = Prisma.UserGetPayload<{
   include: { roles: true };
@@ -234,13 +234,11 @@ export function DirectorTab() {
     try {
       const selectedUser = users.find((user) => user.id === data.userId);
       if (!selectedUser) {
-        alert("Diretor selecionado não encontrado");
         return;
       }
 
       const director = await getOrCreateDirector(selectedUser.id);
       if (!director) {
-        alert("Erro ao criar/obter diretor");
         return;
       }
 
@@ -262,7 +260,6 @@ export function DirectorTab() {
         });
 
         if (!addResult.success) {
-          alert(`Erro ao adicionar cursos: ${addResult.message}`);
           return;
         }
       }
@@ -274,7 +271,6 @@ export function DirectorTab() {
         });
 
         if (!removeResult.success) {
-          alert(`Erro ao remover cursos: ${removeResult.message}`);
           return;
         }
       }
@@ -305,20 +301,8 @@ export function DirectorTab() {
 
       clearForm();
       setIsDialogOpen(false);
-
-      if (coursesToAdd.length > 0 || coursesToRemove.length > 0) {
-        const messages = [];
-        if (coursesToAdd.length > 0)
-          messages.push(`${coursesToAdd.length} curso(s) adicionado(s)`);
-        if (coursesToRemove.length > 0)
-          messages.push(`${coursesToRemove.length} curso(s) removido(s)`);
-        alert(messages.join(" e "));
-      } else {
-        alert("Nenhuma alteração foi feita");
-      }
     } catch (error) {
       console.error("Erro ao atualizar cursos:", error);
-      alert("Erro ao atualizar cursos. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -340,7 +324,6 @@ export function DirectorTab() {
     try {
       const director = await getOrCreateDirector(user.id);
       if (!director) {
-        alert("Erro ao obter diretor");
         return;
       }
 
@@ -354,10 +337,7 @@ export function DirectorTab() {
           ...prev,
           [userId]: (prev[userId] || []).filter((c) => c.id !== courseId),
         }));
-
-        alert("Curso removido com sucesso!");
       } else {
-        alert(`Erro: ${result.message}`);
       }
     } catch (error) {
       console.error("Erro ao remover curso:", error);
@@ -383,7 +363,6 @@ export function DirectorTab() {
     try {
       const director = await getOrCreateDirector(user.id);
       if (!director) {
-        alert("Erro ao obter diretor");
         return;
       }
 
@@ -397,14 +376,10 @@ export function DirectorTab() {
           ...prev,
           [userId]: [],
         }));
-
-        alert("Todos os cursos foram removidos!");
       } else {
-        alert(`Erro: ${result.message}`);
       }
     } catch (error) {
       console.error("Erro ao remover cursos:", error);
-      alert("Erro ao remover cursos. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -443,7 +418,6 @@ export function DirectorTab() {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {/* SELEÇÃO DE DIRETOR */}
               <div className="space-y-2">
                 <Label htmlFor="userId">
                   <User className="inline h-4 w-4 mr-2" />

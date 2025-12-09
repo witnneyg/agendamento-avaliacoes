@@ -6,7 +6,7 @@ export async function getDirectorCourses(userId: string) {
   try {
     const director = await db.director.findFirst({
       where: {
-        userId: userId, // APENAS busca pelo userId, não pela relação user
+        userId: userId,
       },
       include: {
         courses: true,

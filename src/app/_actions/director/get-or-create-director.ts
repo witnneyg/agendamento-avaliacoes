@@ -4,7 +4,6 @@ import { db } from "@/lib/prisma";
 
 export async function getOrCreateDirector(userId: string) {
   try {
-    // Busca usuário
     const user = await db.user.findUnique({
       where: { id: userId },
       include: { roles: true },
@@ -14,17 +13,15 @@ export async function getOrCreateDirector(userId: string) {
       throw new Error("Usuário não encontrado");
     }
 
-    // Busca diretor APENAS pelo userId
     let director = await db.director.findFirst({
       where: {
-        userId: userId, // Corrigido: busca direta pelo userId
+        userId: userId,
       },
       include: {
         courses: true,
       },
     });
 
-    // Se não existe, cria
     if (!director) {
       director = await db.director.create({
         data: {
