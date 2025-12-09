@@ -3,9 +3,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TeachersTab } from "../_components/teachers-tab";
-import { CoursesTab } from "../_components/coursers-tab";
 import DisciplinesTab from "../_components/disciplines-tab";
-import { ClassesTab } from "../_components/classes-tab";
 import { NavBar } from "../_components/navbar";
 
 export default function AdminPage() {
@@ -32,13 +30,13 @@ export default function AdminPage() {
             onValueChange={setActiveTab}
             className="space-y-4"
           >
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="courses" className="cursor-pointer">
+            <TabsList className="grid w-full grid-cols-2">
+              {/* <TabsTrigger value="courses" className="cursor-pointer">
                 Cursos
               </TabsTrigger>
               <TabsTrigger value="classes" className="cursor-pointer">
                 Turmas
-              </TabsTrigger>
+              </TabsTrigger> */}
               <TabsTrigger value="disciplines" className="cursor-pointer">
                 Disciplinas
               </TabsTrigger>
@@ -50,12 +48,12 @@ export default function AdminPage() {
               </TabsTrigger> */}
             </TabsList>
 
-            <TabsContent value="courses">
+            {/* <TabsContent value="courses">
               <CoursesTab />
-            </TabsContent>
-            <TabsContent value="classes">
+            </TabsContent> */}
+            {/* <TabsContent value="classes">
               <ClassesTab />
-            </TabsContent>
+            </TabsContent> */}
             <TabsContent value="disciplines">
               <DisciplinesTab />
             </TabsContent>
