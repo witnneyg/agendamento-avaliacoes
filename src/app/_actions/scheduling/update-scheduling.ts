@@ -1,6 +1,8 @@
 "use server";
 
+import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
 
 interface UpdatedAppointment {
   startTime: string | Date;
@@ -25,12 +27,41 @@ export async function updateScheduling({
   updatedAppointments,
 }: UpdateSchedulingInput) {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
+      return { success: false, error: "Usuário não logado" };
+    }
+
     const existingAppointment = await db.scheduling.findUnique({
       where: { id: appointmentId },
+      include: {
+        course: true,
+      },
     });
 
     if (!existingAppointment) {
       return { success: false, error: "Agendamento não encontrado" };
+    }
+
+    const isOwner = existingAppointment.userId === session.user.id;
+
+    const isDirectorOfCourse = await db.course.findFirst({
+      where: {
+        id: existingAppointment.courseId,
+        directors: {
+          some: {
+            userId: session.user.id,
+          },
+        },
+      },
+    });
+
+    if (!isOwner && !isDirectorOfCourse) {
+      return {
+        success: false,
+        error: "Você não tem permissão para editar este agendamento",
+      };
     }
 
     const updatedAppointment = await db.scheduling.update({

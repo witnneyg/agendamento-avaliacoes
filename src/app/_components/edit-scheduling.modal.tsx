@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Controller, useForm } from "react-hook-form";
@@ -203,6 +203,7 @@ export const EditSchedulingModal = ({
   canEdit = true,
 }: EditSchedulingModalProps) => {
   // Verifica se o usuário tem permissão para editar
+  // Mas não retornamos aqui, apenas verificamos antes de renderizar
   if (!canEdit) {
     return null;
   }
@@ -238,7 +239,7 @@ export const EditSchedulingModal = ({
     },
   });
 
-  const updateTimeSlots = () => {
+  const updateTimeSlots = useCallback(() => {
     if (!selectedDate || scheduledTimes.length === 0) return;
     const slots = generateTimeSlotsAndCheckAvailability(
       selectedDate,
@@ -249,7 +250,14 @@ export const EditSchedulingModal = ({
       originalAppointmentDate
     );
     setTimeSlots(slots);
-  };
+  }, [
+    selectedDate,
+    scheduledTimes,
+    disciplineDayPeriods,
+    appointment.id,
+    currentTimeSlots,
+    originalAppointmentDate,
+  ]);
 
   useEffect(() => {
     async function fetchScheduledTimes() {
@@ -294,7 +302,7 @@ export const EditSchedulingModal = ({
 
   useEffect(() => {
     if (selectedDate && scheduledTimes.length > 0) updateTimeSlots();
-  }, [selectedDate, scheduledTimes]);
+  }, [selectedDate, scheduledTimes, updateTimeSlots]);
 
   useEffect(() => {
     if (isOpen) {
@@ -305,7 +313,7 @@ export const EditSchedulingModal = ({
       setSelectedDate(new Date(appointment.date));
       if (scheduledTimes.length > 0) updateTimeSlots();
     }
-  }, [isOpen, appointment.date, reset]);
+  }, [isOpen, appointment.date, reset, scheduledTimes.length, updateTimeSlots]);
 
   const isDateDisabled = (date: Date): boolean => {
     if (isPastDate(date)) return true;
@@ -486,6 +494,11 @@ export const EditSchedulingModal = ({
       setIsSubmitting(false);
     }
   };
+
+  // Se não tiver permissão para editar, retorna null aqui
+  if (!canEdit) {
+    return null;
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

@@ -131,7 +131,6 @@ export default function CalendarPage() {
         setAcademicCourses(coursesData as any);
         setSchedulingCourses(schedulingData as any);
 
-        // Verifica se é diretor
         const directorData = await getDirectorByUserId(session.id);
         if (directorData) {
           setIsDirector(true);
@@ -195,8 +194,6 @@ export default function CalendarPage() {
   const handleAppointmentUpdated = (
     updatedAppointments: Partial<SchedulingWithRelations>[]
   ) => {
-    console.log("Atualizando agendamentos:", updatedAppointments);
-
     setSchedulingCourses((prev) =>
       prev.map((apt) => {
         const updated = updatedAppointments.find((u) => u.id === apt.id);
@@ -217,7 +214,6 @@ export default function CalendarPage() {
   };
 
   const handleAppointmentDeleted = (deletedId: string) => {
-    console.log("Removendo agendamento:", deletedId);
     setSchedulingCourses((prev) => prev.filter((apt) => apt.id !== deletedId));
   };
 
@@ -231,9 +227,6 @@ export default function CalendarPage() {
       return;
     }
 
-    // Permissões simples:
-    // 1. Se for diretor E o agendamento for de um curso que ele administra
-    // 2. Se for o próprio usuário que criou o agendamento
     const isDirectorOfCourse =
       isDirector &&
       directorCourses.some((course) => course.id === scheduleToDelete.courseId);

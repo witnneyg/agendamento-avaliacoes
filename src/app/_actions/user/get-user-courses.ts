@@ -39,9 +39,6 @@ export async function getUserCourses() {
         },
       });
 
-      console.log("Professor encontrado:", teacher?.name);
-      console.log("Cursos do professor:", teacher?.courses?.length);
-
       return teacher?.courses || [];
     } else {
       const courses = await db.course.findMany({

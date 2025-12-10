@@ -28,8 +28,6 @@ export function SemesterSelector({
   const [semesterByCourse, setSemesterByCourse] = useState<Semester[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  console.log({ semesterByCourse });
-
   useEffect(() => {
     async function fetch() {
       setIsLoading(true);
