@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { cn } from "@/lib/utils";
-import { Edit, Trash2, X, Loader2 } from "lucide-react";
+import { Edit, Trash2, X, Loader2, Shield } from "lucide-react";
 import { getDepartmentColor } from "@/utils/getDepartamentColor";
 import {
   SchedulingWithRelations,
@@ -76,6 +76,7 @@ const extractTimeSlots = (appointment: SchedulingWithRelations) => {
     if (error instanceof Error) {
       throw new Error(error.message);
     }
+    return [];
   }
 };
 
@@ -87,6 +88,8 @@ interface AppointmentItemProps {
     updatedAppointments: Partial<SchedulingWithRelations>[]
   ) => void;
   onAppointmentDeleted?: (deletedId: string) => void;
+  isDirector?: boolean;
+  directorCourses?: { id: string }[];
 }
 
 export const AppointmentItem = ({
@@ -95,6 +98,8 @@ export const AppointmentItem = ({
   userSession,
   onAppointmentUpdated,
   onAppointmentDeleted,
+  isDirector = false,
+  directorCourses = [],
 }: AppointmentItemProps) => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -102,15 +107,44 @@ export const AppointmentItem = ({
   const [isAlertOpen, setIsAlertOpen] = useState(false);
 
   const isOwner = appointment.userId === userSession?.id;
+  const isDirectorOfCourse =
+    isDirector &&
+    directorCourses.some((course) => course.id === appointment.courseId);
+
+  // Diretor pode editar/deletar agendamentos dos cursos que administra
+  // Usuário normal só pode editar/deletar seus próprios agendamentos
+  const canEdit = isDirectorOfCourse || isOwner;
+  const canDeleteItem = isDirectorOfCourse || isOwner;
+
   const timeSlots = extractTimeSlots(appointment);
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    if (!canEdit) {
+      alert(
+        isDirector
+          ? "Você só pode editar agendamentos dos cursos que administra"
+          : "Você só pode editar seus próprios agendamentos"
+      );
+      return;
+    }
+
     setIsEditOpen(true);
   };
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    if (!canDeleteItem) {
+      alert(
+        isDirector
+          ? "Você só pode excluir agendamentos dos cursos que administra"
+          : "Você só pode excluir seus próprios agendamentos"
+      );
+      return;
+    }
+
     setIsDeleteDialogOpen(true);
   };
 
@@ -165,10 +199,15 @@ export const AppointmentItem = ({
         <AlertDialogTrigger asChild>
           <div
             className={cn(
-              "w-full p-2 rounded border-l-4 overflow-hidden cursor-pointer mb-1",
+              "w-full p-2 rounded border-l-4 overflow-hidden cursor-pointer mb-1 relative",
               getDepartmentColor(appointment.course.name)
             )}
           >
+            {isDirectorOfCourse && (
+              <div className="absolute top-1 right-1">
+                <Shield className="h-3 w-3 text-purple-600" />
+              </div>
+            )}
             <div className="overflow-hidden">
               <div className="flex gap-2 font-medium text-xs truncate">
                 {appointment.discipline.name}
@@ -185,17 +224,31 @@ export const AppointmentItem = ({
         <AlertDialogContent>
           <AlertDialogHeader>
             <div className="flex gap-4 justify-end">
-              {isOwner && (
-                <Edit
-                  className="h-4 w-4 cursor-pointer hover:text-blue-500 transition-colors"
+              {canEdit && (
+                <button
                   onClick={handleEditClick}
-                />
+                  className="h-4 w-4 cursor-pointer hover:text-blue-500 transition-colors"
+                  title={
+                    isDirectorOfCourse
+                      ? "Editar (administra este curso)"
+                      : "Editar"
+                  }
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
               )}
-              {isOwner && (
-                <Trash2
-                  className="h-4 w-4 cursor-pointer hover:text-red-500 transition-colors"
+              {canDeleteItem && (
+                <button
                   onClick={handleDeleteClick}
-                />
+                  className="h-4 w-4 cursor-pointer hover:text-red-500 transition-colors"
+                  title={
+                    isDirectorOfCourse
+                      ? "Excluir (administra este curso)"
+                      : "Excluir"
+                  }
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               )}
               <AlertDialogCancel className="h-4 w-4 cursor-pointer border-none hover:bg-gray-100 rounded transition-colors">
                 <X />
@@ -210,6 +263,12 @@ export const AppointmentItem = ({
               />
               <p className="font-medium">Disciplina:</p>
               {appointment.discipline.name}
+              {isDirectorOfCourse && (
+                <span className="ml-2 text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full">
+                  <Shield className="h-3 w-3 inline mr-1" />
+                  Administra
+                </span>
+              )}
             </AlertDialogTitle>
           </AlertDialogHeader>
 
@@ -268,8 +327,19 @@ export const AppointmentItem = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir este agendamento? Esta ação não
-              pode ser desfeita.
+              {isDirectorOfCourse ? (
+                <>
+                  Você está excluindo um agendamento de um curso que administra.
+                  <br />
+                  <strong>Professor:</strong> {appointment.name}
+                  <br />
+                  <strong>Curso:</strong> {appointment.course.name}
+                  <br />
+                  <strong>Disciplina:</strong> {appointment.discipline.name}
+                </>
+              ) : (
+                "Tem certeza que deseja excluir este agendamento? Esta ação não pode ser desfeita."
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -298,13 +368,17 @@ export const AppointmentItem = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      <EditSchedulingModal
-        appointment={appointment}
-        isOpen={isEditOpen}
-        onClose={handleEditClose}
-        onSave={handleSave}
-        disciplineDayPeriods={appointment.discipline.dayPeriods}
-      />
+      {canEdit && (
+        <EditSchedulingModal
+          appointment={appointment}
+          isOpen={isEditOpen}
+          onClose={handleEditClose}
+          onSave={handleSave}
+          disciplineDayPeriods={appointment.discipline.dayPeriods}
+          isDirector={isDirector}
+          canEdit={canEdit}
+        />
+      )}
     </>
   );
 };

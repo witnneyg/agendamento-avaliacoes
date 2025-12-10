@@ -7,7 +7,7 @@ import DisciplinesTab from "../_components/disciplines-tab";
 import { NavBar } from "../_components/navbar";
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState("classes");
+  const [activeTab, setActiveTab] = useState("disciplines");
 
   return (
     <div className="min-h-screen flex flex-col">

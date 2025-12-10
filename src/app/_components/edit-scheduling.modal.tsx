@@ -11,7 +11,7 @@ import { Scheduling, Period } from "@prisma/client";
 import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Shield } from "lucide-react";
 import { getTranslatedPeriods } from "../_helpers/getOrderedPeriods";
 import {
   Dialog,
@@ -28,6 +28,8 @@ interface EditSchedulingModalProps {
   onClose: () => void;
   onSave: (updatedAppointments: Partial<Scheduling>[]) => void;
   disciplineDayPeriods: Period[];
+  isDirector?: boolean;
+  canEdit?: boolean;
 }
 
 const editSchema = z.object({
@@ -197,7 +199,14 @@ export const EditSchedulingModal = ({
   onClose,
   onSave,
   disciplineDayPeriods,
+  isDirector = false,
+  canEdit = true,
 }: EditSchedulingModalProps) => {
+  // Verifica se o usuário tem permissão para editar
+  if (!canEdit) {
+    return null;
+  }
+
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date(appointment.date)
   );
@@ -482,34 +491,58 @@ export const EditSchedulingModal = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar Agendamento</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            Editar Agendamento
+            {isDirector && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">
+                <Shield className="h-3 w-3" />
+                Diretor
+              </span>
+            )}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
-          <div className="p-4 bg-blue-50 rounded-lg">
-            <h3 className="font-semibold text-blue-800 mb-2">
-              Agendamento Atual
+          <div
+            className={`p-4 rounded-lg ${isDirector ? "bg-purple-50" : "bg-blue-50"}`}
+          >
+            <h3
+              className={`font-semibold mb-2 ${isDirector ? "text-purple-800" : "text-blue-800"}`}
+            >
+              {isDirector
+                ? "📋 Agendamento (Você administra este curso)"
+                : "📋 Agendamento Atual"}
             </h3>
-            <p className="text-sm text-blue-600">
-              <strong>Data:</strong>{" "}
-              {format(originalAppointmentDate, "dd/MM/yyyy")}
-            </p>
-            <p className="text-sm text-blue-600">
-              <strong>Horários reservados:</strong>{" "}
-              {currentTimeSlots.join(", ")}
-            </p>
-            <p className="text-sm text-blue-600">
-              <strong>Quantidade de Horários :</strong> {requiredSlotsCount}
-            </p>
+            <div className="space-y-1 text-sm">
+              <p className={isDirector ? "text-purple-600" : "text-blue-600"}>
+                <strong>Curso:</strong>{" "}
+                {appointment.course?.name || "Não informado"}
+              </p>
+              <p className={isDirector ? "text-purple-600" : "text-blue-600"}>
+                <strong>Data:</strong>{" "}
+                {format(originalAppointmentDate, "dd/MM/yyyy")}
+              </p>
+              <p className={isDirector ? "text-purple-600" : "text-blue-600"}>
+                <strong>Horários reservados:</strong>{" "}
+                {currentTimeSlots.join(", ")}
+              </p>
+              <p className={isDirector ? "text-purple-600" : "text-blue-600"}>
+                <strong>Quantidade de Horários:</strong> {requiredSlotsCount}
+              </p>
+            </div>
             {isLoading && (
-              <p className="text-sm text-blue-600">
+              <p
+                className={`text-sm mt-2 ${isDirector ? "text-purple-600" : "text-blue-600"}`}
+              >
                 <strong>Carregando agendamentos...</strong>
               </p>
             )}
           </div>
 
           <div className="flex flex-col space-y-4">
-            <Label>Selecione uma nova data</Label>
+            <Label className="flex items-center gap-2">
+              Selecione uma nova data
+            </Label>
             <div className="flex justify-center">
               <Calendar
                 mode="single"
@@ -532,7 +565,7 @@ export const EditSchedulingModal = ({
           </div>
 
           <div className="mt-4">
-            <Label className="text-lg font-semibold">
+            <Label className="text-lg font-semibold flex items-center gap-2">
               Horários Disponíveis
             </Label>
             {isLoading ? (
@@ -612,7 +645,9 @@ export const EditSchedulingModal = ({
                           {timeSlots.map((periodGroup) => (
                             <div key={periodGroup.period} className="space-y-3">
                               <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-primary rounded-full"></div>
+                                <div
+                                  className={`w-2 h-2 rounded-full ${isDirector ? "bg-purple-500" : "bg-primary"}`}
+                                ></div>
                                 <Label className="text-base font-semibold">
                                   {periodGroup.period === Period.MORNING &&
                                     "Matutino"}
@@ -645,8 +680,8 @@ export const EditSchedulingModal = ({
                                               !slot.isCurrentTimeSlot
                                             ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-500 border-gray-300 w-full justify-start"
                                             : selectedTimes.includes(slot.time)
-                                              ? "bg-primary text-primary-foreground hover:bg-primary/90 w-full justify-start"
-                                              : "hover:bg-primary/10 cursor-pointer border-primary w-full justify-start"
+                                              ? `${isDirector ? "bg-purple-600 hover:bg-purple-700" : "bg-primary hover:bg-primary/90"} text-primary-foreground w-full justify-start`
+                                              : `hover:${isDirector ? "bg-purple-100" : "bg-primary/10"} cursor-pointer border-${isDirector ? "purple-300" : "primary"} w-full justify-start`
                                       }
                                       disabled={
                                         !slot.available &&
@@ -707,7 +742,7 @@ export const EditSchedulingModal = ({
                     </Button>
                     <Button
                       type="submit"
-                      className="flex-1"
+                      className={`flex-1 ${isDirector ? "bg-purple-600 hover:bg-purple-700" : ""}`}
                       disabled={
                         !selectedDate ||
                         isSubmitting ||
@@ -727,6 +762,7 @@ export const EditSchedulingModal = ({
                       }
                     >
                       {isSubmitting ? "Salvando..." : "Salvar Alterações"}
+                      {isDirector && " (como Diretor)"}
                     </Button>
                   </div>
                 </form>

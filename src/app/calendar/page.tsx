@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { format, startOfWeek, addDays, isSameDay } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, Menu, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Menu, X, Shield } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -34,12 +34,15 @@ import type {
 import { getUser } from "../_actions/user/getUser";
 import { AppointmentItem } from "../_components/AppointItem";
 import { getDepartmentColor } from "@/utils/getDepartamentColor";
+import { getDirectorByUserId } from "../_actions/get-director-by-user-id";
+import { getCoursesByDirectorId } from "../_actions/get-courses-by-director-id";
 
 export type SchedulingWithRelations = Scheduling & {
   course: Course;
   semester: Semester;
   discipline: Discipline;
   class: Class;
+  user: User;
 };
 
 export type UserWithoutEmailVerified = Omit<User, "emailVerified">;
@@ -95,6 +98,8 @@ export default function CalendarPage() {
   const [user, setUser] = useState<UserWithoutEmailVerified | null>(null);
   const [view, setView] = useState<"week" | "day" | "fortnight">("week");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isDirector, setIsDirector] = useState(false);
+  const [directorCourses, setDirectorCourses] = useState<Course[]>([]);
   const router = useRouter();
 
   const daysToShow = view === "week" ? 7 : view === "day" ? 1 : 14;
@@ -115,13 +120,42 @@ export default function CalendarPage() {
   );
 
   useEffect(() => {
-    async function fetchUser() {
+    async function fetchUserAndCourses() {
       const session = await getUser();
       setUser(session);
+
+      if (session) {
+        const coursesData = await getUserCourses();
+        const schedulingData = await getScheduling();
+
+        setAcademicCourses(coursesData as any);
+        setSchedulingCourses(schedulingData as any);
+
+        // Verifica se é diretor
+        const directorData = await getDirectorByUserId(session.id);
+        if (directorData) {
+          setIsDirector(true);
+          const directorCoursesData = await getCoursesByDirectorId(
+            directorData.id
+          );
+          setDirectorCourses(directorCoursesData);
+        }
+
+        const savedDepartments = loadVisibleDepartmentsFromStorage(
+          coursesData as any
+        );
+        setVisibleDepartments(savedDepartments);
+      }
     }
 
-    fetchUser();
+    fetchUserAndCourses();
   }, []);
+
+  useEffect(() => {
+    if (Object.keys(visibleDepartments).length > 0) {
+      saveVisibleDepartmentsToStorage(visibleDepartments);
+    }
+  }, [visibleDepartments]);
 
   const navigatePrevious = () => {
     if (view === "day") {
@@ -187,31 +221,39 @@ export default function CalendarPage() {
     setSchedulingCourses((prev) => prev.filter((apt) => apt.id !== deletedId));
   };
 
-  useEffect(() => {
-    async function fetch() {
-      const coursesData = await getUserCourses();
-      const schedulingData = await getScheduling();
-      setSchedulingCourses(schedulingData as any);
-      setAcademicCourses(coursesData as any);
-
-      const savedDepartments = loadVisibleDepartmentsFromStorage(
-        coursesData as any
-      );
-      setVisibleDepartments(savedDepartments);
-    }
-
-    fetch();
-  }, []);
-
-  useEffect(() => {
-    if (Object.keys(visibleDepartments).length > 0) {
-      saveVisibleDepartmentsToStorage(visibleDepartments);
-    }
-  }, [visibleDepartments]);
-
   const handleDeleteSchedule = async (scheduleId: string) => {
-    await deleteSchedule(scheduleId);
-    handleAppointmentDeleted(scheduleId);
+    if (!user) return;
+
+    const scheduleToDelete = schedulingCourses.find((s) => s.id === scheduleId);
+
+    if (!scheduleToDelete) {
+      alert("Agendamento não encontrado");
+      return;
+    }
+
+    // Permissões simples:
+    // 1. Se for diretor E o agendamento for de um curso que ele administra
+    // 2. Se for o próprio usuário que criou o agendamento
+    const isDirectorOfCourse =
+      isDirector &&
+      directorCourses.some((course) => course.id === scheduleToDelete.courseId);
+    const isOwner = scheduleToDelete.userId === user.id;
+
+    const canDelete = isDirectorOfCourse || isOwner;
+
+    if (!canDelete) {
+      alert(
+        isDirector
+          ? "Você só pode excluir agendamentos dos cursos que administra"
+          : "Você só pode excluir seus próprios agendamentos"
+      );
+      return;
+    }
+
+    if (confirm("Tem certeza que deseja excluir este agendamento?")) {
+      await deleteSchedule(scheduleId);
+      handleAppointmentDeleted(scheduleId);
+    }
   };
 
   const formatDateRange = () => {
@@ -243,6 +285,13 @@ export default function CalendarPage() {
         >
           <X className="h-4 w-4" />
         </Button>
+
+        {isDirector && (
+          <div className="flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
+            <Shield className="h-4 w-4" />
+            <span>Diretor</span>
+          </div>
+        )}
       </div>
 
       <div className="mb-6">
@@ -268,28 +317,39 @@ export default function CalendarPage() {
       <div>
         <h3 className="font-medium mb-4">Cursos</h3>
         <div className="space-y-2">
-          {academicCourses.map((course) => (
-            <div key={course.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={course.id}
-                checked={visibleDepartments[course.id] || false}
-                onCheckedChange={() => toggleDepartment(course.id)}
-                className="cursor-pointer"
-              />
-              <div
-                className={cn(
-                  "w-3 h-3 rounded-full flex-shrink-0",
-                  getDepartmentColor(course.name)
+          {academicCourses.map((course) => {
+            const isDirectorCourse = directorCourses.some(
+              (c) => c.id === course.id
+            );
+
+            return (
+              <div key={course.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={course.id}
+                  checked={visibleDepartments[course.id] || false}
+                  onCheckedChange={() => toggleDepartment(course.id)}
+                  className="cursor-pointer"
+                />
+                <div
+                  className={cn(
+                    "w-3 h-3 rounded-full flex-shrink-0",
+                    getDepartmentColor(course.name)
+                  )}
+                />
+                <label
+                  htmlFor={course.id}
+                  className="text-sm font-medium leading-none cursor-pointer flex-1 truncate"
+                >
+                  {course.name}
+                </label>
+                {isDirector && isDirectorCourse && (
+                  <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">
+                    Administra
+                  </span>
                 )}
-              />
-              <label
-                htmlFor={course.id}
-                className="text-sm font-medium leading-none cursor-pointer flex-1 truncate"
-              >
-                {course.name}
-              </label>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       </div>
     </>
@@ -369,6 +429,11 @@ export default function CalendarPage() {
               </Button>
               <h2 className="text-sm sm:text-xl font-semibold ml-1 sm:ml-2 truncate">
                 {formatDateRange()}
+                {isDirector && (
+                  <span className="text-sm text-purple-600 ml-2 hidden sm:inline">
+                    • Diretor
+                  </span>
+                )}
               </h2>
             </div>
             <div className="flex gap-1 sm:gap-2 flex-shrink-0">
@@ -486,6 +551,8 @@ export default function CalendarPage() {
                                     onAppointmentDeleted={
                                       handleAppointmentDeleted
                                     }
+                                    isDirector={isDirector}
+                                    directorCourses={directorCourses}
                                   />
 
                                   {remainingCount > 0 && (
@@ -521,6 +588,10 @@ export default function CalendarPage() {
                                                 }
                                                 onAppointmentDeleted={
                                                   handleAppointmentDeleted
+                                                }
+                                                isDirector={isDirector}
+                                                directorCourses={
+                                                  directorCourses
                                                 }
                                               />
                                             )

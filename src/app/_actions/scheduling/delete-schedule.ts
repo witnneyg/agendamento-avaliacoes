@@ -13,13 +13,29 @@ export async function deleteSchedule(scheduleId: string) {
     where: {
       id: scheduleId,
     },
+    include: {
+      course: true,
+    },
   });
 
   if (!schedule) {
     throw new Error("Agendamento não encontrado");
   }
 
-  if (schedule.userId !== session.user.id) {
+  const isOwner = schedule.userId === session.user.id;
+
+  const isDirectorOfCourse = await db.course.findFirst({
+    where: {
+      id: schedule.courseId,
+      directors: {
+        some: {
+          userId: session.user.id,
+        },
+      },
+    },
+  });
+
+  if (!isOwner && !isDirectorOfCourse) {
     throw new Error("Você não tem permissão para excluir este agendamento");
   }
 
