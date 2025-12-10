@@ -202,12 +202,7 @@ export const EditSchedulingModal = ({
   isDirector = false,
   canEdit = true,
 }: EditSchedulingModalProps) => {
-  // Verifica se o usuário tem permissão para editar
-  // Mas não retornamos aqui, apenas verificamos antes de renderizar
-  if (!canEdit) {
-    return null;
-  }
-
+  // TODOS OS HOOKS PRIMEIRO (SEM NENHUM RETURN ANTES DELES)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date(appointment.date)
   );
@@ -221,7 +216,10 @@ export const EditSchedulingModal = ({
     () => extractCurrentTimeSlots(appointment),
     [appointment]
   );
-  const originalAppointmentDate = new Date(appointment.date);
+  const originalAppointmentDate = useMemo(
+    () => new Date(appointment.date),
+    [appointment.date]
+  );
   const requiredSlotsCount = currentTimeSlots.length;
 
   const {
@@ -314,6 +312,11 @@ export const EditSchedulingModal = ({
       if (scheduledTimes.length > 0) updateTimeSlots();
     }
   }, [isOpen, appointment.date, reset, scheduledTimes.length, updateTimeSlots]);
+
+  // APÓS TODOS OS HOOKS, AGORA PODEMOS FAZER O RETURN CONDICIONAL
+  if (!canEdit) {
+    return null;
+  }
 
   const isDateDisabled = (date: Date): boolean => {
     if (isPastDate(date)) return true;
@@ -494,11 +497,6 @@ export const EditSchedulingModal = ({
       setIsSubmitting(false);
     }
   };
-
-  // Se não tiver permissão para editar, retorna null aqui
-  if (!canEdit) {
-    return null;
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
