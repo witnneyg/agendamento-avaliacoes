@@ -2,7 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { format, startOfWeek, addDays, isSameDay } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, Menu, X, Shield } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Menu,
+  X,
+  Shield,
+  User,
+  Loader2,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -28,7 +37,7 @@ import type {
   Course,
   Semester,
   Discipline,
-  User,
+  User as PrismaUser,
   Class,
 } from "@prisma/client";
 import { getUser } from "../_actions/user/getUser";
@@ -42,10 +51,10 @@ export type SchedulingWithRelations = Scheduling & {
   semester: Semester;
   discipline: Discipline;
   class: Class;
-  user: User;
+  user: PrismaUser;
 };
 
-export type UserWithoutEmailVerified = Omit<User, "emailVerified">;
+export type UserWithoutEmailVerified = Omit<PrismaUser, "emailVerified">;
 
 const timeSlots = Array.from({ length: 17 }, (_, i) => i + 7);
 
@@ -100,6 +109,7 @@ export default function CalendarPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDirector, setIsDirector] = useState(false);
   const [directorCourses, setDirectorCourses] = useState<Course[]>([]);
+  const [isLoadingUserRoles, setIsLoadingUserRoles] = useState(true); // ← APENAS para carregamento dos roles
   const router = useRouter();
 
   const daysToShow = view === "week" ? 7 : view === "day" ? 1 : 14;
@@ -121,29 +131,47 @@ export default function CalendarPage() {
 
   useEffect(() => {
     async function fetchUserAndCourses() {
-      const session = await getUser();
-      setUser(session);
+      try {
+        setIsLoadingUserRoles(true); // ← Iniciar loading apenas dos roles
+        const session = await getUser();
+        console.log({ session });
+        setUser(session);
 
-      if (session) {
-        const coursesData = await getUserCourses();
-        const schedulingData = await getScheduling();
+        if (session) {
+          // Carregar cursos e agendamentos em paralelo
+          const [coursesData, schedulingData] = await Promise.all([
+            getUserCourses(),
+            getScheduling(),
+          ]);
 
-        setAcademicCourses(coursesData as any);
-        setSchedulingCourses(schedulingData as any);
+          setAcademicCourses(coursesData as any);
+          setSchedulingCourses(schedulingData as any);
 
-        const directorData = await getDirectorByUserId(session.id);
-        if (directorData) {
-          setIsDirector(true);
-          const directorCoursesData = await getCoursesByDirectorId(
-            directorData.id
+          // Verificar se é diretor
+          const hasDirectorRole = session.roles?.some(
+            (role) => role.name === "DIRECAO"
           );
-          setDirectorCourses(directorCoursesData);
-        }
 
-        const savedDepartments = loadVisibleDepartmentsFromStorage(
-          coursesData as any
-        );
-        setVisibleDepartments(savedDepartments);
+          if (hasDirectorRole) {
+            const directorData = await getDirectorByUserId(session.id);
+            if (directorData) {
+              setIsDirector(true);
+              const directorCoursesData = await getCoursesByDirectorId(
+                directorData.id
+              );
+              setDirectorCourses(directorCoursesData);
+            }
+          }
+
+          const savedDepartments = loadVisibleDepartmentsFromStorage(
+            coursesData as any
+          );
+          setVisibleDepartments(savedDepartments);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+      } finally {
+        setIsLoadingUserRoles(false); // ← Finalizar loading dos roles
       }
     }
 
@@ -274,23 +302,43 @@ export default function CalendarPage() {
           variant="ghost"
           size="icon"
           onClick={() => setIsSidebarOpen(false)}
-          className="h-8 w-8 cursor-pointer lg:hidden bg-amber-200-"
+          className="h-8 w-8 cursor-pointer lg:hidden"
         >
           <X className="h-4 w-4" />
         </Button>
 
-        {isDirector && (
-          <div className="flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
-            <Shield className="h-4 w-4" />
-            <span>Diretor</span>
-          </div>
-        )}
+        <div className="flex gap-2 shrink-0">
+          {/* Loading apenas para as badges */}
+          {isLoadingUserRoles ? (
+            <div className="flex items-center gap-2 bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Carregando...</span>
+            </div>
+          ) : (
+            <>
+              {isDirector && (
+                <div className="flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
+                  <Shield className="h-4 w-4" />
+                  <span>Diretor</span>
+                </div>
+              )}
+              {/* Mostrar "Professor" apenas se NÃO for diretor */}
+              {!isDirector && user && (
+                <div className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                  <User className="h-4 w-4" />
+                  <span>Professor</span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       <div className="mb-6">
         <Button
           onClick={handleNewAppointment}
           className="w-full flex items-center gap-2 cursor-pointer"
+          disabled={isLoadingUserRoles} // Desabilitar enquanto carrega
         >
           <Plus className="h-4 w-4" />
           Novo Agendamento
@@ -310,39 +358,65 @@ export default function CalendarPage() {
       <div>
         <h3 className="font-medium mb-4">Cursos</h3>
         <div className="space-y-2">
-          {academicCourses.map((course) => {
-            const isDirectorCourse = directorCourses.some(
-              (c) => c.id === course.id
-            );
-
-            return (
-              <div key={course.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={course.id}
-                  checked={visibleDepartments[course.id] || false}
-                  onCheckedChange={() => toggleDepartment(course.id)}
-                  className="cursor-pointer"
-                />
+          {isLoadingUserRoles
+            ? // Loading para os cursos enquanto carrega os roles
+              Array.from({ length: 3 }).map((_, index) => (
                 <div
-                  className={cn(
-                    "w-3 h-3 rounded-full flex-shrink-0",
-                    getDepartmentColor(course.name)
-                  )}
-                />
-                <label
-                  htmlFor={course.id}
-                  className="text-sm font-medium leading-none cursor-pointer flex-1 truncate"
+                  key={index}
+                  className="flex items-center space-x-2 animate-pulse"
                 >
-                  {course.name}
-                </label>
-                {isDirector && isDirectorCourse && (
-                  <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">
-                    Administra
-                  </span>
-                )}
-              </div>
-            );
-          })}
+                  <div className="h-4 w-4 bg-gray-200 rounded"></div>
+                  <div className="w-3 h-3 rounded-full bg-gray-200 shrink-0"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                  <div className="w-16 h-5 bg-gray-200 rounded-full"></div>
+                </div>
+              ))
+            : academicCourses.map((course) => {
+                const isDirectorCourse = directorCourses.some(
+                  (c) => c.id === course.id
+                );
+                const isMyCourse =
+                  user && academicCourses.some((c) => c.id === course.id);
+
+                return (
+                  <div key={course.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={course.id}
+                      checked={visibleDepartments[course.id] || false}
+                      onCheckedChange={() => toggleDepartment(course.id)}
+                      className="cursor-pointer"
+                    />
+                    <div
+                      className={cn(
+                        "w-3 h-3 rounded-full shrink-0",
+                        getDepartmentColor(course.name)
+                      )}
+                    />
+                    <label
+                      htmlFor={course.id}
+                      className="text-sm font-medium leading-none cursor-pointer flex-1 truncate"
+                    >
+                      {course.name}
+                    </label>
+                    <div className="flex gap-1 shrink-0">
+                      {isDirector && isDirectorCourse && (
+                        <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Shield className="h-3 w-3" />
+                          Diretor
+                        </span>
+                      )}
+                      {!isDirectorCourse && isMyCourse && (
+                        <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          Professor
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
         </div>
       </div>
     </>
@@ -387,7 +461,8 @@ export default function CalendarPage() {
                 variant="outline"
                 size="icon"
                 onClick={() => setIsSidebarOpen(true)}
-                className="cursor-pointer bg-transparent flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 lg:hidden"
+                className="cursor-pointer bg-transparent shrink-0 h-8 w-8 sm:h-10 sm:w-10 lg:hidden"
+                disabled={isLoadingUserRoles}
               >
                 <Menu className="h-4 w-4" />
               </Button>
@@ -396,7 +471,8 @@ export default function CalendarPage() {
                 variant="outline"
                 size="icon"
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="cursor-pointer bg-transparent flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 hidden lg:flex mr-5"
+                className="cursor-pointer bg-transparent shrink-0 h-8 w-8 sm:h-10 sm:w-10 hidden lg:flex mr-5"
+                disabled={isLoadingUserRoles}
               >
                 {isSidebarOpen ? (
                   <ChevronLeft className="h-4 w-4" />
@@ -408,7 +484,8 @@ export default function CalendarPage() {
                 variant="outline"
                 size="icon"
                 onClick={navigatePrevious}
-                className="cursor-pointer bg-transparent flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10"
+                className="cursor-pointer bg-transparent shrink-0 h-8 w-8 sm:h-10 sm:w-10"
+                disabled={isLoadingUserRoles}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -416,25 +493,22 @@ export default function CalendarPage() {
                 variant="outline"
                 size="icon"
                 onClick={navigateNext}
-                className="cursor-pointer bg-transparent flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10"
+                className="cursor-pointer bg-transparent shrink-0 h-8 w-8 sm:h-10 sm:w-10"
+                disabled={isLoadingUserRoles}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
               <h2 className="text-sm sm:text-xl font-semibold ml-1 sm:ml-2 truncate">
                 {formatDateRange()}
-                {isDirector && (
-                  <span className="text-sm text-purple-600 ml-2 hidden sm:inline">
-                    • Diretor
-                  </span>
-                )}
               </h2>
             </div>
-            <div className="flex gap-1 sm:gap-2 flex-shrink-0">
+            <div className="flex gap-1 sm:gap-2 shrink-0">
               <Button
                 variant={view === "day" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setView("day")}
                 className="cursor-pointer h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3"
+                disabled={isLoadingUserRoles}
               >
                 Dia
               </Button>
@@ -443,6 +517,7 @@ export default function CalendarPage() {
                 size="sm"
                 onClick={() => setView("week")}
                 className="cursor-pointer h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3"
+                disabled={isLoadingUserRoles}
               >
                 Semana
               </Button>
@@ -451,6 +526,7 @@ export default function CalendarPage() {
                 size="sm"
                 onClick={() => setView("fortnight")}
                 className="cursor-pointer h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3 hidden sm:inline-flex"
+                disabled={isLoadingUserRoles}
               >
                 Quinzena
               </Button>
@@ -468,7 +544,7 @@ export default function CalendarPage() {
                     : "min-w-[1200px]"
               )}
             >
-              <div className="w-12 sm:w-16 flex-shrink-0 border-r">
+              <div className="w-12 sm:w-16 shrink-0 border-r">
                 <div className="h-10 sm:h-12 border-b text-[10px] sm:text-xs text-gray-500 flex items-center justify-center">
                   GMT-03
                 </div>
