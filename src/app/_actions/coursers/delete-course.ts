@@ -7,6 +7,7 @@ export async function deleteCourse(courseId: string) {
     const course = await db.course.findUnique({
       where: { id: courseId },
       include: {
+        directors: true,
         semesters: {
           include: {
             disciplines: {
@@ -20,6 +21,7 @@ export async function deleteCourse(courseId: string) {
         teachers: true,
         disciplines: true,
         classes: true,
+        schedulings: true,
       },
     });
 
@@ -28,13 +30,27 @@ export async function deleteCourse(courseId: string) {
     }
 
     const semesterIds = course.semesters.map((s) => s.id);
-    const disciplineIds = course.semesters.flatMap((s) =>
-      s.disciplines.map((d) => d.id)
-    );
+    const disciplineIds = [
+      ...course.disciplines.map((d) => d.id),
+      ...course.semesters.flatMap((s) => s.disciplines.map((d) => d.id)),
+    ];
     const classIds = [
       ...course.classes.map((c) => c.id),
       ...course.semesters.flatMap((s) => s.classes.map((c) => c.id)),
     ];
+
+    if (course.directors.length > 0) {
+      for (const director of course.directors) {
+        await db.director.update({
+          where: { id: director.id },
+          data: {
+            courses: {
+              disconnect: { id: courseId },
+            },
+          },
+        });
+      }
+    }
 
     await db.scheduling.deleteMany({
       where: {
@@ -58,9 +74,7 @@ export async function deleteCourse(courseId: string) {
           },
         });
       }
-    }
 
-    if (disciplineIds.length > 0) {
       await db.discipline.deleteMany({
         where: { id: { in: disciplineIds } },
       });
@@ -78,17 +92,18 @@ export async function deleteCourse(courseId: string) {
       });
     }
 
-    await db.course.update({
-      where: { id: courseId },
-      data: {
-        teachers: {
-          set: [],
-        },
-        disciplines: {
-          set: [],
-        },
-      },
-    });
+    if (course.teachers.length > 0) {
+      for (const teacher of course.teachers) {
+        await db.teacher.update({
+          where: { id: teacher.id },
+          data: {
+            courses: {
+              disconnect: { id: courseId },
+            },
+          },
+        });
+      }
+    }
 
     await db.course.delete({
       where: { id: courseId },
@@ -96,6 +111,26 @@ export async function deleteCourse(courseId: string) {
 
     return { success: true };
   } catch (error) {
-    console.error("Erro detalhado ao deletar curso:", error);
+    try {
+      const courseWithDirectors = await db.course.findUnique({
+        where: { id: courseId },
+        include: { directors: true },
+      });
+
+      if (courseWithDirectors && courseWithDirectors.directors.length > 0) {
+        for (const director of courseWithDirectors.directors) {
+          await db.director.update({
+            where: { id: director.id },
+            data: {
+              courses: {
+                disconnect: { id: courseId },
+              },
+            },
+          });
+        }
+      }
+    } catch {}
+
+    throw error;
   }
 }
