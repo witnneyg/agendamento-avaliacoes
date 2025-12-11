@@ -421,19 +421,16 @@ export default function CalendarPage() {
                 {isSecretary && (
                   <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
                     <ClipboardList className="h-4 w-4" />
-                    <span>Secretaria</span>
                   </div>
                 )}
                 {isDirector && (
                   <div className="flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
                     <Shield className="h-4 w-4" />
-                    <span>Diretor</span>
                   </div>
                 )}
                 {academicCourses.length > 0 && (
                   <div className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
                     <User className="h-4 w-4" />
-                    <span>Professor</span>
                   </div>
                 )}
               </>
