@@ -511,21 +511,18 @@ export default function CalendarPage() {
                         {isSecretary && (
                           <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full flex items-center gap-1 whitespace-nowrap">
                             <ClipboardList className="h-3 w-3" />
-                            Secretaria
                           </span>
                         )}
 
                         {isDirector && isDirectorCourse && (
                           <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full flex items-center gap-1 whitespace-nowrap">
                             <Shield className="h-3 w-3" />
-                            Diretor
                           </span>
                         )}
 
                         {isProfessorCourse && (
                           <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full flex items-center gap-1 whitespace-nowrap">
                             <User className="h-3 w-3" />
-                            Professor
                           </span>
                         )}
                       </div>
