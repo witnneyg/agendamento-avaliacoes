@@ -80,7 +80,11 @@ const loadVisibleDepartmentsFromStorage = (allCourses: Course[]) => {
         {} as Record<string, boolean>
       );
     }
-  } catch (error) {}
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+  }
 
   return allCourses.reduce(
     (acc, course) => ({ ...acc, [course.id]: true }),
@@ -94,7 +98,11 @@ const saveVisibleDepartmentsToStorage = (
   if (typeof window !== "undefined") {
     try {
       localStorage.setItem("visibleDepartments", JSON.stringify(departments));
-    } catch (error) {}
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(error.message);
+      }
+    }
   }
 };
 
@@ -193,6 +201,9 @@ export default function CalendarPage() {
           saveVisibleDepartmentsToStorage(savedDepartments);
         }
       } catch (error) {
+        if (error instanceof Error) {
+          throw new Error(error.message);
+        }
       } finally {
         setIsLoadingUserRoles(false);
       }
