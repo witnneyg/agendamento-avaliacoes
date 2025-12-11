@@ -278,33 +278,29 @@ export const AppointmentItem = ({
               />
               <p className="font-medium">Disciplina:</p>
               {appointment.discipline.name}
-              <div className="flex gap-1 ml-2 flex-wrap">
+              <div className="flex gap-1 ml-2 flex-wrap justify-end flex-1">
                 {/* Mostrar TODAS as badges lado a lado */}
                 {isSecretary && (
                   <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full whitespace-nowrap mb-1">
                     <ClipboardList className="h-3 w-3 inline mr-1" />
-                    Secretaria
                   </span>
                 )}
 
                 {isDirectorOfCourse && (
                   <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full whitespace-nowrap mb-1">
                     <Shield className="h-3 w-3 inline mr-1" />
-                    Diretor
                   </span>
                 )}
 
                 {isProfessorOfCourse && (
                   <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full whitespace-nowrap mb-1">
                     <User className="h-3 w-3 inline mr-1" />
-                    Professor do curso
                   </span>
                 )}
 
                 {isOwner && !isProfessorOfCourse && (
                   <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-800 rounded-full whitespace-nowrap mb-1">
                     <User className="h-3 w-3 inline mr-1" />
-                    Seu agendamento
                   </span>
                 )}
               </div>
