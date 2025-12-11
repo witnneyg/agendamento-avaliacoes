@@ -82,12 +82,18 @@ const teacherSchema = z
     courseIds: z.array(z.string()),
     disciplineIds: z.array(z.string()),
     status: z.enum(["ACTIVE", "INACTIVE"]),
+    isEditing: z.boolean().optional(),
   })
   .refine(
     (data) => {
+      if (data.isEditing) {
+        return true;
+      }
+
       if (data.status === "ACTIVE") {
         return data.courseIds.length > 0 && data.disciplineIds.length > 0;
       }
+
       return true;
     },
     {
@@ -125,6 +131,7 @@ export function TeachersTab() {
     watch,
     reset,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<TeacherForm>({
     resolver: zodResolver(teacherSchema),
@@ -133,12 +140,15 @@ export function TeachersTab() {
       courseIds: [],
       disciplineIds: [],
       status: "ACTIVE",
+      isEditing: false,
     },
   });
 
   const selectedCourseIds = watch("courseIds");
   const selectedDisciplineIds = watch("disciplineIds");
   const selectedUserId = watch("userId");
+  const selectedStatus = watch("status");
+  const isEditing = watch("isEditing");
 
   const clearForm = () => {
     reset({
@@ -146,6 +156,7 @@ export function TeachersTab() {
       courseIds: [],
       disciplineIds: [],
       status: "ACTIVE",
+      isEditing: false,
     });
     setEditingTeacher(null);
     setCourseSearchTerm("");
@@ -353,14 +364,18 @@ export function TeachersTab() {
         return;
       }
 
-      if (
-        data.status === "INACTIVE" &&
-        (data.courseIds.length > 0 || data.disciplineIds.length > 0)
-      ) {
-        alert(
-          "Professores inativos não podem ter cursos ou disciplinas vinculados. Os vínculos serão removidos automaticamente."
-        );
-        return;
+      if (data.status === "INACTIVE") {
+        data.courseIds = [];
+        data.disciplineIds = [];
+      }
+
+      if (!data.isEditing && data.status === "ACTIVE") {
+        if (data.courseIds.length === 0 || data.disciplineIds.length === 0) {
+          alert(
+            "Selecione pelo menos um curso e uma disciplina para novos professores ativos"
+          );
+          return;
+        }
       }
 
       const existingTeacher = teachers.find(
@@ -370,20 +385,12 @@ export function TeachersTab() {
       const validCourseIds = data.courseIds.filter((courseId) =>
         courses.some((course) => course.id === courseId)
       );
-      if (validCourseIds.length === 0 && data.status === "ACTIVE") {
-        alert("Nenhum curso válido selecionado");
-        return;
-      }
 
       const validDisciplineIds = data.disciplineIds.filter((disciplineId) =>
         availableDisciplines.some(
           (discipline) => discipline.id === disciplineId
         )
       );
-      if (validDisciplineIds.length === 0 && data.status === "ACTIVE") {
-        alert("Nenhuma disciplina válida selecionada");
-        return;
-      }
 
       const conflictedDisciplines = validDisciplineIds.filter(
         (disciplineId) => {
@@ -470,6 +477,7 @@ export function TeachersTab() {
       courseIds: teacher.courses.map((c) => c.id),
       disciplineIds: teacher.disciplines.map((d) => d.id),
       status: teacher.status,
+      isEditing: true,
     });
     setIsDialogOpen(true);
 
@@ -599,13 +607,16 @@ export function TeachersTab() {
           onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) {
-              clearForm(); // Limpa o formulário quando o dialog fecha
+              clearForm();
             }
           }}
         >
           <DialogTrigger asChild>
             <Button
-              onClick={clearForm} // LIMPA O FORMULÁRIO AO CLICAR EM "ADICIONAR PROFESSOR"
+              onClick={() => {
+                clearForm();
+                setValue("isEditing", false);
+              }}
             >
               <Plus className="mr-2 h-4 w-4" />
               {editingTeacher ? "Editar Professor" : "Adicionar Professor"}
@@ -756,7 +767,7 @@ export function TeachersTab() {
               <div className="space-y-3">
                 <Label>Cursos</Label>
 
-                {watch("status") === "INACTIVE" ? (
+                {selectedStatus === "INACTIVE" ? (
                   <Alert className="bg-gray-50 border-gray-200">
                     <AlertDescription className="text-gray-600">
                       Professores inativos não podem ter cursos vinculados.
@@ -837,18 +848,21 @@ export function TeachersTab() {
                   </div>
                 )}
 
-                {errors.courseIds && (
-                  <p className="text-sm text-red-500">
-                    {errors.courseIds.message}
-                  </p>
-                )}
+                {/* Exibe erro apenas quando não está editando e está ativo */}
+                {errors.courseIds &&
+                  !isEditing &&
+                  selectedStatus === "ACTIVE" && (
+                    <p className="text-sm text-red-500">
+                      {errors.courseIds.message}
+                    </p>
+                  )}
               </div>
 
               {/* SEÇÃO DE DISCIPLINAS - MODIFICADA PARA STATUS INACTIVE */}
               <div className="space-y-3">
                 <Label>Disciplinas</Label>
 
-                {watch("status") === "INACTIVE" ? (
+                {selectedStatus === "INACTIVE" ? (
                   <Alert className="bg-gray-50 border-gray-200">
                     <AlertDescription className="text-gray-600">
                       Professores inativos não podem ter disciplinas vinculadas.
@@ -986,11 +1000,6 @@ export function TeachersTab() {
                       )}
                     </div>
                   </div>
-                )}
-                {errors.disciplineIds && (
-                  <p className="text-sm text-red-500">
-                    {errors.disciplineIds.message}
-                  </p>
                 )}
               </div>
 
