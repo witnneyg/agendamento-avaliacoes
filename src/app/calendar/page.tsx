@@ -430,7 +430,7 @@ export default function CalendarPage() {
                     <span>Diretor</span>
                   </div>
                 )}
-                {academicCourses.length > 0 && !isSecretary && (
+                {academicCourses.length > 0 && (
                   <div className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
                     <User className="h-4 w-4" />
                     <span>Professor</span>

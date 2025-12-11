@@ -14,7 +14,15 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { cn } from "@/lib/utils";
-import { Edit, Trash2, X, Loader2, Shield, ClipboardList } from "lucide-react";
+import {
+  Edit,
+  Trash2,
+  X,
+  Loader2,
+  Shield,
+  ClipboardList,
+  User,
+} from "lucide-react";
 import { getDepartmentColor } from "@/utils/getDepartamentColor";
 import {
   SchedulingWithRelations,
@@ -82,7 +90,7 @@ const extractTimeSlots = (appointment: SchedulingWithRelations) => {
 
 interface AppointmentItemProps {
   appointment: SchedulingWithRelations;
-  isSecretary?: boolean; // ← Adicione esta prop
+  isSecretary?: boolean;
   onDelete: (id: string) => void;
   userSession: UserWithoutEmailVerified | null;
   onAppointmentUpdated?: (
@@ -91,6 +99,7 @@ interface AppointmentItemProps {
   onAppointmentDeleted?: (deletedId: string) => void;
   isDirector?: boolean;
   directorCourses?: { id: string }[];
+  academicCourses?: { id: string }[];
 }
 
 export const AppointmentItem = ({
@@ -102,6 +111,7 @@ export const AppointmentItem = ({
   isDirector = false,
   isSecretary = false,
   directorCourses = [],
+  academicCourses = [],
 }: AppointmentItemProps) => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -113,8 +123,15 @@ export const AppointmentItem = ({
     isDirector &&
     directorCourses.some((course) => course.id === appointment.courseId);
 
-  const canEdit = isSecretary || isDirectorOfCourse || isOwner;
-  const canDeleteItem = isSecretary || isDirectorOfCourse || isOwner;
+  const isProfessorOfCourse = academicCourses.some(
+    (course) => course.id === appointment.courseId
+  );
+
+  const canEdit =
+    isSecretary || isDirectorOfCourse || isOwner || isProfessorOfCourse;
+
+  const canDeleteItem =
+    isSecretary || isDirectorOfCourse || isOwner || isProfessorOfCourse;
 
   const timeSlots = extractTimeSlots(appointment);
 
@@ -122,13 +139,7 @@ export const AppointmentItem = ({
     e.stopPropagation();
 
     if (!canEdit) {
-      if (isDirector) {
-        alert("Você só pode editar agendamentos dos cursos que administra");
-      } else if (isSecretary) {
-        alert("Como secretaria, você pode editar qualquer agendamento");
-      } else {
-        alert("Você só pode editar seus próprios agendamentos");
-      }
+      alert("Você não tem permissão para editar este agendamento");
       return;
     }
 
@@ -139,13 +150,7 @@ export const AppointmentItem = ({
     e.stopPropagation();
 
     if (!canDeleteItem) {
-      if (isDirector) {
-        alert("Você só pode excluir agendamentos dos cursos que administra");
-      } else if (isSecretary) {
-        alert("Como secretaria, você pode excluir qualquer agendamento");
-      } else {
-        alert("Você só pode excluir seus próprios agendamentos");
-      }
+      alert("Você não tem permissão para excluir este agendamento");
       return;
     }
 
@@ -207,15 +212,25 @@ export const AppointmentItem = ({
               getDepartmentColor(appointment.course.name)
             )}
           >
-            {(isDirectorOfCourse || isSecretary) && (
-              <div className="absolute top-1 right-1">
-                {isSecretary ? (
-                  <ClipboardList className="h-3 w-3 text-green-600" />
-                ) : (
-                  <Shield className="h-3 w-3 text-purple-600" />
-                )}
-              </div>
-            )}
+            {/* Mostrar TODOS os ícones lado a lado */}
+            <div className="absolute top-1 right-1 flex gap-1">
+              {isSecretary && (
+                <ClipboardList className="h-3 w-3 text-green-600" />
+              )}
+
+              {isDirectorOfCourse && (
+                <Shield className="h-3 w-3 text-purple-600" />
+              )}
+
+              {isProfessorOfCourse && (
+                <User className="h-3 w-3 text-blue-600" />
+              )}
+
+              {isOwner && !isProfessorOfCourse && (
+                <User className="h-3 w-3 text-gray-600" />
+              )}
+            </div>
+
             <div className="overflow-hidden">
               <div className="flex gap-2 font-medium text-xs truncate">
                 {appointment.discipline.name}
@@ -236,13 +251,7 @@ export const AppointmentItem = ({
                 <button
                   onClick={handleEditClick}
                   className="h-4 w-4 cursor-pointer hover:text-blue-500 transition-colors"
-                  title={
-                    isSecretary
-                      ? "Editar (secretaria)"
-                      : isDirectorOfCourse
-                        ? "Editar (administra este curso)"
-                        : "Editar"
-                  }
+                  title="Editar agendamento"
                 >
                   <Edit className="h-4 w-4" />
                 </button>
@@ -251,13 +260,7 @@ export const AppointmentItem = ({
                 <button
                   onClick={handleDeleteClick}
                   className="h-4 w-4 cursor-pointer hover:text-red-500 transition-colors"
-                  title={
-                    isSecretary
-                      ? "Excluir (secretaria)"
-                      : isDirectorOfCourse
-                        ? "Excluir (administra este curso)"
-                        : "Excluir"
-                  }
+                  title="Excluir agendamento"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -275,18 +278,36 @@ export const AppointmentItem = ({
               />
               <p className="font-medium">Disciplina:</p>
               {appointment.discipline.name}
-              {isSecretary && (
-                <span className="ml-2 text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full">
-                  <ClipboardList className="h-3 w-3 inline mr-1" />
-                  Secretaria
-                </span>
-              )}
-              {!isSecretary && isDirectorOfCourse && (
-                <span className="ml-2 text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full">
-                  <Shield className="h-3 w-3 inline mr-1" />
-                  Administra
-                </span>
-              )}
+              <div className="flex gap-1 ml-2 flex-wrap">
+                {/* Mostrar TODAS as badges lado a lado */}
+                {isSecretary && (
+                  <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full whitespace-nowrap mb-1">
+                    <ClipboardList className="h-3 w-3 inline mr-1" />
+                    Secretaria
+                  </span>
+                )}
+
+                {isDirectorOfCourse && (
+                  <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full whitespace-nowrap mb-1">
+                    <Shield className="h-3 w-3 inline mr-1" />
+                    Diretor
+                  </span>
+                )}
+
+                {isProfessorOfCourse && (
+                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full whitespace-nowrap mb-1">
+                    <User className="h-3 w-3 inline mr-1" />
+                    Professor do curso
+                  </span>
+                )}
+
+                {isOwner && !isProfessorOfCourse && (
+                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-800 rounded-full whitespace-nowrap mb-1">
+                    <User className="h-3 w-3 inline mr-1" />
+                    Seu agendamento
+                  </span>
+                )}
+              </div>
             </AlertDialogTitle>
           </AlertDialogHeader>
 
@@ -345,9 +366,10 @@ export const AppointmentItem = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              {isSecretary ? (
-                <>
-                  <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded">
+              {/* Mostrar TODAS as roles que se aplicam */}
+              <div className="space-y-2 mb-3">
+                {isSecretary && (
+                  <div className="p-2 bg-green-50 border border-green-200 rounded">
                     <div className="flex items-center gap-2 text-green-700">
                       <ClipboardList className="h-4 w-4" />
                       <span className="font-medium">Ação da Secretaria</span>
@@ -356,12 +378,47 @@ export const AppointmentItem = ({
                       Você está excluindo um agendamento como secretaria.
                     </p>
                   </div>
-                </>
-              ) : isDirectorOfCourse ? (
-                <>
-                  Você está excluindo um agendamento de um curso que administra.
-                </>
-              ) : null}
+                )}
+
+                {isDirectorOfCourse && (
+                  <div className="p-2 bg-purple-50 border border-purple-200 rounded">
+                    <div className="flex items-center gap-2 text-purple-700">
+                      <Shield className="h-4 w-4" />
+                      <span className="font-medium">Ação de Diretor</span>
+                    </div>
+                    <p className="text-sm mt-1">
+                      Você está excluindo um agendamento de um curso que
+                      administra.
+                    </p>
+                  </div>
+                )}
+
+                {isProfessorOfCourse && (
+                  <div className="p-2 bg-blue-50 border border-blue-200 rounded">
+                    <div className="flex items-center gap-2 text-blue-700">
+                      <User className="h-4 w-4" />
+                      <span className="font-medium">Ação de Professor</span>
+                    </div>
+                    <p className="text-sm mt-1">
+                      Você está excluindo um agendamento de um curso onde é
+                      professor.
+                    </p>
+                  </div>
+                )}
+
+                {isOwner && !isProfessorOfCourse && (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded">
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <User className="h-4 w-4" />
+                      <span className="font-medium">Seu Agendamento</span>
+                    </div>
+                    <p className="text-sm mt-1">
+                      Você está excluindo seu próprio agendamento.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <div className="mt-2 space-y-1">
                 <div>
                   <strong>Professor:</strong> {appointment.name}
