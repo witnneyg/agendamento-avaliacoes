@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { format, startOfWeek, addDays, isSameDay } from "date-fns";
 import {
   ChevronLeft,
@@ -58,29 +58,34 @@ export type UserWithoutEmailVerified = Omit<PrismaUser, "emailVerified">;
 
 const timeSlots = Array.from({ length: 17 }, (_, i) => i + 7);
 
-const loadVisibleDepartmentsFromStorage = (courses: Course[]) => {
+const loadVisibleDepartmentsFromStorage = (allCourses: Course[]) => {
   if (typeof window === "undefined") {
-    return courses.reduce((acc, course) => ({ ...acc, [course.id]: true }), {});
+    return allCourses.reduce(
+      (acc, course) => ({ ...acc, [course.id]: true }),
+      {}
+    );
   }
 
   try {
     const stored = localStorage.getItem("visibleDepartments");
     if (stored) {
       const parsed = JSON.parse(stored);
-      return courses.reduce(
-        (acc, course) => ({
-          ...acc,
-          [course.id]:
-            parsed[course.id] !== undefined ? parsed[course.id] : true,
-        }),
-        {}
+
+      return allCourses.reduce(
+        (acc, course) => {
+          acc[course.id] =
+            parsed[course.id] !== undefined ? parsed[course.id] : true;
+          return acc;
+        },
+        {} as Record<string, boolean>
       );
     }
-  } catch (error) {
-    console.error("Erro ao carregar do localStorage:", error);
-  }
+  } catch (error) {}
 
-  return courses.reduce((acc, course) => ({ ...acc, [course.id]: true }), {});
+  return allCourses.reduce(
+    (acc, course) => ({ ...acc, [course.id]: true }),
+    {}
+  );
 };
 
 const saveVisibleDepartmentsToStorage = (
@@ -89,9 +94,7 @@ const saveVisibleDepartmentsToStorage = (
   if (typeof window !== "undefined") {
     try {
       localStorage.setItem("visibleDepartments", JSON.stringify(departments));
-    } catch (error) {
-      console.error("Erro ao salvar no localStorage:", error);
-    }
+    } catch (error) {}
   }
 };
 
@@ -109,7 +112,7 @@ export default function CalendarPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDirector, setIsDirector] = useState(false);
   const [directorCourses, setDirectorCourses] = useState<Course[]>([]);
-  const [isLoadingUserRoles, setIsLoadingUserRoles] = useState(true); // ← APENAS para carregamento dos roles
+  const [isLoadingUserRoles, setIsLoadingUserRoles] = useState(true);
   const router = useRouter();
 
   const daysToShow = view === "week" ? 7 : view === "day" ? 1 : 14;
@@ -122,8 +125,24 @@ export default function CalendarPage() {
     addDays(startDate, i)
   );
 
+  const allUniqueCourses = useMemo(() => {
+    const allCoursesMap = new Map<string, Course>();
+
+    directorCourses.forEach((course) => {
+      allCoursesMap.set(course.id, course);
+    });
+
+    academicCourses.forEach((course) => {
+      allCoursesMap.set(course.id, course);
+    });
+
+    return Array.from(allCoursesMap.values()).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+  }, [directorCourses, academicCourses]);
+
   const filteredAppointments = schedulingCourses.filter((appointment) =>
-    academicCourses.some(
+    allUniqueCourses.some(
       (course) =>
         course.name === appointment.course.name && visibleDepartments[course.id]
     )
@@ -132,13 +151,11 @@ export default function CalendarPage() {
   useEffect(() => {
     async function fetchUserAndCourses() {
       try {
-        setIsLoadingUserRoles(true); // ← Iniciar loading apenas dos roles
+        setIsLoadingUserRoles(true);
         const session = await getUser();
-        console.log({ session });
         setUser(session);
 
         if (session) {
-          // Carregar cursos e agendamentos em paralelo
           const [coursesData, schedulingData] = await Promise.all([
             getUserCourses(),
             getScheduling(),
@@ -147,31 +164,37 @@ export default function CalendarPage() {
           setAcademicCourses(coursesData as any);
           setSchedulingCourses(schedulingData as any);
 
-          // Verificar se é diretor
           const hasDirectorRole = session.roles?.some(
             (role) => role.name === "DIRECAO"
           );
+
+          let directorCoursesData: Course[] = [];
 
           if (hasDirectorRole) {
             const directorData = await getDirectorByUserId(session.id);
             if (directorData) {
               setIsDirector(true);
-              const directorCoursesData = await getCoursesByDirectorId(
+              directorCoursesData = await getCoursesByDirectorId(
                 directorData.id
               );
               setDirectorCourses(directorCoursesData);
             }
           }
 
-          const savedDepartments = loadVisibleDepartmentsFromStorage(
-            coursesData as any
-          );
+          const allCoursesForStorage = [
+            ...(coursesData as Course[]),
+            ...directorCoursesData,
+          ];
+
+          const savedDepartments =
+            loadVisibleDepartmentsFromStorage(allCoursesForStorage);
           setVisibleDepartments(savedDepartments);
+
+          saveVisibleDepartmentsToStorage(savedDepartments);
         }
       } catch (error) {
-        console.error("Erro ao carregar dados:", error);
       } finally {
-        setIsLoadingUserRoles(false); // ← Finalizar loading dos roles
+        setIsLoadingUserRoles(false);
       }
     }
 
@@ -183,6 +206,29 @@ export default function CalendarPage() {
       saveVisibleDepartmentsToStorage(visibleDepartments);
     }
   }, [visibleDepartments]);
+
+  useEffect(() => {
+    if (
+      directorCourses.length > 0 &&
+      Object.keys(visibleDepartments).length > 0
+    ) {
+      const hasNewCourses = directorCourses.some(
+        (course) => !(course.id in visibleDepartments)
+      );
+
+      if (hasNewCourses) {
+        const updatedDepartments = { ...visibleDepartments };
+
+        directorCourses.forEach((course) => {
+          if (!(course.id in updatedDepartments)) {
+            updatedDepartments[course.id] = true;
+          }
+        });
+
+        setVisibleDepartments(updatedDepartments);
+      }
+    }
+  }, [directorCourses, visibleDepartments]);
 
   const navigatePrevious = () => {
     if (view === "day") {
@@ -295,132 +341,150 @@ export default function CalendarPage() {
     }
   };
 
-  const SidebarContent = () => (
-    <>
-      <div className="flex items-center justify-between mb-6">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsSidebarOpen(false)}
-          className="h-8 w-8 cursor-pointer lg:hidden"
-        >
-          <X className="h-4 w-4" />
-        </Button>
+  const SidebarContent = () => {
+    return (
+      <>
+        <div className="flex items-center justify-between mb-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsSidebarOpen(false)}
+            className="h-8 w-8 cursor-pointer lg:hidden"
+          >
+            <X className="h-4 w-4" />
+          </Button>
 
-        <div className="flex gap-2 shrink-0">
-          {/* Loading apenas para as badges */}
-          {isLoadingUserRoles ? (
-            <div className="flex items-center gap-2 bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Carregando...</span>
-            </div>
-          ) : (
-            <>
-              {isDirector && (
-                <div className="flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
-                  <Shield className="h-4 w-4" />
-                  <span>Diretor</span>
-                </div>
-              )}
-              {/* Mostrar "Professor" apenas se NÃO for diretor */}
-              {!isDirector && user && (
-                <div className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                  <User className="h-4 w-4" />
-                  <span>Professor</span>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="mb-6">
-        <Button
-          onClick={handleNewAppointment}
-          className="w-full flex items-center gap-2 cursor-pointer"
-          disabled={isLoadingUserRoles} // Desabilitar enquanto carrega
-        >
-          <Plus className="h-4 w-4" />
-          Novo Agendamento
-        </Button>
-      </div>
-
-      <div className="mb-6">
-        <Calendar
-          mode="single"
-          selected={currentDate}
-          onSelect={(date) => date && setCurrentDate(date)}
-          className="rounded-md border"
-          locale={ptBR}
-        />
-      </div>
-
-      <div>
-        <h3 className="font-medium mb-4">Cursos</h3>
-        <div className="space-y-2">
-          {isLoadingUserRoles
-            ? // Loading para os cursos enquanto carrega os roles
-              Array.from({ length: 3 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="flex items-center space-x-2 animate-pulse"
-                >
-                  <div className="h-4 w-4 bg-gray-200 rounded"></div>
-                  <div className="w-3 h-3 rounded-full bg-gray-200 shrink-0"></div>
-                  <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="flex gap-2 shrink-0">
+            {isLoadingUserRoles ? (
+              <div className="flex items-center gap-2 bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Carregando...</span>
+              </div>
+            ) : user ? (
+              <>
+                {isDirector && (
+                  <div className="flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
+                    <Shield className="h-4 w-4" />
+                    <span>Diretor</span>
                   </div>
-                  <div className="w-16 h-5 bg-gray-200 rounded-full"></div>
-                </div>
-              ))
-            : academicCourses.map((course) => {
-                const isDirectorCourse = directorCourses.some(
-                  (c) => c.id === course.id
-                );
-                const isMyCourse =
-                  user && academicCourses.some((c) => c.id === course.id);
+                )}
 
-                return (
-                  <div key={course.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={course.id}
-                      checked={visibleDepartments[course.id] || false}
-                      onCheckedChange={() => toggleDepartment(course.id)}
-                      className="cursor-pointer"
-                    />
-                    <div
-                      className={cn(
-                        "w-3 h-3 rounded-full shrink-0",
-                        getDepartmentColor(course.name)
-                      )}
-                    />
-                    <label
-                      htmlFor={course.id}
-                      className="text-sm font-medium leading-none cursor-pointer flex-1 truncate"
-                    >
-                      {course.name}
-                    </label>
-                    <div className="flex gap-1 shrink-0">
-                      {isDirector && isDirectorCourse && (
-                        <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <Shield className="h-3 w-3" />
-                          Diretor
-                        </span>
-                      )}
-                      {!isDirectorCourse && isMyCourse && (
-                        <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <User className="h-3 w-3" />
-                          Professor
-                        </span>
-                      )}
+                {academicCourses.length > 0 && (
+                  <div className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                    <User className="h-4 w-4" />
+                    <span>Professor</span>
+                  </div>
+                )}
+              </>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <Button
+            onClick={handleNewAppointment}
+            className="w-full flex items-center gap-2 cursor-pointer"
+            disabled={isLoadingUserRoles}
+          >
+            <Plus className="h-4 w-4" />
+            Novo Agendamento
+          </Button>
+        </div>
+
+        <div className="mb-6">
+          <Calendar
+            mode="single"
+            selected={currentDate}
+            onSelect={(date) => date && setCurrentDate(date)}
+            className="rounded-md border"
+            locale={ptBR}
+          />
+        </div>
+
+        <div>
+          <h3 className="font-medium mb-4">Cursos</h3>
+          <div className="space-y-2">
+            {isLoadingUserRoles
+              ? Array.from({ length: 3 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center space-x-2 animate-pulse"
+                  >
+                    <div className="h-4 w-4 bg-gray-200 rounded"></div>
+                    <div className="w-3 h-3 rounded-full bg-gray-200 shrink-0"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                     </div>
+                    <div className="w-16 h-5 bg-gray-200 rounded-full"></div>
                   </div>
-                );
-              })}
+                ))
+              : allUniqueCourses.map((course) => {
+                  const isDirectorCourse = directorCourses.some(
+                    (c) => c.id === course.id
+                  );
+                  const isProfessorCourse = academicCourses.some(
+                    (c) => c.id === course.id
+                  );
+
+                  return (
+                    <div
+                      key={course.id}
+                      className="flex items-center space-x-2"
+                    >
+                      <Checkbox
+                        id={course.id}
+                        checked={visibleDepartments[course.id] || false}
+                        onCheckedChange={() => toggleDepartment(course.id)}
+                        className="cursor-pointer"
+                      />
+                      <div
+                        className={cn(
+                          "w-3 h-3 rounded-full shrink-0",
+                          getDepartmentColor(course.name)
+                        )}
+                      />
+                      <label
+                        htmlFor={course.id}
+                        className="text-sm font-medium leading-none cursor-pointer flex-1 truncate"
+                      >
+                        {course.name}
+                      </label>
+                      <div className="flex gap-1 shrink-0">
+                        {isDirector && isDirectorCourse && (
+                          <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Shield className="h-3 w-3" />
+                            Diretor
+                          </span>
+                        )}
+                        {isProfessorCourse && !isDirectorCourse && (
+                          <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            Professor
+                          </span>
+                        )}
+                        {isDirector &&
+                          isDirectorCourse &&
+                          isProfessorCourse && (
+                            <>
+                              <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <Shield className="h-3 w-3" />
+                                Diretor
+                              </span>
+                              <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                Professor
+                              </span>
+                            </>
+                          )}
+                      </div>
+                    </div>
+                  );
+                })}
+          </div>
         </div>
-      </div>
-    </>
-  );
+      </>
+    );
+  };
 
   return (
     <div className="min-h-screen flex flex-col">

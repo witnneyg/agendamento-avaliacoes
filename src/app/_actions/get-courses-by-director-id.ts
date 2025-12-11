@@ -13,6 +13,8 @@ export async function getCoursesByDirectorId(directorId: string) {
       },
     });
 
+    console.log({ director });
+
     return director?.courses || [];
   } catch (error) {
     console.error("Erro ao buscar cursos do diretor:", error);
