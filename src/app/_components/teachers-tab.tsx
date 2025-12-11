@@ -131,7 +131,6 @@ export function TeachersTab() {
     watch,
     reset,
     setValue,
-    getValues,
     formState: { errors },
   } = useForm<TeacherForm>({
     resolver: zodResolver(teacherSchema),
