@@ -100,7 +100,7 @@ export const AppointmentItem = ({
   onAppointmentUpdated,
   onAppointmentDeleted,
   isDirector = false,
-  isSecretary = false, // ← Receba esta prop
+  isSecretary = false,
   directorCourses = [],
 }: AppointmentItemProps) => {
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -113,7 +113,6 @@ export const AppointmentItem = ({
     isDirector &&
     directorCourses.some((course) => course.id === appointment.courseId);
 
-  // Atualize as permissões para incluir a Secretaria
   const canEdit = isSecretary || isDirectorOfCourse || isOwner;
   const canDeleteItem = isSecretary || isDirectorOfCourse || isOwner;
 
@@ -413,7 +412,7 @@ export const AppointmentItem = ({
           onSave={handleSave}
           disciplineDayPeriods={appointment.discipline.dayPeriods}
           isDirector={isDirector}
-          isSecretary={isSecretary} // ← Passe para o modal
+          isSecretary={isSecretary}
           canEdit={canEdit}
         />
       )}

@@ -151,12 +151,12 @@ export default function CalendarPage() {
     );
   }, [directorCourses, academicCourses]);
 
-  const filteredAppointments = schedulingCourses.filter((appointment) =>
-    allUniqueCourses.some(
-      (course) =>
-        course.name === appointment.course.name && visibleDepartments[course.id]
-    )
-  );
+  const filteredAppointments = schedulingCourses.filter((appointment) => {
+    const course = allUniqueCourses.find(
+      (c) => c.name === appointment.course.name
+    );
+    return course && visibleDepartments[course.id];
+  });
 
   useEffect(() => {
     async function fetchUserAndCourses() {
@@ -169,45 +169,61 @@ export default function CalendarPage() {
           const coursesData = await getUserCourses();
           setAcademicCourses(coursesData as any);
 
-          // Verificar roles do usuário
           const hasDirectorRole = session.roles?.some(
             (role) => role.name === "DIRECAO"
           );
 
           const hasSecretaryRole = session.roles?.some(
-            (role) => role.name === "SECRETARIA" // Ajuste conforme seu sistema
+            (role) => role.name === "SECRETARIA"
           );
 
           setIsSecretary(hasSecretaryRole || false);
 
           let directorCoursesData: Course[] = [];
+
           let schedulingData: any = [];
 
           if (hasSecretaryRole) {
-            // SECRETARIA: Vê TODOS os agendamentos
             setIsSecretary(true);
             schedulingData = await getSchedulingByRole({ isSecretary: true });
-          } else if (hasDirectorRole) {
-            // DIRETOR: Vê agendamentos dos seus cursos
-            const directorData = await getDirectorByUserId(session.id);
-            if (directorData) {
-              setIsDirector(true);
-              directorCoursesData = await getCoursesByDirectorId(
-                directorData.id
-              );
-              setDirectorCourses(directorCoursesData);
-
-              schedulingData = await getSchedulingByRole({
-                directorId: directorData.id,
-              });
-            } else {
-              // Se tem role de diretor mas não tem registro, busca apenas seus agendamentos
-              schedulingData = await getSchedulingByRole({
-                userId: session.id,
-              });
-            }
           } else {
-            // USUÁRIO NORMAL (Professor/Aluno): Vê apenas seus agendamentos
+            const allUserAppointments = await getSchedulingByRole({
+              userId: session.id,
+            });
+
+            if (hasDirectorRole) {
+              const directorData = await getDirectorByUserId(session.id);
+              if (directorData) {
+                setIsDirector(true);
+                directorCoursesData = await getCoursesByDirectorId(
+                  directorData.id
+                );
+                setDirectorCourses(directorCoursesData);
+
+                const directorAppointments = await getSchedulingByRole({
+                  directorId: directorData.id,
+                });
+
+                const allAppointments = [
+                  ...allUserAppointments,
+                  ...directorAppointments,
+                ];
+                const uniqueAppointments = new Map();
+
+                allAppointments.forEach((appointment: any) => {
+                  uniqueAppointments.set(appointment.id, appointment);
+                });
+
+                schedulingData = Array.from(uniqueAppointments.values());
+              } else {
+                schedulingData = allUserAppointments;
+              }
+            } else {
+              schedulingData = allUserAppointments;
+            }
+          }
+
+          if (hasSecretaryRole === false && hasDirectorRole === false) {
             schedulingData = await getSchedulingByRole({ userId: session.id });
           }
 
@@ -336,7 +352,6 @@ export default function CalendarPage() {
       return;
     }
 
-    // Verificar permissões
     const isDirectorOfCourse =
       isDirector &&
       directorCourses.some((course) => course.id === scheduleToDelete.courseId);
@@ -415,7 +430,7 @@ export default function CalendarPage() {
                     <span>Diretor</span>
                   </div>
                 )}
-                {academicCourses.length > 0 && (
+                {academicCourses.length > 0 && !isSecretary && (
                   <div className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
                     <User className="h-4 w-4" />
                     <span>Professor</span>
@@ -495,29 +510,27 @@ export default function CalendarPage() {
                       >
                         {course.name}
                       </label>
-                      <div className="flex gap-1 shrink-0">
+                      <div className="flex gap-1 shrink-0 flex-wrap justify-end">
                         {isSecretary && (
-                          <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full flex items-center gap-1 whitespace-nowrap">
                             <ClipboardList className="h-3 w-3" />
                             Secretaria
                           </span>
                         )}
 
-                        {isDirector && isDirectorCourse && !isSecretary && (
-                          <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        {isDirector && isDirectorCourse && (
+                          <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full flex items-center gap-1 whitespace-nowrap">
                             <Shield className="h-3 w-3" />
                             Diretor
                           </span>
                         )}
 
-                        {isProfessorCourse &&
-                          !isDirectorCourse &&
-                          !isSecretary && (
-                            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              Professor
-                            </span>
-                          )}
+                        {isProfessorCourse && (
+                          <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full flex items-center gap-1 whitespace-nowrap">
+                            <User className="h-3 w-3" />
+                            Professor
+                          </span>
+                        )}
                       </div>
                     </div>
                   );
