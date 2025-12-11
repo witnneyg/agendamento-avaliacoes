@@ -11,6 +11,7 @@ import {
   Shield,
   User,
   Loader2,
+  ClipboardList,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,6 @@ import { useRouter } from "next/navigation";
 import { NavBar } from "../_components/navbar";
 import { ptBR } from "date-fns/locale";
 import { getUserCourses } from "../_actions/user/get-user-courses";
-import { getScheduling } from "../_actions/scheduling/get-scheduling";
 import { deleteSchedule } from "../_actions/scheduling/delete-schedule";
 import type {
   Scheduling,
@@ -45,6 +45,7 @@ import { AppointmentItem } from "../_components/AppointItem";
 import { getDepartmentColor } from "@/utils/getDepartamentColor";
 import { getDirectorByUserId } from "../_actions/get-director-by-user-id";
 import { getCoursesByDirectorId } from "../_actions/get-courses-by-director-id";
+import { getSchedulingByRole } from "../_actions/scheduling/get-scheduling-by-role";
 
 export type SchedulingWithRelations = Scheduling & {
   course: Course;
@@ -119,6 +120,7 @@ export default function CalendarPage() {
   const [view, setView] = useState<"week" | "day" | "fortnight">("week");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDirector, setIsDirector] = useState(false);
+  const [isSecretary, setIsSecretary] = useState(false);
   const [directorCourses, setDirectorCourses] = useState<Course[]>([]);
   const [isLoadingUserRoles, setIsLoadingUserRoles] = useState(true);
   const router = useRouter();
@@ -164,21 +166,29 @@ export default function CalendarPage() {
         setUser(session);
 
         if (session) {
-          const [coursesData, schedulingData] = await Promise.all([
-            getUserCourses(),
-            getScheduling(),
-          ]);
-
+          const coursesData = await getUserCourses();
           setAcademicCourses(coursesData as any);
-          setSchedulingCourses(schedulingData as any);
 
+          // Verificar roles do usuário
           const hasDirectorRole = session.roles?.some(
             (role) => role.name === "DIRECAO"
           );
 
-          let directorCoursesData: Course[] = [];
+          const hasSecretaryRole = session.roles?.some(
+            (role) => role.name === "SECRETARIA" // Ajuste conforme seu sistema
+          );
 
-          if (hasDirectorRole) {
+          setIsSecretary(hasSecretaryRole || false);
+
+          let directorCoursesData: Course[] = [];
+          let schedulingData: any = [];
+
+          if (hasSecretaryRole) {
+            // SECRETARIA: Vê TODOS os agendamentos
+            setIsSecretary(true);
+            schedulingData = await getSchedulingByRole({ isSecretary: true });
+          } else if (hasDirectorRole) {
+            // DIRETOR: Vê agendamentos dos seus cursos
             const directorData = await getDirectorByUserId(session.id);
             if (directorData) {
               setIsDirector(true);
@@ -186,8 +196,22 @@ export default function CalendarPage() {
                 directorData.id
               );
               setDirectorCourses(directorCoursesData);
+
+              schedulingData = await getSchedulingByRole({
+                directorId: directorData.id,
+              });
+            } else {
+              // Se tem role de diretor mas não tem registro, busca apenas seus agendamentos
+              schedulingData = await getSchedulingByRole({
+                userId: session.id,
+              });
             }
+          } else {
+            // USUÁRIO NORMAL (Professor/Aluno): Vê apenas seus agendamentos
+            schedulingData = await getSchedulingByRole({ userId: session.id });
           }
+
+          setSchedulingCourses(schedulingData as any);
 
           const allCoursesForStorage = [
             ...(coursesData as Course[]),
@@ -312,19 +336,25 @@ export default function CalendarPage() {
       return;
     }
 
+    // Verificar permissões
     const isDirectorOfCourse =
       isDirector &&
       directorCourses.some((course) => course.id === scheduleToDelete.courseId);
+
     const isOwner = scheduleToDelete.userId === user.id;
 
-    const canDelete = isDirectorOfCourse || isOwner;
+    const isSecretaryUser = isSecretary;
+
+    const canDelete = isDirectorOfCourse || isOwner || isSecretaryUser;
 
     if (!canDelete) {
-      alert(
-        isDirector
-          ? "Você só pode excluir agendamentos dos cursos que administra"
-          : "Você só pode excluir seus próprios agendamentos"
-      );
+      if (isDirector) {
+        alert("Você só pode excluir agendamentos dos cursos que administra");
+      } else if (isSecretary) {
+        alert("Como secretaria, você pode excluir qualquer agendamento");
+      } else {
+        alert("Você só pode excluir seus próprios agendamentos");
+      }
       return;
     }
 
@@ -373,13 +403,18 @@ export default function CalendarPage() {
               </div>
             ) : user ? (
               <>
+                {isSecretary && (
+                  <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+                    <ClipboardList className="h-4 w-4" />
+                    <span>Secretaria</span>
+                  </div>
+                )}
                 {isDirector && (
                   <div className="flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
                     <Shield className="h-4 w-4" />
                     <span>Diretor</span>
                   </div>
                 )}
-
                 {academicCourses.length > 0 && (
                   <div className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
                     <User className="h-4 w-4" />
@@ -461,18 +496,28 @@ export default function CalendarPage() {
                         {course.name}
                       </label>
                       <div className="flex gap-1 shrink-0">
-                        {isDirector && isDirectorCourse && (
+                        {isSecretary && (
+                          <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <ClipboardList className="h-3 w-3" />
+                            Secretaria
+                          </span>
+                        )}
+
+                        {isDirector && isDirectorCourse && !isSecretary && (
                           <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full flex items-center gap-1">
                             <Shield className="h-3 w-3" />
                             Diretor
                           </span>
                         )}
-                        {isProfessorCourse && !isDirectorCourse && (
-                          <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            Professor
-                          </span>
-                        )}
+
+                        {isProfessorCourse &&
+                          !isDirectorCourse &&
+                          !isSecretary && (
+                            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              Professor
+                            </span>
+                          )}
                       </div>
                     </div>
                   );
@@ -682,6 +727,7 @@ export default function CalendarPage() {
                                       handleAppointmentDeleted
                                     }
                                     isDirector={isDirector}
+                                    isSecretary={isSecretary}
                                     directorCourses={directorCourses}
                                   />
 
@@ -720,6 +766,7 @@ export default function CalendarPage() {
                                                   handleAppointmentDeleted
                                                 }
                                                 isDirector={isDirector}
+                                                isSecretary={isSecretary}
                                                 directorCourses={
                                                   directorCourses
                                                 }

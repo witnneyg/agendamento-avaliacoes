@@ -11,7 +11,7 @@ import { Scheduling, Period } from "@prisma/client";
 import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Shield } from "lucide-react";
+import { AlertTriangle, Shield, ClipboardList } from "lucide-react"; // ← Adicionar ClipboardList
 import { getTranslatedPeriods } from "../_helpers/getOrderedPeriods";
 import {
   Dialog,
@@ -29,6 +29,7 @@ interface EditSchedulingModalProps {
   onSave: (updatedAppointments: Partial<Scheduling>[]) => void;
   disciplineDayPeriods: Period[];
   isDirector?: boolean;
+  isSecretary?: boolean; // ← Adicionar esta prop
   canEdit?: boolean;
 }
 
@@ -200,6 +201,7 @@ export const EditSchedulingModal = ({
   onSave,
   disciplineDayPeriods,
   isDirector = false,
+  isSecretary = false, // ← Receber esta prop
   canEdit = true,
 }: EditSchedulingModalProps) => {
   // TODOS OS HOOKS PRIMEIRO (SEM NENHUM RETURN ANTES DELES)
@@ -504,6 +506,12 @@ export const EditSchedulingModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Editar Agendamento
+            {isSecretary && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                <ClipboardList className="h-3 w-3" />
+                Secretaria
+              </span>
+            )}
             {isDirector && (
               <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">
                 <Shield className="h-3 w-3" />
@@ -515,35 +523,69 @@ export const EditSchedulingModal = ({
 
         <div className="space-y-6">
           <div
-            className={`p-4 rounded-lg ${isDirector ? "bg-purple-50" : "bg-blue-50"}`}
+            className={`p-4 rounded-lg ${isSecretary ? "bg-green-50" : isDirector ? "bg-purple-50" : "bg-blue-50"}`}
           >
             <h3
-              className={`font-semibold mb-2 ${isDirector ? "text-purple-800" : "text-blue-800"}`}
+              className={`font-semibold mb-2 ${isSecretary ? "text-green-800" : isDirector ? "text-purple-800" : "text-blue-800"}`}
             >
-              {isDirector
-                ? "📋 Agendamento (Você administra este curso)"
-                : "📋 Agendamento Atual"}
+              {isSecretary
+                ? "📋 Agendamento (Edição pela Secretaria)"
+                : isDirector
+                  ? "📋 Agendamento (Você administra este curso)"
+                  : "📋 Agendamento Atual"}
             </h3>
             <div className="space-y-1 text-sm">
-              <p className={isDirector ? "text-purple-600" : "text-blue-600"}>
+              <p
+                className={
+                  isSecretary
+                    ? "text-green-600"
+                    : isDirector
+                      ? "text-purple-600"
+                      : "text-blue-600"
+                }
+              >
                 <strong>Curso:</strong>{" "}
                 {appointment.course?.name || "Não informado"}
               </p>
-              <p className={isDirector ? "text-purple-600" : "text-blue-600"}>
+              <p
+                className={
+                  isSecretary
+                    ? "text-green-600"
+                    : isDirector
+                      ? "text-purple-600"
+                      : "text-blue-600"
+                }
+              >
                 <strong>Data:</strong>{" "}
                 {format(originalAppointmentDate, "dd/MM/yyyy")}
               </p>
-              <p className={isDirector ? "text-purple-600" : "text-blue-600"}>
+              <p
+                className={
+                  isSecretary
+                    ? "text-green-600"
+                    : isDirector
+                      ? "text-purple-600"
+                      : "text-blue-600"
+                }
+              >
                 <strong>Horários reservados:</strong>{" "}
                 {currentTimeSlots.join(", ")}
               </p>
-              <p className={isDirector ? "text-purple-600" : "text-blue-600"}>
+              <p
+                className={
+                  isSecretary
+                    ? "text-green-600"
+                    : isDirector
+                      ? "text-purple-600"
+                      : "text-blue-600"
+                }
+              >
                 <strong>Quantidade de Horários:</strong> {requiredSlotsCount}
               </p>
             </div>
             {isLoading && (
               <p
-                className={`text-sm mt-2 ${isDirector ? "text-purple-600" : "text-blue-600"}`}
+                className={`text-sm mt-2 ${isSecretary ? "text-green-600" : isDirector ? "text-purple-600" : "text-blue-600"}`}
               >
                 <strong>Carregando agendamentos...</strong>
               </p>
@@ -657,7 +699,7 @@ export const EditSchedulingModal = ({
                             <div key={periodGroup.period} className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <div
-                                  className={`w-2 h-2 rounded-full ${isDirector ? "bg-purple-500" : "bg-primary"}`}
+                                  className={`w-2 h-2 rounded-full ${isSecretary ? "bg-green-500" : isDirector ? "bg-purple-500" : "bg-primary"}`}
                                 ></div>
                                 <Label className="text-base font-semibold">
                                   {periodGroup.period === Period.MORNING &&
@@ -691,8 +733,8 @@ export const EditSchedulingModal = ({
                                               !slot.isCurrentTimeSlot
                                             ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-500 border-gray-300 w-full justify-start"
                                             : selectedTimes.includes(slot.time)
-                                              ? `${isDirector ? "bg-purple-600 hover:bg-purple-700" : "bg-primary hover:bg-primary/90"} text-primary-foreground w-full justify-start`
-                                              : `hover:${isDirector ? "bg-purple-100" : "bg-primary/10"} cursor-pointer border-${isDirector ? "purple-300" : "primary"} w-full justify-start`
+                                              ? `${isSecretary ? "bg-green-600 hover:bg-green-700" : isDirector ? "bg-purple-600 hover:bg-purple-700" : "bg-primary hover:bg-primary/90"} text-primary-foreground w-full justify-start`
+                                              : `hover:${isSecretary ? "bg-green-100" : isDirector ? "bg-purple-100" : "bg-primary/10"} cursor-pointer border-${isSecretary ? "green-300" : isDirector ? "purple-300" : "primary"} w-full justify-start`
                                       }
                                       disabled={
                                         !slot.available &&
@@ -753,7 +795,7 @@ export const EditSchedulingModal = ({
                     </Button>
                     <Button
                       type="submit"
-                      className={`flex-1 ${isDirector ? "bg-purple-600 hover:bg-purple-700" : ""}`}
+                      className={`flex-1 ${isSecretary ? "bg-green-600 hover:bg-green-700" : isDirector ? "bg-purple-600 hover:bg-purple-700" : ""}`}
                       disabled={
                         !selectedDate ||
                         isSubmitting ||
@@ -773,6 +815,7 @@ export const EditSchedulingModal = ({
                       }
                     >
                       {isSubmitting ? "Salvando..." : "Salvar Alterações"}
+                      {isSecretary && " (como Secretaria)"}
                       {isDirector && " (como Diretor)"}
                     </Button>
                   </div>

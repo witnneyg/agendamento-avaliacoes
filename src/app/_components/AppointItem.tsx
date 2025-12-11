@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { cn } from "@/lib/utils";
-import { Edit, Trash2, X, Loader2, Shield } from "lucide-react";
+import { Edit, Trash2, X, Loader2, Shield, ClipboardList } from "lucide-react";
 import { getDepartmentColor } from "@/utils/getDepartamentColor";
 import {
   SchedulingWithRelations,
@@ -82,6 +82,7 @@ const extractTimeSlots = (appointment: SchedulingWithRelations) => {
 
 interface AppointmentItemProps {
   appointment: SchedulingWithRelations;
+  isSecretary?: boolean; // ← Adicione esta prop
   onDelete: (id: string) => void;
   userSession: UserWithoutEmailVerified | null;
   onAppointmentUpdated?: (
@@ -99,6 +100,7 @@ export const AppointmentItem = ({
   onAppointmentUpdated,
   onAppointmentDeleted,
   isDirector = false,
+  isSecretary = false, // ← Receba esta prop
   directorCourses = [],
 }: AppointmentItemProps) => {
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -111,10 +113,9 @@ export const AppointmentItem = ({
     isDirector &&
     directorCourses.some((course) => course.id === appointment.courseId);
 
-  // Diretor pode editar/deletar agendamentos dos cursos que administra
-  // Usuário normal só pode editar/deletar seus próprios agendamentos
-  const canEdit = isDirectorOfCourse || isOwner;
-  const canDeleteItem = isDirectorOfCourse || isOwner;
+  // Atualize as permissões para incluir a Secretaria
+  const canEdit = isSecretary || isDirectorOfCourse || isOwner;
+  const canDeleteItem = isSecretary || isDirectorOfCourse || isOwner;
 
   const timeSlots = extractTimeSlots(appointment);
 
@@ -122,11 +123,13 @@ export const AppointmentItem = ({
     e.stopPropagation();
 
     if (!canEdit) {
-      alert(
-        isDirector
-          ? "Você só pode editar agendamentos dos cursos que administra"
-          : "Você só pode editar seus próprios agendamentos"
-      );
+      if (isDirector) {
+        alert("Você só pode editar agendamentos dos cursos que administra");
+      } else if (isSecretary) {
+        alert("Como secretaria, você pode editar qualquer agendamento");
+      } else {
+        alert("Você só pode editar seus próprios agendamentos");
+      }
       return;
     }
 
@@ -137,11 +140,13 @@ export const AppointmentItem = ({
     e.stopPropagation();
 
     if (!canDeleteItem) {
-      alert(
-        isDirector
-          ? "Você só pode excluir agendamentos dos cursos que administra"
-          : "Você só pode excluir seus próprios agendamentos"
-      );
+      if (isDirector) {
+        alert("Você só pode excluir agendamentos dos cursos que administra");
+      } else if (isSecretary) {
+        alert("Como secretaria, você pode excluir qualquer agendamento");
+      } else {
+        alert("Você só pode excluir seus próprios agendamentos");
+      }
       return;
     }
 
@@ -203,9 +208,13 @@ export const AppointmentItem = ({
               getDepartmentColor(appointment.course.name)
             )}
           >
-            {isDirectorOfCourse && (
+            {(isDirectorOfCourse || isSecretary) && (
               <div className="absolute top-1 right-1">
-                <Shield className="h-3 w-3 text-purple-600" />
+                {isSecretary ? (
+                  <ClipboardList className="h-3 w-3 text-green-600" />
+                ) : (
+                  <Shield className="h-3 w-3 text-purple-600" />
+                )}
               </div>
             )}
             <div className="overflow-hidden">
@@ -229,9 +238,11 @@ export const AppointmentItem = ({
                   onClick={handleEditClick}
                   className="h-4 w-4 cursor-pointer hover:text-blue-500 transition-colors"
                   title={
-                    isDirectorOfCourse
-                      ? "Editar (administra este curso)"
-                      : "Editar"
+                    isSecretary
+                      ? "Editar (secretaria)"
+                      : isDirectorOfCourse
+                        ? "Editar (administra este curso)"
+                        : "Editar"
                   }
                 >
                   <Edit className="h-4 w-4" />
@@ -242,9 +253,11 @@ export const AppointmentItem = ({
                   onClick={handleDeleteClick}
                   className="h-4 w-4 cursor-pointer hover:text-red-500 transition-colors"
                   title={
-                    isDirectorOfCourse
-                      ? "Excluir (administra este curso)"
-                      : "Excluir"
+                    isSecretary
+                      ? "Excluir (secretaria)"
+                      : isDirectorOfCourse
+                        ? "Excluir (administra este curso)"
+                        : "Excluir"
                   }
                 >
                   <Trash2 className="h-4 w-4" />
@@ -263,7 +276,13 @@ export const AppointmentItem = ({
               />
               <p className="font-medium">Disciplina:</p>
               {appointment.discipline.name}
-              {isDirectorOfCourse && (
+              {isSecretary && (
+                <span className="ml-2 text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full">
+                  <ClipboardList className="h-3 w-3 inline mr-1" />
+                  Secretaria
+                </span>
+              )}
+              {!isSecretary && isDirectorOfCourse && (
                 <span className="ml-2 text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full">
                   <Shield className="h-3 w-3 inline mr-1" />
                   Administra
@@ -327,19 +346,37 @@ export const AppointmentItem = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              {isDirectorOfCourse ? (
+              {isSecretary ? (
+                <>
+                  <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded">
+                    <div className="flex items-center gap-2 text-green-700">
+                      <ClipboardList className="h-4 w-4" />
+                      <span className="font-medium">Ação da Secretaria</span>
+                    </div>
+                    <p className="text-sm mt-1">
+                      Você está excluindo um agendamento como secretaria.
+                    </p>
+                  </div>
+                </>
+              ) : isDirectorOfCourse ? (
                 <>
                   Você está excluindo um agendamento de um curso que administra.
-                  <br />
-                  <strong>Professor:</strong> {appointment.name}
-                  <br />
-                  <strong>Curso:</strong> {appointment.course.name}
-                  <br />
-                  <strong>Disciplina:</strong> {appointment.discipline.name}
                 </>
-              ) : (
-                "Tem certeza que deseja excluir este agendamento? Esta ação não pode ser desfeita."
-              )}
+              ) : null}
+              <div className="mt-2 space-y-1">
+                <div>
+                  <strong>Professor:</strong> {appointment.name}
+                </div>
+                <div>
+                  <strong>Curso:</strong> {appointment.course.name}
+                </div>
+                <div>
+                  <strong>Disciplina:</strong> {appointment.discipline.name}
+                </div>
+                <div className="mt-2 text-red-600 font-medium">
+                  Esta ação não pode ser desfeita.
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -376,6 +413,7 @@ export const AppointmentItem = ({
           onSave={handleSave}
           disciplineDayPeriods={appointment.discipline.dayPeriods}
           isDirector={isDirector}
+          isSecretary={isSecretary} // ← Passe para o modal
           canEdit={canEdit}
         />
       )}
