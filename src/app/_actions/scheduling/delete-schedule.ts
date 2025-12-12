@@ -9,6 +9,32 @@ export async function deleteSchedule(scheduleId: string) {
 
   if (!session?.user?.email) throw new Error("Usuário não logado");
 
+  const userWithRoles = await db.user.findUnique({
+    where: {
+      email: session.user.email,
+    },
+    include: {
+      roles: true,
+    },
+  });
+
+  if (!userWithRoles) {
+    throw new Error("Usuário não encontrado");
+  }
+
+  const isSecretary = userWithRoles.roles.some(
+    (role) => role.name === "SECRETARIA"
+  );
+
+  if (isSecretary) {
+    await db.scheduling.delete({
+      where: {
+        id: scheduleId,
+      },
+    });
+    return;
+  }
+
   const schedule = await db.scheduling.findUnique({
     where: {
       id: scheduleId,

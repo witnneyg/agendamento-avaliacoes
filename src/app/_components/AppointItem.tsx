@@ -361,76 +361,77 @@ export const AppointmentItem = ({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              {/* Mostrar TODAS as roles que se aplicam */}
-              <div className="space-y-2 mb-3">
-                {isSecretary && (
-                  <div className="p-2 bg-green-50 border border-green-200 rounded">
-                    <div className="flex items-center gap-2 text-green-700">
-                      <ClipboardList className="h-4 w-4" />
-                      <span className="font-medium">Ação da Secretaria</span>
-                    </div>
-                    <p className="text-sm mt-1">
-                      Você está excluindo um agendamento como secretaria.
-                    </p>
-                  </div>
-                )}
-
-                {isDirectorOfCourse && (
-                  <div className="p-2 bg-purple-50 border border-purple-200 rounded">
-                    <div className="flex items-center gap-2 text-purple-700">
-                      <Shield className="h-4 w-4" />
-                      <span className="font-medium">Ação de Diretor</span>
-                    </div>
-                    <p className="text-sm mt-1">
-                      Você está excluindo um agendamento de um curso que
-                      administra.
-                    </p>
-                  </div>
-                )}
-
-                {isProfessorOfCourse && (
-                  <div className="p-2 bg-blue-50 border border-blue-200 rounded">
-                    <div className="flex items-center gap-2 text-blue-700">
-                      <User className="h-4 w-4" />
-                      <span className="font-medium">Ação de Professor</span>
-                    </div>
-                    <p className="text-sm mt-1">
-                      Você está excluindo um agendamento de um curso onde é
-                      professor.
-                    </p>
-                  </div>
-                )}
-
-                {isOwner && !isProfessorOfCourse && (
-                  <div className="p-2 bg-gray-50 border border-gray-200 rounded">
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <User className="h-4 w-4" />
-                      <span className="font-medium">Seu Agendamento</span>
-                    </div>
-                    <p className="text-sm mt-1">
-                      Você está excluindo seu próprio agendamento.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-2 space-y-1">
-                <div>
-                  <strong>Professor:</strong> {appointment.name}
-                </div>
-                <div>
-                  <strong>Curso:</strong> {appointment.course.name}
-                </div>
-                <div>
-                  <strong>Disciplina:</strong> {appointment.discipline.name}
-                </div>
-                <div className="mt-2 text-red-600 font-medium">
-                  Esta ação não pode ser desfeita.
-                </div>
-              </div>
-            </AlertDialogDescription>
           </AlertDialogHeader>
+
+          <div className="mt-4 space-y-3">
+            <div className="space-y-2 mb-3">
+              {isSecretary && (
+                <div className="p-2 bg-green-50 border border-green-200 rounded">
+                  <div className="flex items-center gap-2 text-green-700">
+                    <ClipboardList className="h-4 w-4" />
+                    <span className="font-medium">Ação da Secretaria</span>
+                  </div>
+                  <p className="text-sm mt-1">
+                    Você está excluindo um agendamento como secretaria.
+                  </p>
+                </div>
+              )}
+
+              {isDirectorOfCourse && (
+                <div className="p-2 bg-purple-50 border border-purple-200 rounded">
+                  <div className="flex items-center gap-2 text-purple-700">
+                    <Shield className="h-4 w-4" />
+                    <span className="font-medium">Ação de Diretor</span>
+                  </div>
+                  <p className="text-sm mt-1">
+                    Você está excluindo um agendamento de um curso que
+                    administra.
+                  </p>
+                </div>
+              )}
+
+              {isProfessorOfCourse && (
+                <div className="p-2 bg-blue-50 border border-blue-200 rounded">
+                  <div className="flex items-center gap-2 text-blue-700">
+                    <User className="h-4 w-4" />
+                    <span className="font-medium">Ação de Professor</span>
+                  </div>
+                  <p className="text-sm mt-1">
+                    Você está excluindo um agendamento de um curso onde é
+                    professor.
+                  </p>
+                </div>
+              )}
+
+              {isOwner && !isProfessorOfCourse && (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded">
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <User className="h-4 w-4" />
+                    <span className="font-medium">Seu Agendamento</span>
+                  </div>
+                  <p className="text-sm mt-1">
+                    Você está excluindo seu próprio agendamento.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-2 space-y-1">
+              <div>
+                <strong>Professor:</strong> {appointment.name}
+              </div>
+              <div>
+                <strong>Curso:</strong> {appointment.course.name}
+              </div>
+              <div>
+                <strong>Disciplina:</strong> {appointment.discipline.name}
+              </div>
+              <div className="mt-2 text-red-600 font-medium">
+                Esta ação não pode ser desfeita.
+              </div>
+            </div>
+          </div>
+
           <AlertDialogFooter>
             <AlertDialogCancel
               onClick={handleCancelDelete}
