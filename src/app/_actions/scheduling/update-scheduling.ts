@@ -20,17 +20,32 @@ interface UpdatedAppointment {
 interface UpdateSchedulingInput {
   appointmentId: string;
   updatedAppointments: UpdatedAppointment[];
+  isSecretary?: boolean;
+  isDirector?: boolean;
 }
 
 export async function updateScheduling({
   appointmentId,
   updatedAppointments,
+  isSecretary = false,
+  isDirector = false,
 }: UpdateSchedulingInput) {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
       return { success: false, error: "Usuário não logado" };
+    }
+
+    const user = await db.user.findUnique({
+      where: { email: session.user.email },
+      include: {
+        roles: true,
+      },
+    });
+
+    if (!user) {
+      return { success: false, error: "Usuário não encontrado" };
     }
 
     const existingAppointment = await db.scheduling.findUnique({
@@ -44,20 +59,31 @@ export async function updateScheduling({
       return { success: false, error: "Agendamento não encontrado" };
     }
 
-    const isOwner = existingAppointment.userId === session.user.id;
+    const hasSecretaryRole = user.roles.some(
+      (role) => role.name === "SECRETARIA"
+    );
+    const hasDirectorRole = user.roles.some((role) => role.name === "DIRECAO");
+
+    const isSecretaryUser = isSecretary || hasSecretaryRole;
+    const isDirectorUser = isDirector || hasDirectorRole;
+
+    const isOwner = existingAppointment.userId === user.id;
 
     const isDirectorOfCourse = await db.course.findFirst({
       where: {
         id: existingAppointment.courseId,
         directors: {
           some: {
-            userId: session.user.id,
+            userId: user.id,
           },
         },
       },
     });
 
-    if (!isOwner && !isDirectorOfCourse) {
+    const canEdit =
+      isSecretaryUser || (isDirectorUser && isDirectorOfCourse) || isOwner;
+
+    if (!canEdit) {
       return {
         success: false,
         error: "Você não tem permissão para editar este agendamento",

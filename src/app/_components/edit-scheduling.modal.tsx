@@ -515,6 +515,8 @@ export const EditSchedulingModal = ({
       const result: any = await updateScheduling({
         appointmentId: appointment.id,
         updatedAppointments: [updatedAppointment],
+        isSecretary,
+        isDirector,
       });
 
       if (result.success) {
