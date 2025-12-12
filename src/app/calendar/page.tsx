@@ -46,6 +46,7 @@ import { getDepartmentColor } from "@/utils/getDepartamentColor";
 import { getDirectorByUserId } from "../_actions/get-director-by-user-id";
 import { getCoursesByDirectorId } from "../_actions/get-courses-by-director-id";
 import { getSchedulingByRole } from "../_actions/scheduling/get-scheduling-by-role";
+import { getAllCourses } from "../_actions/coursers/getAllCoursers";
 
 export type SchedulingWithRelations = Scheduling & {
   course: Course;
@@ -116,11 +117,14 @@ export default function CalendarPage() {
   const [visibleDepartments, setVisibleDepartments] = useState<
     Record<string, boolean>
   >({});
-  const [user, setUser] = useState<UserWithoutEmailVerified | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [view, setView] = useState<"week" | "day" | "fortnight">("week");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDirector, setIsDirector] = useState(false);
   const [isSecretary, setIsSecretary] = useState(false);
+  const [isProfessor, setIsProfessor] = useState(false);
+  const [professorCourses, setProfessorCourses] = useState<Course[]>([]);
+
   const [directorCourses, setDirectorCourses] = useState<Course[]>([]);
   const [isLoadingUserRoles, setIsLoadingUserRoles] = useState(true);
   const router = useRouter();
@@ -166,8 +170,10 @@ export default function CalendarPage() {
         setUser(session);
 
         if (session) {
-          const coursesData = await getUserCourses();
-          setAcademicCourses(coursesData as any);
+          // Verifique as roles do usuário
+          const hasProfessorRole = session.roles?.some(
+            (role) => role.name === "PROFESSOR"
+          );
 
           const hasDirectorRole = session.roles?.some(
             (role) => role.name === "DIRECAO"
@@ -177,14 +183,59 @@ export default function CalendarPage() {
             (role) => role.name === "SECRETARIA"
           );
 
+          // ATUALIZE OS ESTADOS AQUI
           setIsSecretary(hasSecretaryRole || false);
+          setIsDirector(hasDirectorRole || false);
+          setIsProfessor(hasProfessorRole || false);
 
+          let professorCoursesData: Course[] = [];
           let directorCoursesData: Course[] = [];
-
+          let secretaryCoursesData: any = [];
           let schedulingData: any = [];
 
+          if (hasProfessorRole) {
+            professorCoursesData = (await getUserCourses()) as Course[];
+            setProfessorCourses(professorCoursesData);
+            console.log("Cursos do professor:", professorCoursesData);
+          }
+
+          if (hasDirectorRole) {
+            const directorData = await getDirectorByUserId(session.id);
+            if (directorData) {
+              directorCoursesData = await getCoursesByDirectorId(
+                directorData.id
+              );
+              setDirectorCourses(directorCoursesData);
+              console.log("Cursos do diretor:", directorCoursesData);
+            }
+          }
+
           if (hasSecretaryRole) {
-            setIsSecretary(true);
+            secretaryCoursesData = await getAllCourses();
+            console.log("Todos os cursos (secretaria):", secretaryCoursesData);
+          }
+
+          const allCoursesMap = new Map<string, Course>();
+
+          if (hasSecretaryRole) {
+            secretaryCoursesData.forEach((course: Course) => {
+              allCoursesMap.set(course.id, course);
+            });
+          } else {
+            professorCoursesData.forEach((course: Course) => {
+              allCoursesMap.set(course.id, course);
+            });
+          }
+
+          directorCoursesData.forEach((course: Course) => {
+            allCoursesMap.set(course.id, course);
+          });
+
+          const combinedCourses = Array.from(allCoursesMap.values());
+          setAcademicCourses(combinedCourses);
+          console.log("Cursos combinados:", combinedCourses);
+
+          if (hasSecretaryRole) {
             schedulingData = await getSchedulingByRole({ isSecretary: true });
           } else {
             const allUserAppointments = await getSchedulingByRole({
@@ -194,12 +245,6 @@ export default function CalendarPage() {
             if (hasDirectorRole) {
               const directorData = await getDirectorByUserId(session.id);
               if (directorData) {
-                setIsDirector(true);
-                directorCoursesData = await getCoursesByDirectorId(
-                  directorData.id
-                );
-                setDirectorCourses(directorCoursesData);
-
                 const directorAppointments = await getSchedulingByRole({
                   directorId: directorData.id,
                 });
@@ -230,7 +275,7 @@ export default function CalendarPage() {
           setSchedulingCourses(schedulingData as any);
 
           const allCoursesForStorage = [
-            ...(coursesData as Course[]),
+            ...combinedCourses,
             ...directorCoursesData,
           ];
 
@@ -397,6 +442,8 @@ export default function CalendarPage() {
     }
   };
 
+  console.log({ isProfessor });
+
   const SidebarContent = () => {
     return (
       <>
@@ -430,7 +477,7 @@ export default function CalendarPage() {
                     <span>Diretor</span>
                   </div>
                 )}
-                {academicCourses.length > 0 && (
+                {isProfessor && (
                   <div className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
                     <User className="h-4 w-4" />
                     <span>Professor</span>
@@ -440,7 +487,6 @@ export default function CalendarPage() {
             ) : null}
           </div>
         </div>
-
         <div className="mb-6">
           <Button
             onClick={handleNewAppointment}
@@ -451,7 +497,6 @@ export default function CalendarPage() {
             Novo Agendamento
           </Button>
         </div>
-
         <div className="mb-6">
           <Calendar
             mode="single"
@@ -461,7 +506,6 @@ export default function CalendarPage() {
             locale={ptBR}
           />
         </div>
-
         <div>
           <h3 className="font-medium mb-4">Cursos</h3>
           <div className="space-y-2">
@@ -483,7 +527,9 @@ export default function CalendarPage() {
                   const isDirectorCourse = directorCourses.some(
                     (c) => c.id === course.id
                   );
-                  const isProfessorCourse = academicCourses.some(
+
+                  // VERIFICAÇÃO CORRETA: é curso do professor?
+                  const isProfessorCourse = professorCourses.some(
                     (c) => c.id === course.id
                   );
 
@@ -523,7 +569,8 @@ export default function CalendarPage() {
                           </span>
                         )}
 
-                        {isProfessorCourse && (
+                        {/* SÓ MOSTRA BADGE DE PROFESSOR SE FOR CURSO DO PROFESSOR */}
+                        {isProfessor && isProfessorCourse && (
                           <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full flex items-center gap-1 whitespace-nowrap">
                             <User className="h-3 w-3" />
                           </span>
