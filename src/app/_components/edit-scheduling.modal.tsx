@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Controller, useForm } from "react-hook-form";
@@ -11,7 +11,7 @@ import { Scheduling, Period } from "@prisma/client";
 import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Shield, ClipboardList } from "lucide-react"; // ← Adicionar ClipboardList
+import { AlertTriangle, Shield, ClipboardList } from "lucide-react";
 import { getTranslatedPeriods } from "../_helpers/getOrderedPeriods";
 import {
   Dialog,
@@ -29,7 +29,7 @@ interface EditSchedulingModalProps {
   onSave: (updatedAppointments: Partial<Scheduling>[]) => void;
   disciplineDayPeriods: Period[];
   isDirector?: boolean;
-  isSecretary?: boolean; // ← Adicionar esta prop
+  isSecretary?: boolean;
   canEdit?: boolean;
 }
 
@@ -201,10 +201,10 @@ export const EditSchedulingModal = ({
   onSave,
   disciplineDayPeriods,
   isDirector = false,
-  isSecretary = false, // ← Receber esta prop
+  isSecretary = false,
   canEdit = true,
 }: EditSchedulingModalProps) => {
-  // TODOS OS HOOKS PRIMEIRO (SEM NENHUM RETURN ANTES DELES)
+  // Estado e refs
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date(appointment.date)
   );
@@ -213,7 +213,10 @@ export const EditSchedulingModal = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeSlots, setTimeSlots] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasLoadedScheduledTimes, setHasLoadedScheduledTimes] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Memo values
   const currentTimeSlots = useMemo(
     () => extractCurrentTimeSlots(appointment),
     [appointment]
@@ -224,6 +227,7 @@ export const EditSchedulingModal = ({
   );
   const requiredSlotsCount = currentTimeSlots.length;
 
+  // Form
   const {
     handleSubmit,
     control,
@@ -239,17 +243,27 @@ export const EditSchedulingModal = ({
     },
   });
 
+  // Função para atualizar timeSlots com debounce
   const updateTimeSlots = useCallback(() => {
     if (!selectedDate || scheduledTimes.length === 0) return;
-    const slots = generateTimeSlotsAndCheckAvailability(
-      selectedDate,
-      scheduledTimes,
-      disciplineDayPeriods,
-      appointment.id,
-      currentTimeSlots,
-      originalAppointmentDate
-    );
-    setTimeSlots(slots);
+
+    // Limpar timeout anterior
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Usar debounce para evitar atualizações muito frequentes
+    timeoutRef.current = setTimeout(() => {
+      const slots = generateTimeSlotsAndCheckAvailability(
+        selectedDate,
+        scheduledTimes,
+        disciplineDayPeriods,
+        appointment.id,
+        currentTimeSlots,
+        originalAppointmentDate
+      );
+      setTimeSlots(slots);
+    }, 50); // Debounce de 50ms
   }, [
     selectedDate,
     scheduledTimes,
@@ -259,13 +273,24 @@ export const EditSchedulingModal = ({
     originalAppointmentDate,
   ]);
 
+  // Cleanup do timeout
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Buscar agendamentos apenas uma vez quando o modal abrir
   useEffect(() => {
     async function fetchScheduledTimes() {
-      if (isOpen) {
+      if (isOpen && !hasLoadedScheduledTimes) {
         setIsLoading(true);
         try {
           const schedulingData = await getScheduling();
           setScheduledTimes(schedulingData as any);
+          setHasLoadedScheduledTimes(true);
         } catch (error) {
           console.error("Erro ao buscar agendamentos:", error);
         } finally {
@@ -274,8 +299,23 @@ export const EditSchedulingModal = ({
       }
     }
     fetchScheduledTimes();
+  }, [isOpen, hasLoadedScheduledTimes]);
+
+  // Resetar quando fechar o modal
+  useEffect(() => {
+    if (!isOpen) {
+      setHasLoadedScheduledTimes(false);
+    }
   }, [isOpen]);
 
+  // Atualizar timeSlots quando selectedDate ou scheduledTimes mudar
+  useEffect(() => {
+    if (selectedDate && scheduledTimes.length > 0) {
+      updateTimeSlots();
+    }
+  }, [selectedDate, scheduledTimes]); // Não inclua updateTimeSlots nas dependências
+
+  // Calcular count de agendamentos existentes
   useEffect(() => {
     if (!selectedDate || scheduledTimes.length === 0) {
       setExistingAppointmentsCount(0);
@@ -300,10 +340,7 @@ export const EditSchedulingModal = ({
     setExistingAppointmentsCount(count);
   }, [selectedDate, scheduledTimes, appointment]);
 
-  useEffect(() => {
-    if (selectedDate && scheduledTimes.length > 0) updateTimeSlots();
-  }, [selectedDate, scheduledTimes, updateTimeSlots]);
-
+  // Resetar form quando modal abrir
   useEffect(() => {
     if (isOpen) {
       reset({
@@ -311,15 +348,15 @@ export const EditSchedulingModal = ({
         time: extractCurrentTimeSlots(appointment),
       });
       setSelectedDate(new Date(appointment.date));
-      if (scheduledTimes.length > 0) updateTimeSlots();
     }
-  }, [isOpen, appointment.date, reset, scheduledTimes.length, updateTimeSlots]);
+  }, [isOpen, appointment.date, reset]);
 
-  // APÓS TODOS OS HOOKS, AGORA PODEMOS FAZER O RETURN CONDICIONAL
+  // Verificar se pode editar
   if (!canEdit) {
     return null;
   }
 
+  // Funções
   const isDateDisabled = (date: Date): boolean => {
     if (isPastDate(date)) return true;
 
@@ -522,76 +559,6 @@ export const EditSchedulingModal = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          <div
-            className={`p-4 rounded-lg ${isSecretary ? "bg-green-50" : isDirector ? "bg-purple-50" : "bg-blue-50"}`}
-          >
-            <h3
-              className={`font-semibold mb-2 ${isSecretary ? "text-green-800" : isDirector ? "text-purple-800" : "text-blue-800"}`}
-            >
-              {isSecretary
-                ? "📋 Agendamento (Edição pela Secretaria)"
-                : isDirector
-                  ? "📋 Agendamento (Você administra este curso)"
-                  : "📋 Agendamento Atual"}
-            </h3>
-            <div className="space-y-1 text-sm">
-              <p
-                className={
-                  isSecretary
-                    ? "text-green-600"
-                    : isDirector
-                      ? "text-purple-600"
-                      : "text-blue-600"
-                }
-              >
-                <strong>Curso:</strong>{" "}
-                {appointment.course?.name || "Não informado"}
-              </p>
-              <p
-                className={
-                  isSecretary
-                    ? "text-green-600"
-                    : isDirector
-                      ? "text-purple-600"
-                      : "text-blue-600"
-                }
-              >
-                <strong>Data:</strong>{" "}
-                {format(originalAppointmentDate, "dd/MM/yyyy")}
-              </p>
-              <p
-                className={
-                  isSecretary
-                    ? "text-green-600"
-                    : isDirector
-                      ? "text-purple-600"
-                      : "text-blue-600"
-                }
-              >
-                <strong>Horários reservados:</strong>{" "}
-                {currentTimeSlots.join(", ")}
-              </p>
-              <p
-                className={
-                  isSecretary
-                    ? "text-green-600"
-                    : isDirector
-                      ? "text-purple-600"
-                      : "text-blue-600"
-                }
-              >
-                <strong>Quantidade de Horários:</strong> {requiredSlotsCount}
-              </p>
-            </div>
-            {isLoading && (
-              <p
-                className={`text-sm mt-2 ${isSecretary ? "text-green-600" : isDirector ? "text-purple-600" : "text-blue-600"}`}
-              >
-                <strong>Carregando agendamentos...</strong>
-              </p>
-            )}
-          </div>
-
           <div className="flex flex-col space-y-4">
             <Label className="flex items-center gap-2">
               Selecione uma nova data
