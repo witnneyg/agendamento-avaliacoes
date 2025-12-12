@@ -52,12 +52,12 @@ import {
 import { Plus, Edit, Trash2, Loader2, Search, Filter, X } from "lucide-react";
 import type { Course, Period, Prisma, Semester } from "@prisma/client";
 
-import { getDisciplines } from "@/app/_actions/discipline/get-disciplines";
 import { createDiscipline } from "@/app/_actions/discipline/create-discipline";
 import { getSemesterByCourse } from "@/app/_actions/semesters/get-semester-by-course-selected";
 import { deleteDiscipline } from "../_actions/discipline/delete-discipline";
 import { updateDiscipline } from "../_actions/discipline/update-discipline";
-import { getCourses } from "../_actions/coursers/get-coursers";
+import { getDisciplinesByDirector } from "../_actions/director/get-disciplines-by-director";
+import { getCoursesByDirector } from "../_actions/director/get-coursers-by-director";
 
 const disciplineSchema = z.object({
   name: z.string().min(1, "O nome da disciplina é obrigatório"),
@@ -103,8 +103,8 @@ export default function DisciplinesTab() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCourseFilter, setSelectedCourseFilter] = useState("");
-  const [selectedSemesterFilter, setSelectedSemesterFilter] = useState("");
+  const [selectedCourseFilter, setSelectedCourseFilter] = useState("todos");
+  const [selectedSemesterFilter, setSelectedSemesterFilter] = useState("todos");
 
   const {
     control,
@@ -128,12 +128,14 @@ export default function DisciplinesTab() {
     async function fetchData() {
       setIsLoading(true);
       try {
-        const disciplinesData = await getDisciplines();
+        const disciplinesData = await getDisciplinesByDirector();
         setDisciplinas(disciplinesData as any);
         setFilteredDisciplinas(disciplinesData as any);
 
-        const coursesData = await getCourses();
+        const coursesData = await getCoursesByDirector();
         setCourses(coursesData);
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
       } finally {
         setIsLoading(false);
       }
@@ -162,13 +164,13 @@ export default function DisciplinesTab() {
       );
     }
 
-    if (selectedCourseFilter) {
+    if (selectedCourseFilter && selectedCourseFilter !== "todos") {
       filtered = filtered.filter((disciplina) =>
         disciplina.courses.some((course) => course.id === selectedCourseFilter)
       );
     }
 
-    if (selectedSemesterFilter) {
+    if (selectedSemesterFilter && selectedSemesterFilter !== "todos") {
       filtered = filtered.filter(
         (disciplina) => disciplina.semester.id === selectedSemesterFilter
       );
@@ -259,8 +261,8 @@ export default function DisciplinesTab() {
 
   const clearFilters = () => {
     setSearchTerm("");
-    setSelectedCourseFilter("");
-    setSelectedSemesterFilter("");
+    setSelectedCourseFilter("todos");
+    setSelectedSemesterFilter("todos");
   };
 
   const uniqueSemesters = Array.from(
@@ -278,8 +280,18 @@ export default function DisciplinesTab() {
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Disciplinas</h2>
           <p className="text-muted-foreground">
-            Gerencie as disciplinas e matérias dos cursos
+            Gerencie as disciplinas dos seus cursos
           </p>
+          {courses.length > 0 && (
+            <p className="text-sm text-muted-foreground mt-1">
+              {courses.length} curso(s) vinculado(s) a você
+            </p>
+          )}
+          {courses.length === 0 && !isLoading && (
+            <p className="text-sm text-amber-600 mt-1">
+              ⚠️ Você não está vinculado a nenhum curso como diretor
+            </p>
+          )}
         </div>
         <Dialog
           open={isDialogOpen}
@@ -297,7 +309,7 @@ export default function DisciplinesTab() {
           }}
         >
           <DialogTrigger asChild>
-            <Button className="cursor-pointer">
+            <Button className="cursor-pointer" disabled={courses.length === 0}>
               <Plus className="mr-2 h-4 w-4" />
               Adicionar Disciplina
             </Button>
@@ -310,7 +322,7 @@ export default function DisciplinesTab() {
               <DialogDescription>
                 {editingDiscpline
                   ? "Atualize as informações da disciplina"
-                  : "Adicione uma nova disciplina ao sistema"}
+                  : "Adicione uma nova disciplina ao seu curso"}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -347,6 +359,11 @@ export default function DisciplinesTab() {
                             {curso.name}
                           </SelectItem>
                         ))}
+                        {courses.length === 0 && (
+                          <SelectItem value="sem-cursos" disabled>
+                            Nenhum curso disponível
+                          </SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   )}
@@ -377,6 +394,11 @@ export default function DisciplinesTab() {
                             {semestre.name}
                           </SelectItem>
                         ))}
+                        {semesters.length === 0 && selectedCourseId && (
+                          <SelectItem value="sem-periodos" disabled>
+                            Nenhum período disponível para este curso
+                          </SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   )}
@@ -464,7 +486,7 @@ export default function DisciplinesTab() {
                 <Button
                   type="submit"
                   className="cursor-pointer"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || courses.length === 0}
                 >
                   {isSubmitting ? (
                     <>
@@ -522,11 +544,17 @@ export default function DisciplinesTab() {
                   <SelectValue placeholder="Todos os cursos" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="todos">Todos os cursos</SelectItem>
                   {courses.map((curso) => (
                     <SelectItem key={curso.id} value={curso.id}>
                       {curso.name}
                     </SelectItem>
                   ))}
+                  {courses.length === 0 && (
+                    <SelectItem value="sem-cursos" disabled>
+                      Nenhum curso disponível
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -541,6 +569,7 @@ export default function DisciplinesTab() {
                   <SelectValue placeholder="Todos os períodos" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="todos">Todos os períodos</SelectItem>
                   {uniqueSemesters.map((semestre) => (
                     <SelectItem key={semestre.id} value={semestre.id}>
                       {semestre.name}
@@ -558,8 +587,8 @@ export default function DisciplinesTab() {
                 className="w-full cursor-pointer"
                 disabled={
                   !searchTerm &&
-                  !selectedCourseFilter &&
-                  !selectedSemesterFilter
+                  selectedCourseFilter === "todos" &&
+                  selectedSemesterFilter === "todos"
                 }
               >
                 <X className="mr-2 h-4 w-4" />
@@ -571,6 +600,11 @@ export default function DisciplinesTab() {
           <div className="mt-4 text-sm text-muted-foreground">
             {filteredDisciplinas.length} de {disciplinas.length} disciplinas
             encontradas
+            {courses.length === 0 && !isLoading && (
+              <span className="block text-amber-600 font-medium mt-1">
+                ⚠️ Você não está vinculado a nenhum curso como diretor.
+              </span>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -580,10 +614,12 @@ export default function DisciplinesTab() {
           <CardTitle>Todas as Disciplinas</CardTitle>
           <CardDescription>
             {filteredDisciplinas.length} disciplinas{" "}
-            {searchTerm || selectedCourseFilter || selectedSemesterFilter
+            {searchTerm ||
+            selectedCourseFilter !== "todos" ||
+            selectedSemesterFilter !== "todos"
               ? "filtradas"
               : "cadastradas"}{" "}
-            em todos os cursos
+            em seus cursos
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -592,16 +628,43 @@ export default function DisciplinesTab() {
               <Loader2 className="h-6 w-6 animate-spin" />
               <span className="ml-2">Carregando disciplinas...</span>
             </div>
+          ) : courses.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="mb-4">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 text-amber-600 mb-2">
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-muted-foreground mb-2">
+                Você não está vinculado a nenhum curso como diretor.
+              </p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Entre em contato com a administração para ser vinculado a um
+                curso.
+              </p>
+            </div>
           ) : filteredDisciplinas.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground mb-2">
                 {disciplinas.length === 0
-                  ? "Nenhuma disciplina cadastrada ainda."
+                  ? "Nenhuma disciplina cadastrada ainda nos seus cursos."
                   : "Nenhuma disciplina encontrada com os filtros aplicados."}
               </p>
               {(searchTerm ||
-                selectedCourseFilter ||
-                selectedSemesterFilter) && (
+                selectedCourseFilter !== "todos" ||
+                selectedSemesterFilter !== "todos") && (
                 <Button
                   variant="outline"
                   onClick={clearFilters}
