@@ -404,6 +404,22 @@ export default function CalendarPage() {
     const isOwner = scheduleToDelete.userId === user.id;
 
     const isSecretaryUser = isSecretary;
+
+    const canDelete = isDirectorOfCourse || isOwner || isSecretaryUser;
+
+    if (!canDelete) {
+      if (isDirector) {
+        alert("Você só pode excluir agendamentos dos cursos que administra");
+      } else if (isSecretary) {
+        alert("Como secretaria, você pode excluir qualquer agendamento");
+      } else {
+        alert("Você só pode excluir seus próprios agendamentos");
+      }
+      return;
+    }
+
+    await deleteSchedule(scheduleId);
+    handleAppointmentDeleted(scheduleId);
   };
 
   const formatDateRange = () => {
