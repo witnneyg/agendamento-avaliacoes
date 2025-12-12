@@ -58,6 +58,8 @@ import { deleteDiscipline } from "../_actions/discipline/delete-discipline";
 import { updateDiscipline } from "../_actions/discipline/update-discipline";
 import { getDisciplinesByDirector } from "../_actions/director/get-disciplines-by-director";
 import { getCoursesByDirector } from "../_actions/director/get-coursers-by-director";
+import { getDisciplines } from "@/app/_actions/discipline/get-disciplines";
+import { getCourses } from "../_actions/coursers/get-coursers";
 
 const disciplineSchema = z.object({
   name: z.string().min(1, "O nome da disciplina é obrigatório"),
@@ -85,7 +87,30 @@ const periodOptions: { value: Period; label: string }[] = [
 
 const periodOrder: Period[] = ["MORNING", "AFTERNOON", "EVENING"];
 
-export default function DisciplinesTab() {
+// Defina as props do componente
+interface DisciplinesTabProps {
+  /**
+   * Define se o componente deve usar as server actions do diretor
+   * @default false
+   */
+  isDirectorView?: boolean;
+
+  /**
+   * Título personalizado para a página
+   */
+  title?: string;
+
+  /**
+   * Descrição personalizada para a página
+   */
+  description?: string;
+}
+
+export default function DisciplinesTab({
+  isDirectorView = false,
+  title = "Disciplinas",
+  description = "Gerencie as disciplinas dos cursos",
+}: DisciplinesTabProps) {
   const [disciplinas, setDisciplinas] = useState<DisciplineWithRelations[]>([]);
   const [filteredDisciplinas, setFilteredDisciplinas] = useState<
     DisciplineWithRelations[]
@@ -128,11 +153,22 @@ export default function DisciplinesTab() {
     async function fetchData() {
       setIsLoading(true);
       try {
-        const disciplinesData = await getDisciplinesByDirector();
+        // Escolhe a server action baseada na prop isDirectorView
+        let disciplinesData;
+        let coursesData;
+
+        if (isDirectorView) {
+          // Usa as server actions do diretor
+          disciplinesData = await getDisciplinesByDirector();
+          coursesData = await getCoursesByDirector();
+        } else {
+          // Usa as server actions normais (para secretaria)
+          disciplinesData = await getDisciplines();
+          coursesData = await getCourses();
+        }
+
         setDisciplinas(disciplinesData as any);
         setFilteredDisciplinas(disciplinesData as any);
-
-        const coursesData = await getCoursesByDirector();
         setCourses(coursesData);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
@@ -141,7 +177,7 @@ export default function DisciplinesTab() {
       }
     }
     fetchData();
-  }, []);
+  }, [isDirectorView]); // Adiciona isDirectorView como dependência
 
   useEffect(() => {
     async function fetchSemesters() {
@@ -149,6 +185,8 @@ export default function DisciplinesTab() {
         setSemesters([]);
         return;
       }
+
+      // Se for diretor, pode passar um parâmetro adicional para validação
       const semestersData = await getSemesterByCourse(selectedCourseId);
       setSemesters(semestersData);
     }
@@ -274,22 +312,39 @@ export default function DisciplinesTab() {
     })
     .filter(Boolean) as Semester[];
 
+  // Mensagem personalizada baseada no contexto
+  const getContextMessage = () => {
+    if (isDirectorView) {
+      if (courses.length > 0) {
+        return `${courses.length} curso(s) vinculado(s) a você`;
+      } else if (courses.length === 0 && !isLoading) {
+        return "⚠️ Você não está vinculado a nenhum curso como diretor";
+      }
+    } else {
+      if (courses.length > 0) {
+        return `${courses.length} curso(s) disponíveis no sistema`;
+      }
+    }
+    return null;
+  };
+
+  const contextMessage = getContextMessage();
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Disciplinas</h2>
-          <p className="text-muted-foreground">
-            Gerencie as disciplinas dos seus cursos
-          </p>
-          {courses.length > 0 && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {courses.length} curso(s) vinculado(s) a você
-            </p>
-          )}
-          {courses.length === 0 && !isLoading && (
-            <p className="text-sm text-amber-600 mt-1">
-              ⚠️ Você não está vinculado a nenhum curso como diretor
+          <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
+          <p className="text-muted-foreground">{description}</p>
+          {contextMessage && (
+            <p
+              className={`text-sm mt-1 ${
+                contextMessage.includes("⚠️")
+                  ? "text-amber-600"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {contextMessage}
             </p>
           )}
         </div>
@@ -322,7 +377,7 @@ export default function DisciplinesTab() {
               <DialogDescription>
                 {editingDiscpline
                   ? "Atualize as informações da disciplina"
-                  : "Adicione uma nova disciplina ao seu curso"}
+                  : "Adicione uma nova disciplina ao curso"}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -600,11 +655,6 @@ export default function DisciplinesTab() {
           <div className="mt-4 text-sm text-muted-foreground">
             {filteredDisciplinas.length} de {disciplinas.length} disciplinas
             encontradas
-            {courses.length === 0 && !isLoading && (
-              <span className="block text-amber-600 font-medium mt-1">
-                ⚠️ Você não está vinculado a nenhum curso como diretor.
-              </span>
-            )}
           </div>
         </CardContent>
       </Card>
@@ -619,7 +669,7 @@ export default function DisciplinesTab() {
             selectedSemesterFilter !== "todos"
               ? "filtradas"
               : "cadastradas"}{" "}
-            em seus cursos
+            {isDirectorView ? "em seus cursos" : "no sistema"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -648,18 +698,22 @@ export default function DisciplinesTab() {
                 </div>
               </div>
               <p className="text-muted-foreground mb-2">
-                Você não está vinculado a nenhum curso como diretor.
+                {isDirectorView
+                  ? "Você não está vinculado a nenhum curso como diretor."
+                  : "Nenhum curso disponível no sistema."}
               </p>
-              <p className="text-sm text-muted-foreground mb-4">
-                Entre em contato com a administração para ser vinculado a um
-                curso.
-              </p>
+              {isDirectorView && (
+                <p className="text-sm text-muted-foreground mb-4">
+                  Entre em contato com a administração para ser vinculado a um
+                  curso.
+                </p>
+              )}
             </div>
           ) : filteredDisciplinas.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground mb-2">
                 {disciplinas.length === 0
-                  ? "Nenhuma disciplina cadastrada ainda nos seus cursos."
+                  ? `Nenhuma disciplina cadastrada ${isDirectorView ? "nos seus cursos" : "no sistema"}.`
                   : "Nenhuma disciplina encontrada com os filtros aplicados."}
               </p>
               {(searchTerm ||

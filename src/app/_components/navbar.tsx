@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { signOut } from "next-auth/react";
 import { getUser } from "../_actions/user/getUser";
+import Image from "next/image";
 
 interface UserWithRoles {
   id: string;
@@ -106,11 +107,19 @@ export function NavBar() {
   return (
     <nav className="border-b bg-background">
       <div className="container mx-auto flex h-16 items-center px-4 justify-between">
-        <Link
-          href="/"
-          className="font-semibold hover:text-primary/70 flex-shrink-0"
-        >
-          UniCerrado
+        <Link href="/" className="flex items-center flex-shrink-0">
+          <div className="relative h-10 w-40">
+            {" "}
+            {/* Ajuste o tamanho conforme necessário */}
+            <Image
+              src="/logo-unicerrado-destaque.svg"
+              alt="UniCerrado"
+              fill
+              className="object-contain"
+              priority
+              sizes="(max-width: 768px) 160px, 160px"
+            />
+          </div>
         </Link>
 
         <div className="hidden md:flex space-x-1 lg:space-x-4">

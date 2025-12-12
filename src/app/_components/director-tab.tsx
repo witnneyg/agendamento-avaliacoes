@@ -749,7 +749,8 @@ export function DirectorTab() {
               <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium">Nenhum diretor encontrado</h3>
               <p className="text-muted-foreground mt-1">
-                Adicione a role DIRECTOR a um usuário para que ele apareça aqui.
+                Adicione o perfil diretor a um usuário para que ele apareça
+                aqui.
               </p>
             </div>
           ) : (

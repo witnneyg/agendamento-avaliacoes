@@ -61,7 +61,11 @@ export default function AdminPage() {
               <ClassesTab />
             </TabsContent>
             <TabsContent value="disciplines">
-              <DisciplinesTab />
+              <DisciplinesTab
+                isDirectorView={false}
+                title="Disciplinas - Secretaria"
+                description="Gerencie todas as disciplinas do sistema"
+              />
             </TabsContent>
             <TabsContent value="teachers">
               <TeachersTab />
