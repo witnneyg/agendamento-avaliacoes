@@ -582,16 +582,21 @@ export default function CalendarPage() {
     <div className="min-h-screen flex flex-col">
       <NavBar />
       <div className="flex flex-1">
+        {/* Sidebar para desktop */}
         <aside
           className={cn(
-            "border-r p-4 flex-col overflow-y-auto bg-background transition-all duration-300 ease-in-out",
-            isSidebarOpen ? "w-72" : "w-0 p-0 overflow-hidden",
-            "hidden lg:flex"
+            "border-r p-4 flex-col overflow-y-auto bg-background transition-all duration-300 ease-in-out hidden lg:flex",
+            isSidebarOpen
+              ? view === "fortnight"
+                ? "w-72"
+                : "w-72" // Largura menor na quinzena
+              : "w-0 p-0 overflow-hidden"
           )}
         >
           {isSidebarOpen && <SidebarContent />}
         </aside>
 
+        {/* Overlay para mobile */}
         {isSidebarOpen && (
           <div
             className="lg:hidden fixed inset-0 bg-black/50 z-40"
@@ -599,10 +604,11 @@ export default function CalendarPage() {
           />
         )}
 
+        {/* Sidebar para mobile */}
         <div
           className={cn(
-            "fixed inset-y-0 left-0 z-50 w-72 bg-background border-r transform transition-transform duration-300 ease-in-out lg:hidden",
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            "fixed inset-y-0 left-0 z-50 bg-background border-r transform transition-transform duration-300 ease-in-out lg:hidden",
+            isSidebarOpen ? "translate-x-0 w-72" : "-translate-x-full w-0"
           )}
         >
           <div className="p-4 h-full overflow-y-auto">
@@ -610,8 +616,9 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        <main className="flex-1 flex flex-col">
-          <div className="p-2 sm:p-4 border-b flex items-center justify-between gap-2">
+        {/* Conteúdo principal */}
+        <main className="flex-1 flex flex-col min-w-0">
+          <div className="p-2 sm:p-4 border-b flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0 h-full">
               <Button
                 variant="outline"
@@ -658,7 +665,7 @@ export default function CalendarPage() {
                 {formatDateRange()}
               </h2>
             </div>
-            <div className="flex gap-1 sm:gap-2 shrink-0">
+            <div className="flex gap-1 sm:gap-2 shrink-0 mt-2 sm:mt-0">
               <Button
                 variant={view === "day" ? "default" : "outline"}
                 size="sm"
@@ -700,6 +707,7 @@ export default function CalendarPage() {
                     : "min-w-[1200px]"
               )}
             >
+              {/* Coluna de horários */}
               <div className="w-12 sm:w-16 shrink-0 border-r">
                 <div className="h-10 sm:h-12 border-b text-[10px] sm:text-xs text-gray-500 flex items-center justify-center">
                   GMT-03
@@ -713,17 +721,21 @@ export default function CalendarPage() {
                 ))}
               </div>
 
+              {/* Dias */}
               <div className="flex-1 flex overflow-x-auto">
                 {days.map((day, dayIndex) => (
                   <div
                     key={dayIndex}
                     className={cn(
-                      "flex-1 border-r",
-                      view === "fortnight"
-                        ? "min-w-[85px]"
-                        : "min-w-[80px] sm:min-w-[120px]"
+                      "border-r flex-shrink-0",
+                      view === "day"
+                        ? "w-full"
+                        : view === "week"
+                          ? "w-[calc(100%/7)] min-w-[85px]"
+                          : "w-[calc(100%/14)] min-w-[60px] sm:min-w-[85px]"
                     )}
                   >
+                    {/* Cabeçalho do dia */}
                     <div className="h-10 sm:h-12 border-b flex flex-col items-center justify-center">
                       <div className="text-[10px] sm:text-xs text-gray-500">
                         {format(day, "EEE", { locale: ptBR })
@@ -743,6 +755,7 @@ export default function CalendarPage() {
                       </div>
                     </div>
 
+                    {/* Horários do dia */}
                     <div>
                       {timeSlots.map((hour) => {
                         const appointmentsInSlot = filteredAppointments.filter(

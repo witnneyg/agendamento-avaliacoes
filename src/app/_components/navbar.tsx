@@ -106,37 +106,40 @@ export function NavBar() {
 
   return (
     <nav className="border-b bg-background">
-      <div className="container mx-auto flex h-16 items-center px-4 justify-between">
-        <Link href="/" className="flex items-center flex-shrink-0 space-x-3">
-          <div className="relative h-10 w-24">
+      <div className="container mx-auto flex h-16 items-center px-3 sm:px-4 justify-between ">
+        <Link
+          href="/"
+          className="flex items-center flex-shrink-0 space-x-2 sm:space-x-3"
+        >
+          <div className="relative h-9 w-20 sm:h-10 sm:w-24">
             <Image
               src="/fesg.jpg"
               alt="FESG"
               fill
               className="object-contain"
               priority
-              sizes="(max-width: 768px) 96px, 96px"
+              sizes="(max-width: 768px) 80px, 96px"
             />
           </div>
-          <div className="h-6 w-px bg-gray-300 hidden sm:block"></div>
-          <div className="relative h-10 w-32">
+          <div className="h-6 w-px bg-gray-300 hidden xs:block"></div>
+          <div className="relative h-9 w-28 sm:h-10 sm:w-32">
             <Image
               src="/logo-unicerrado-destaque.svg"
               alt="UniCerrado"
               fill
               className="object-contain"
               priority
-              sizes="(max-width: 768px) 128px, 128px"
+              sizes="(max-width: 768px) 112px, 128px"
             />
           </div>
         </Link>
 
-        <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 space-x-2 lg:space-x-4">
+        <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 space-x-1 lg:space-x-2">
           {isLoading ? (
             <>
-              <div className="h-6 w-20 bg-muted animate-pulse rounded-md" />
-              <div className="h-6 w-24 bg-muted animate-pulse rounded-md" />
-              <div className="h-6 w-16 bg-muted animate-pulse rounded-md" />
+              <div className="h-8 w-20 bg-muted animate-pulse rounded-md" />
+              <div className="h-8 w-24 bg-muted animate-pulse rounded-md" />
+              <div className="h-8 w-16 bg-muted animate-pulse rounded-md" />
             </>
           ) : (
             navLinks.map(({ href, label, icon: Icon }) => (
@@ -144,14 +147,23 @@ export function NavBar() {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex items-center px-3 py-2 text-sm transition-colors hover:text-primary rounded-md",
+                  "items-center px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm transition-colors hover:text-primary rounded-md hidden lg:flex",
                   isActiveLink(href)
                     ? "text-primary bg-primary/10"
                     : "text-muted-foreground"
                 )}
               >
-                <Icon className="mr-2 h-4 w-4" />
-                <span>{label}</span>
+                <Icon className="mr-1.5 lg:mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">{label}</span>
+                <span className="sm:hidden">
+                  {label === "Agendamento"
+                    ? "Agendar"
+                    : label === "Calendário"
+                      ? "Calend."
+                      : label === "Secretaria"
+                        ? "Secr."
+                        : label}
+                </span>
               </Link>
             ))
           )}
@@ -159,14 +171,15 @@ export function NavBar() {
 
         <div className="hidden md:flex items-center">
           {isLoading ? (
-            <div className="h-6 w-14 bg-muted animate-pulse rounded-md" />
+            <div className="h-8 w-14 bg-muted animate-pulse rounded-md" />
           ) : (
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="flex items-center text-sm px-3 py-2 rounded-md transition-colors hover:text-primary text-muted-foreground cursor-pointer"
+              className="flex items-center text-sm px-2 lg:px-3 py-2 rounded-md transition-colors hover:text-primary text-muted-foreground cursor-pointer"
             >
               <LogOut className="mr-2 h-4 w-4" />
-              <span>Sair</span>
+              <span className="hidden lg:inline">Sair</span>
+              <span className="lg:hidden">Sair</span>
             </button>
           )}
         </div>
@@ -188,9 +201,9 @@ export function NavBar() {
           <div className="container mx-auto px-4 py-2 space-y-1">
             {isLoading ? (
               <>
-                <div className="h-6 w-24 bg-muted animate-pulse rounded-md" />
-                <div className="h-6 w-20 bg-muted animate-pulse rounded-md" />
-                <div className="h-6 w-28 bg-muted animate-pulse rounded-md" />
+                <div className="h-10 w-24 bg-muted animate-pulse rounded-md" />
+                <div className="h-10 w-20 bg-muted animate-pulse rounded-md" />
+                <div className="h-10 w-28 bg-muted animate-pulse rounded-md" />
               </>
             ) : (
               <>
