@@ -22,6 +22,7 @@ interface UpdateSchedulingInput {
   updatedAppointments: UpdatedAppointment[];
   isSecretary?: boolean;
   isDirector?: boolean;
+  isAdmin?: boolean; // ← ADICIONADO AQUI
 }
 
 export async function updateScheduling({
@@ -29,6 +30,7 @@ export async function updateScheduling({
   updatedAppointments,
   isSecretary = false,
   isDirector = false,
+  isAdmin = false, // ← ADICIONADO AQUI
 }: UpdateSchedulingInput) {
   try {
     const session = await getServerSession(authOptions);
@@ -59,16 +61,20 @@ export async function updateScheduling({
       return { success: false, error: "Agendamento não encontrado" };
     }
 
+    // Verificar roles do usuário
     const hasSecretaryRole = user.roles.some(
       (role) => role.name === "SECRETARIA"
     );
     const hasDirectorRole = user.roles.some((role) => role.name === "DIRECAO");
+    const hasAdminRole = user.roles.some((role) => role.name === "ADMIN"); // ← ADICIONADO AQUI
 
     const isSecretaryUser = isSecretary || hasSecretaryRole;
     const isDirectorUser = isDirector || hasDirectorRole;
+    const isAdminUser = isAdmin || hasAdminRole; // ← ADICIONADO AQUI
 
     const isOwner = existingAppointment.userId === user.id;
 
+    // ADMIN não precisa ser diretor do curso, tem acesso total
     const isDirectorOfCourse = await db.course.findFirst({
       where: {
         id: existingAppointment.courseId,
@@ -80,8 +86,12 @@ export async function updateScheduling({
       },
     });
 
+    // ADMIN tem permissão total para editar qualquer agendamento
     const canEdit =
-      isSecretaryUser || (isDirectorUser && isDirectorOfCourse) || isOwner;
+      isAdminUser || // ← ADMIN TEM ACESSO COMPLETO
+      isSecretaryUser ||
+      (isDirectorUser && isDirectorOfCourse) ||
+      isOwner;
 
     if (!canEdit) {
       return {

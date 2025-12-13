@@ -21,6 +21,7 @@ import {
   Shield,
   ClipboardList,
   User,
+  Settings, // Ícone para ADMIN
 } from "lucide-react";
 import { getDepartmentColor } from "@/utils/getDepartamentColor";
 import {
@@ -90,6 +91,7 @@ const extractTimeSlots = (appointment: SchedulingWithRelations) => {
 interface AppointmentItemProps {
   appointment: SchedulingWithRelations;
   isSecretary?: boolean;
+  isAdmin?: boolean; // ← ADICIONADO AQUI
   onDelete: (id: string) => void;
   userSession: UserWithoutEmailVerified | null;
   onAppointmentUpdated?: (
@@ -109,6 +111,7 @@ export const AppointmentItem = ({
   onAppointmentDeleted,
   isDirector = false,
   isSecretary = false,
+  isAdmin = false, // ← ADICIONADO AQUI
   directorCourses = [],
   academicCourses = [],
 }: AppointmentItemProps) => {
@@ -126,11 +129,20 @@ export const AppointmentItem = ({
     (course) => course.id === appointment.courseId
   );
 
+  // ADMIN tem permissão para tudo
   const canEdit =
-    isSecretary || isDirectorOfCourse || isOwner || isProfessorOfCourse;
+    isAdmin ||
+    isSecretary ||
+    isDirectorOfCourse ||
+    isOwner ||
+    isProfessorOfCourse;
 
   const canDeleteItem =
-    isSecretary || isDirectorOfCourse || isOwner || isProfessorOfCourse;
+    isAdmin ||
+    isSecretary ||
+    isDirectorOfCourse ||
+    isOwner ||
+    isProfessorOfCourse;
 
   const timeSlots = extractTimeSlots(appointment);
 
@@ -213,6 +225,10 @@ export const AppointmentItem = ({
           >
             {/* Mostrar TODOS os ícones lado a lado */}
             <div className="absolute top-1 right-1 flex gap-1">
+              {isAdmin && (
+                <Settings className="h-3 w-3 text-red-600" /> // ← ADICIONADO AQUI
+              )}
+
               {isSecretary && (
                 <ClipboardList className="h-3 w-3 text-green-600" />
               )}
@@ -279,27 +295,38 @@ export const AppointmentItem = ({
               {appointment.discipline.name}
               <div className="flex gap-1 ml-2 flex-wrap justify-end flex-1">
                 {/* Mostrar TODAS as badges lado a lado */}
+                {isAdmin && (
+                  <span className="text-xs px-2 py-0.5 bg-red-100 text-red-800 rounded-full whitespace-nowrap mb-1">
+                    <Settings className="h-3 w-3 inline mr-1" />
+                    Admin
+                  </span>
+                )}
+
                 {isSecretary && (
                   <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full whitespace-nowrap mb-1">
                     <ClipboardList className="h-3 w-3 inline mr-1" />
+                    Secretaria
                   </span>
                 )}
 
                 {isDirectorOfCourse && (
                   <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full whitespace-nowrap mb-1">
                     <Shield className="h-3 w-3 inline mr-1" />
+                    Diretor
                   </span>
                 )}
 
                 {isProfessorOfCourse && (
                   <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full whitespace-nowrap mb-1">
                     <User className="h-3 w-3 inline mr-1" />
+                    Professor
                   </span>
                 )}
 
                 {isOwner && !isProfessorOfCourse && (
                   <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-800 rounded-full whitespace-nowrap mb-1">
                     <User className="h-3 w-3 inline mr-1" />
+                    Dono
                   </span>
                 )}
               </div>
@@ -364,6 +391,19 @@ export const AppointmentItem = ({
 
           <div className="mt-4 space-y-3">
             <div className="space-y-2 mb-3">
+              {isAdmin && (
+                <div className="p-2 bg-red-50 border border-red-200 rounded">
+                  <div className="flex items-center gap-2 text-red-700">
+                    <Settings className="h-4 w-4" />
+                    <span className="font-medium">Ação do Administrador</span>
+                  </div>
+                  <p className="text-sm mt-1">
+                    Você está excluindo um agendamento como administrador do
+                    sistema.
+                  </p>
+                </div>
+              )}
+
               {isSecretary && (
                 <div className="p-2 bg-green-50 border border-green-200 rounded">
                   <div className="flex items-center gap-2 text-green-700">
@@ -466,6 +506,7 @@ export const AppointmentItem = ({
           disciplineDayPeriods={appointment.discipline.dayPeriods}
           isDirector={isDirector}
           isSecretary={isSecretary}
+          isAdmin={isAdmin} // ← ADICIONADO AQUI
           canEdit={canEdit}
         />
       )}

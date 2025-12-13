@@ -7,12 +7,21 @@ export async function getSchedulingByRole(options?: {
   userId?: string;
   directorId?: string;
   isSecretary?: boolean;
+  courseIds?: string[]; // ← ADICIONADO
+  isProfessor?: boolean; // ← ADICIONADO
 }) {
   try {
     let whereClause: any = {};
 
     if (options?.isSecretary) {
       whereClause = {};
+    } else if (options?.isProfessor && options?.courseIds) {
+      // Professor: busca todos os agendamentos dos cursos onde está vinculado
+      whereClause = {
+        courseId: {
+          in: options.courseIds,
+        },
+      };
     } else if (options?.directorId) {
       const director = await db.director.findUnique({
         where: { id: options.directorId },

@@ -11,7 +11,7 @@ import { Scheduling, Period } from "@prisma/client";
 import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Shield, ClipboardList } from "lucide-react";
+import { AlertTriangle, Shield, ClipboardList, Settings } from "lucide-react";
 import { getTranslatedPeriods } from "../_helpers/getOrderedPeriods";
 import {
   Dialog,
@@ -30,6 +30,7 @@ interface EditSchedulingModalProps {
   disciplineDayPeriods: Period[];
   isDirector?: boolean;
   isSecretary?: boolean;
+  isAdmin?: boolean;
   canEdit?: boolean;
 }
 
@@ -202,9 +203,9 @@ export const EditSchedulingModal = ({
   disciplineDayPeriods,
   isDirector = false,
   isSecretary = false,
+  isAdmin = false,
   canEdit = true,
 }: EditSchedulingModalProps) => {
-  // Estado e refs
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date(appointment.date)
   );
@@ -216,7 +217,6 @@ export const EditSchedulingModal = ({
   const [hasLoadedScheduledTimes, setHasLoadedScheduledTimes] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Memo values
   const currentTimeSlots = useMemo(
     () => extractCurrentTimeSlots(appointment),
     [appointment]
@@ -227,7 +227,6 @@ export const EditSchedulingModal = ({
   );
   const requiredSlotsCount = currentTimeSlots.length;
 
-  // Form
   const {
     handleSubmit,
     control,
@@ -243,16 +242,13 @@ export const EditSchedulingModal = ({
     },
   });
 
-  // Função para atualizar timeSlots com debounce
   const updateTimeSlots = useCallback(() => {
     if (!selectedDate || scheduledTimes.length === 0) return;
 
-    // Limpar timeout anterior
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    // Usar debounce para evitar atualizações muito frequentes
     timeoutRef.current = setTimeout(() => {
       const slots = generateTimeSlotsAndCheckAvailability(
         selectedDate,
@@ -263,7 +259,7 @@ export const EditSchedulingModal = ({
         originalAppointmentDate
       );
       setTimeSlots(slots);
-    }, 50); // Debounce de 50ms
+    }, 50);
   }, [
     selectedDate,
     scheduledTimes,
@@ -273,7 +269,6 @@ export const EditSchedulingModal = ({
     originalAppointmentDate,
   ]);
 
-  // Cleanup do timeout
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -282,7 +277,6 @@ export const EditSchedulingModal = ({
     };
   }, []);
 
-  // Buscar agendamentos apenas uma vez quando o modal abrir
   useEffect(() => {
     async function fetchScheduledTimes() {
       if (isOpen && !hasLoadedScheduledTimes) {
@@ -301,21 +295,18 @@ export const EditSchedulingModal = ({
     fetchScheduledTimes();
   }, [isOpen, hasLoadedScheduledTimes]);
 
-  // Resetar quando fechar o modal
   useEffect(() => {
     if (!isOpen) {
       setHasLoadedScheduledTimes(false);
     }
   }, [isOpen]);
 
-  // Atualizar timeSlots quando selectedDate ou scheduledTimes mudar
   useEffect(() => {
     if (selectedDate && scheduledTimes.length > 0) {
       updateTimeSlots();
     }
-  }, [selectedDate, scheduledTimes]); // Não inclua updateTimeSlots nas dependências
+  }, [selectedDate, scheduledTimes]);
 
-  // Calcular count de agendamentos existentes
   useEffect(() => {
     if (!selectedDate || scheduledTimes.length === 0) {
       setExistingAppointmentsCount(0);
@@ -340,7 +331,6 @@ export const EditSchedulingModal = ({
     setExistingAppointmentsCount(count);
   }, [selectedDate, scheduledTimes, appointment]);
 
-  // Resetar form quando modal abrir
   useEffect(() => {
     if (isOpen) {
       reset({
@@ -351,12 +341,10 @@ export const EditSchedulingModal = ({
     }
   }, [isOpen, appointment.date, reset]);
 
-  // Verificar se pode editar
   if (!canEdit) {
     return null;
   }
 
-  // Funções
   const isDateDisabled = (date: Date): boolean => {
     if (isPastDate(date)) return true;
 
@@ -517,6 +505,7 @@ export const EditSchedulingModal = ({
         updatedAppointments: [updatedAppointment],
         isSecretary,
         isDirector,
+        isAdmin,
       });
 
       if (result.success) {
@@ -545,16 +534,19 @@ export const EditSchedulingModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Editar Agendamento
+            {isAdmin && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">
+                <Settings className="h-3 w-3" />
+              </span>
+            )}
             {isSecretary && (
               <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
                 <ClipboardList className="h-3 w-3" />
-                Secretaria
               </span>
             )}
             {isDirector && (
               <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">
                 <Shield className="h-3 w-3" />
-                Diretor
               </span>
             )}
           </DialogTitle>
@@ -668,7 +660,7 @@ export const EditSchedulingModal = ({
                             <div key={periodGroup.period} className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <div
-                                  className={`w-2 h-2 rounded-full ${isSecretary ? "bg-green-500" : isDirector ? "bg-purple-500" : "bg-primary"}`}
+                                  className={`w-2 h-2 rounded-full ${isAdmin ? "bg-red-400" : isSecretary ? "bg-green-500" : isDirector ? "bg-purple-500" : "bg-primary"}`}
                                 ></div>
                                 <Label className="text-base font-semibold">
                                   {periodGroup.period === Period.MORNING &&
@@ -702,8 +694,8 @@ export const EditSchedulingModal = ({
                                               !slot.isCurrentTimeSlot
                                             ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-500 border-gray-300 w-full justify-start"
                                             : selectedTimes.includes(slot.time)
-                                              ? `${isSecretary ? "bg-green-600 hover:bg-green-700" : isDirector ? "bg-purple-600 hover:bg-purple-700" : "bg-primary hover:bg-primary/90"} text-primary-foreground w-full justify-start`
-                                              : `hover:${isSecretary ? "bg-green-100" : isDirector ? "bg-purple-100" : "bg-primary/10"} cursor-pointer border-${isSecretary ? "green-300" : isDirector ? "purple-300" : "primary"} w-full justify-start`
+                                              ? `${isAdmin ? "bg-red-400 hover:bg-red-500" : isSecretary ? "bg-green-600 hover:bg-green-700" : isDirector ? "bg-purple-600 hover:bg-purple-700" : "bg-primary hover:bg-primary/90"} text-primary-foreground w-full justify-start`
+                                              : `hover:${isAdmin ? "bg-red-50" : isSecretary ? "bg-green-50" : isDirector ? "bg-purple-50" : "bg-primary/10"} cursor-pointer border-${isAdmin ? "red-300" : isSecretary ? "green-300" : isDirector ? "purple-300" : "primary"} w-full justify-start`
                                       }
                                       disabled={
                                         !slot.available &&
@@ -764,7 +756,7 @@ export const EditSchedulingModal = ({
                     </Button>
                     <Button
                       type="submit"
-                      className={`flex-1 ${isSecretary ? "bg-green-600 hover:bg-green-700" : isDirector ? "bg-purple-600 hover:bg-purple-700" : ""}`}
+                      className={`flex-1 ${isAdmin ? "bg-red-400 hover:bg-red-500" : isSecretary ? "bg-green-600 hover:bg-green-700" : isDirector ? "bg-purple-600 hover:bg-purple-700" : ""}`}
                       disabled={
                         !selectedDate ||
                         isSubmitting ||
@@ -784,8 +776,6 @@ export const EditSchedulingModal = ({
                       }
                     >
                       {isSubmitting ? "Salvando..." : "Salvar Alterações"}
-                      {isSecretary && " (como Secretaria)"}
-                      {isDirector && " (como Diretor)"}
                     </Button>
                   </div>
                 </form>

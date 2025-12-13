@@ -107,22 +107,31 @@ export function NavBar() {
   return (
     <nav className="border-b bg-background">
       <div className="container mx-auto flex h-16 items-center px-4 justify-between">
-        <Link href="/" className="flex items-center flex-shrink-0">
-          <div className="relative h-10 w-40">
-            {" "}
-            {/* Ajuste o tamanho conforme necessário */}
+        <Link href="/" className="flex items-center flex-shrink-0 space-x-3">
+          <div className="relative h-10 w-24">
+            <Image
+              src="/fesg.jpg"
+              alt="FESG"
+              fill
+              className="object-contain"
+              priority
+              sizes="(max-width: 768px) 96px, 96px"
+            />
+          </div>
+          <div className="h-6 w-px bg-gray-300 hidden sm:block"></div>
+          <div className="relative h-10 w-32">
             <Image
               src="/logo-unicerrado-destaque.svg"
               alt="UniCerrado"
               fill
               className="object-contain"
               priority
-              sizes="(max-width: 768px) 160px, 160px"
+              sizes="(max-width: 768px) 128px, 128px"
             />
           </div>
         </Link>
 
-        <div className="hidden md:flex space-x-1 lg:space-x-4">
+        <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 space-x-2 lg:space-x-4">
           {isLoading ? (
             <>
               <div className="h-6 w-20 bg-muted animate-pulse rounded-md" />
@@ -135,20 +144,20 @@ export function NavBar() {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex items-center px-2 lg:px-3 py-2 text-sm transition-colors hover:text-primary rounded-md",
+                  "flex items-center px-3 py-2 text-sm transition-colors hover:text-primary rounded-md",
                   isActiveLink(href)
                     ? "text-primary bg-primary/10"
                     : "text-muted-foreground"
                 )}
               >
-                <Icon className="mr-1 lg:mr-2 h-4 w-4" />
-                <span className="hidden lg:inline">{label}</span>
+                <Icon className="mr-2 h-4 w-4" />
+                <span>{label}</span>
               </Link>
             ))
           )}
         </div>
 
-        <div className="hidden md:flex items-center space-x-4">
+        <div className="hidden md:flex items-center">
           {isLoading ? (
             <div className="h-6 w-14 bg-muted animate-pulse rounded-md" />
           ) : (
@@ -157,7 +166,7 @@ export function NavBar() {
               className="flex items-center text-sm px-3 py-2 rounded-md transition-colors hover:text-primary text-muted-foreground cursor-pointer"
             >
               <LogOut className="mr-2 h-4 w-4" />
-              <span className="hidden lg:inline">Sair</span>
+              <span>Sair</span>
             </button>
           )}
         </div>
@@ -201,10 +210,6 @@ export function NavBar() {
                     {label}
                   </Link>
                 ))}
-
-                <div className="px-3 py-2 text-xs text-muted-foreground border-t mt-2 pt-2">
-                  Logado como: {user?.name || user?.email}
-                </div>
 
                 <button
                   onClick={() => {
