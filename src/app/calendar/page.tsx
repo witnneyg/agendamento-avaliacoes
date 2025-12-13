@@ -195,6 +195,8 @@ export default function CalendarPage() {
           let professorCoursesData: Course[] = [];
           let directorCoursesData: Course[] = [];
           let allCoursesData: any = [];
+          let professorSchedulingData: any = [];
+          let directorSchedulingData: any = [];
           let schedulingData: any = [];
 
           if (hasProfessorRole) {
@@ -237,39 +239,48 @@ export default function CalendarPage() {
 
           if (hasProfessorRole && professorCoursesData.length > 0) {
             const courseIds = professorCoursesData.map((course) => course.id);
-            schedulingData = await getSchedulingByRole({
+            professorSchedulingData = await getSchedulingByRole({
               courseIds: courseIds,
-              isProfessor: true,
             });
-          } else if (hasSecretaryRole || hasAdminRole) {
-            schedulingData = await getSchedulingByRole({ isSecretary: true });
-          } else if (hasDirectorRole) {
-            const allUserAppointments = await getSchedulingByRole({
-              userId: session.id,
-            });
+          }
 
+          if (hasDirectorRole) {
             const directorData = await getDirectorByUserId(session.id);
-            if (directorData) {
-              const directorAppointments = await getSchedulingByRole({
-                directorId: directorData.id,
+
+            if (directorData && directorCoursesData.length > 0) {
+              const directorCourseIds = directorCoursesData.map(
+                (course) => course.id
+              );
+
+              directorSchedulingData = await getSchedulingByRole({
+                courseIds: directorCourseIds,
               });
 
-              const allAppointments = [
-                ...allUserAppointments,
-                ...directorAppointments,
+              const userAppointments = await getSchedulingByRole({
+                userId: session.id,
+              });
+
+              directorSchedulingData = [
+                ...directorSchedulingData,
+                ...userAppointments,
               ];
-              const uniqueAppointments = new Map();
-
-              allAppointments.forEach((appointment: any) => {
-                uniqueAppointments.set(appointment.id, appointment);
-              });
-
-              schedulingData = Array.from(uniqueAppointments.values());
-            } else {
-              schedulingData = allUserAppointments;
             }
+          }
+
+          if (hasSecretaryRole || hasAdminRole) {
+            schedulingData = await getSchedulingByRole({ isSecretary: true });
           } else {
-            schedulingData = await getSchedulingByRole({ userId: session.id });
+            const allAppointments = [
+              ...professorSchedulingData,
+              ...directorSchedulingData,
+            ];
+
+            const uniqueAppointments = new Map();
+            allAppointments.forEach((appointment: any) => {
+              uniqueAppointments.set(appointment.id, appointment);
+            });
+
+            schedulingData = Array.from(uniqueAppointments.values());
           }
 
           setSchedulingCourses(schedulingData as any);

@@ -13,7 +13,7 @@ export async function getCoursesByDirectorId(directorId: string) {
       },
     });
 
-    console.log({ director });
+    console.log(director?.courses);
 
     return director?.courses || [];
   } catch (error) {
