@@ -12,7 +12,7 @@ import {
   User,
   Loader2,
   ClipboardList,
-  Settings, // Ícone para ADMIN
+  Settings,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -124,7 +124,7 @@ export default function CalendarPage() {
   const [isDirector, setIsDirector] = useState(false);
   const [isSecretary, setIsSecretary] = useState(false);
   const [isProfessor, setIsProfessor] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false); // Estado para ADMIN
+  const [isAdmin, setIsAdmin] = useState(false);
   const [professorCourses, setProfessorCourses] = useState<Course[]>([]);
   const [directorCourses, setDirectorCourses] = useState<Course[]>([]);
   const [isLoadingUserRoles, setIsLoadingUserRoles] = useState(true);
@@ -765,6 +765,7 @@ export default function CalendarPage() {
                                     onAppointmentDeleted={
                                       handleAppointmentDeleted
                                     }
+                                    isProfessor={isProfessor}
                                     isDirector={isDirector}
                                     isSecretary={isSecretary}
                                     isAdmin={isAdmin}
@@ -808,6 +809,7 @@ export default function CalendarPage() {
                                                 }
                                                 isDirector={isDirector}
                                                 isSecretary={isSecretary}
+                                                isProfessor={isProfessor}
                                                 isAdmin={isAdmin}
                                                 directorCourses={
                                                   directorCourses

@@ -21,7 +21,7 @@ import {
   Shield,
   ClipboardList,
   User,
-  Settings, // Ícone para ADMIN
+  Settings,
 } from "lucide-react";
 import { getDepartmentColor } from "@/utils/getDepartamentColor";
 import {
@@ -91,18 +91,18 @@ const extractTimeSlots = (appointment: SchedulingWithRelations) => {
 interface AppointmentItemProps {
   appointment: SchedulingWithRelations;
   isSecretary?: boolean;
-  isAdmin?: boolean; // ← ADICIONADO AQUI
+  isAdmin?: boolean;
+  isProfessor?: boolean;
+  isDirector?: boolean;
   onDelete: (id: string) => void;
   userSession: UserWithoutEmailVerified | null;
   onAppointmentUpdated?: (
     updatedAppointments: Partial<SchedulingWithRelations>[]
   ) => void;
   onAppointmentDeleted?: (deletedId: string) => void;
-  isDirector?: boolean;
   directorCourses?: { id: string }[];
   academicCourses?: { id: string }[];
 }
-
 export const AppointmentItem = ({
   appointment,
   onDelete,
@@ -111,7 +111,8 @@ export const AppointmentItem = ({
   onAppointmentDeleted,
   isDirector = false,
   isSecretary = false,
-  isAdmin = false, // ← ADICIONADO AQUI
+  isProfessor = false,
+  isAdmin = false,
   directorCourses = [],
   academicCourses = [],
 }: AppointmentItemProps) => {
@@ -129,20 +130,13 @@ export const AppointmentItem = ({
     (course) => course.id === appointment.courseId
   );
 
-  // ADMIN tem permissão para tudo
+  const isProfessorAndOwner = isProfessorOfCourse && isOwner;
+
   const canEdit =
-    isAdmin ||
-    isSecretary ||
-    isDirectorOfCourse ||
-    isOwner ||
-    isProfessorOfCourse;
+    isAdmin || isSecretary || isDirectorOfCourse || isProfessorAndOwner;
 
   const canDeleteItem =
-    isAdmin ||
-    isSecretary ||
-    isDirectorOfCourse ||
-    isOwner ||
-    isProfessorOfCourse;
+    isAdmin || isSecretary || isDirectorOfCourse || isProfessorAndOwner;
 
   const timeSlots = extractTimeSlots(appointment);
 
@@ -150,7 +144,13 @@ export const AppointmentItem = ({
     e.stopPropagation();
 
     if (!canEdit) {
-      alert("Você não tem permissão para editar este agendamento");
+      if (isProfessor && !isOwner) {
+        alert(
+          "Você não tem permissão para editar agendamentos de outros professores"
+        );
+      } else {
+        alert("Você não tem permissão para editar este agendamento");
+      }
       return;
     }
 
@@ -161,7 +161,13 @@ export const AppointmentItem = ({
     e.stopPropagation();
 
     if (!canDeleteItem) {
-      alert("Você não tem permissão para excluir este agendamento");
+      if (isProfessor && !isOwner) {
+        alert(
+          "Você não tem permissão para excluir agendamentos de outros professores"
+        );
+      } else {
+        alert("Você não tem permissão para excluir este agendamento");
+      }
       return;
     }
 
@@ -223,11 +229,8 @@ export const AppointmentItem = ({
               getDepartmentColor(appointment.course.name)
             )}
           >
-            {/* Mostrar TODOS os ícones lado a lado */}
             <div className="absolute top-1 right-1 flex gap-1">
-              {isAdmin && (
-                <Settings className="h-3 w-3 text-red-600" /> // ← ADICIONADO AQUI
-              )}
+              {isAdmin && <Settings className="h-3 w-3 text-red-600" />}
 
               {isSecretary && (
                 <ClipboardList className="h-3 w-3 text-green-600" />
@@ -239,10 +242,6 @@ export const AppointmentItem = ({
 
               {isProfessorOfCourse && (
                 <User className="h-3 w-3 text-blue-600" />
-              )}
-
-              {isOwner && !isProfessorOfCourse && (
-                <User className="h-3 w-3 text-gray-600" />
               )}
             </div>
 
@@ -294,7 +293,6 @@ export const AppointmentItem = ({
               <p className="font-medium">Disciplina:</p>
               {appointment.discipline.name}
               <div className="flex gap-1 ml-2 flex-wrap justify-end flex-1">
-                {/* Mostrar TODAS as badges lado a lado */}
                 {isAdmin && (
                   <span className="text-xs px-2 py-0.5 bg-red-100 text-red-800 rounded-full whitespace-nowrap mb-1">
                     <Settings className="h-3 w-3 inline mr-1" />
@@ -320,13 +318,6 @@ export const AppointmentItem = ({
                   <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full whitespace-nowrap mb-1">
                     <User className="h-3 w-3 inline mr-1" />
                     Professor
-                  </span>
-                )}
-
-                {isOwner && !isProfessorOfCourse && (
-                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-800 rounded-full whitespace-nowrap mb-1">
-                    <User className="h-3 w-3 inline mr-1" />
-                    Dono
                   </span>
                 )}
               </div>
@@ -506,7 +497,7 @@ export const AppointmentItem = ({
           disciplineDayPeriods={appointment.discipline.dayPeriods}
           isDirector={isDirector}
           isSecretary={isSecretary}
-          isAdmin={isAdmin} // ← ADICIONADO AQUI
+          isAdmin={isAdmin}
           canEdit={canEdit}
         />
       )}
