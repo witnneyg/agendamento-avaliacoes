@@ -476,7 +476,7 @@ export default function CalendarPage() {
             ) : null}
           </div>
         </div>
-        <div className="mb-6 hidden md:block">
+        <div className="mb-6 ">
           <Button
             onClick={handleNewAppointment}
             className="w-full flex items-center gap-2 cursor-pointer"
@@ -486,7 +486,7 @@ export default function CalendarPage() {
             Novo Agendamento
           </Button>
         </div>
-        <div className="mb-6 hidden md:block">
+        <div className="mb-6 ">
           <Calendar
             mode="single"
             selected={currentDate}
@@ -496,8 +496,8 @@ export default function CalendarPage() {
           />
         </div>
         <div>
-          <h3 className="font-medium mb-4 hidden md:block">Cursos</h3>
-          <div className="space-y-2 hidden md:block">
+          <h3 className="font-medium mb-4 ">Cursos</h3>
+          <div className="space-y-2 ">
             {isLoadingUserRoles
               ? Array.from({ length: 3 }).map((_, index) => (
                   <div
@@ -611,9 +611,13 @@ export default function CalendarPage() {
             isSidebarOpen ? "translate-x-0 w-72" : "-translate-x-full w-0"
           )}
         >
-          <div className=" md:block p-4 h-full overflow-y-auto">
-            <SidebarContent />
-          </div>
+          {isSidebarOpen && (
+            <>
+              <div className="p-4 h-full overflow-y-auto">
+                <SidebarContent />
+              </div>
+            </>
+          )}
         </div>
 
         {/* Conteúdo principal */}
