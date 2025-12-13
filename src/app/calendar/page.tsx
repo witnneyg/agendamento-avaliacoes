@@ -419,17 +419,17 @@ export default function CalendarPage() {
   const SidebarContent = () => {
     return (
       <>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setIsSidebarOpen(false)}
-            className="h-8 w-8 cursor-pointer lg:hidden"
+            className="h-8 w-8 cursor-pointer lg:hidden order-1"
           >
             <X className="h-4 w-4" />
           </Button>
 
-          <div className="flex gap-2 shrink-0">
+          <div className="flex flex-wrap gap-2 shrink-0 order-3 w-full lg:order-2 lg:w-auto lg:max-w-[calc(100%-3rem)]">
             {isLoadingUserRoles ? (
               <div className="flex items-center gap-2 bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -438,25 +438,25 @@ export default function CalendarPage() {
             ) : user ? (
               <>
                 {isAdmin && (
-                  <div className="flex items-center gap-2 bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm">
+                  <div className="flex items-center gap-2 bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm flex-shrink-0">
                     <Settings className="h-4 w-4" />
                     <span>Administrador</span>
                   </div>
                 )}
                 {isSecretary && (
-                  <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+                  <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex-shrink-0">
                     <ClipboardList className="h-4 w-4" />
                     <span>Secretaria</span>
                   </div>
                 )}
                 {isDirector && (
-                  <div className="flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
+                  <div className="flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex-shrink-0">
                     <Shield className="h-4 w-4" />
                     <span>Diretor</span>
                   </div>
                 )}
                 {isProfessor && (
-                  <div className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                  <div className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex-shrink-0">
                     <User className="h-4 w-4" />
                     <span>Professor</span>
                   </div>
