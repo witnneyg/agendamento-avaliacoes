@@ -106,7 +106,7 @@ export function NavBar() {
 
   return (
     <nav className="border-b bg-background">
-      <div className="container mx-auto flex h-16 items-center px-3 sm:px-4 justify-between ">
+      <div className="max-w-[1800px] mx-auto flex h-16 items-center px-3 sm:px-4 justify-between ">
         <Link
           href="/"
           className="flex items-center flex-shrink-0 space-x-2 sm:space-x-3"
