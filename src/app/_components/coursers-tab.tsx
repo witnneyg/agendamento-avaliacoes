@@ -355,7 +355,7 @@ export function CoursesTab() {
           {courses.map((course) => (
             <Card key={course.id}>
               <CardHeader>
-                <CardTitle>{course.name}</CardTitle>
+                <CardTitle className="truncate">{course.name}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
