@@ -215,7 +215,7 @@ export const AppointmentItem = ({
             | "director"
             | "professor"
             | "owner";
-          let deletedByName = userSession?.name || "Sistema";
+          const deletedByName = userSession?.name || "Sistema";
 
           if (isAdmin) {
             deletedByRole = "admin";

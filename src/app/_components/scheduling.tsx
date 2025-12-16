@@ -17,7 +17,6 @@ import { createScheduling } from "../_actions/scheduling/create-schedule";
 import { getUser } from "../_actions/user/getUser";
 import { Class, Discipline, User } from "@prisma/client";
 import { ClassSelector } from "./classes-selector";
-import { sendSchedulingEmail } from "../_actions/send-scheduling-email";
 import { getTeacherByUserId } from "../_actions/teacher/get-teacher-by-user-id";
 
 type Step =
@@ -142,14 +141,6 @@ export function Scheduling() {
       };
 
       await createScheduling(data);
-      if (user.email) {
-        await sendSchedulingEmail({
-          to: user.email,
-          name: details.name,
-          date: details.date,
-          time: details.time,
-        });
-      }
     }
 
     setStep("confirmation");

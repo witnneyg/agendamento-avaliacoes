@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 "use server";
 
 import { Resend } from "resend";
@@ -25,10 +27,8 @@ export async function sendConfirmationSchedulingEmail({
   className,
 }: SendConfirmationSchedulingEmailProps) {
   try {
-    // Formatar data para exibição
     const formattedDate = format(date, "dd/MM/yyyy");
 
-    // Criar HTML do email
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
         <h1 style="color: #10b981; border-bottom: 2px solid #10b981; padding-bottom: 10px;">
