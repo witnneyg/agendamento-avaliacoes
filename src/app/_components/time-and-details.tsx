@@ -22,7 +22,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getTeacherByCourse } from "../_actions/teacher/get-teacher-by-disciplines";
-import { sendSchedulingEmail } from "../_actions/send-scheduling-email";
 
 interface Teacher {
   name: string;
@@ -153,12 +152,6 @@ export function TimeAndDetailsForm({
   }, [disciplineId, courseId]);
 
   async function handleSubmitForm(data: any) {
-    await sendSchedulingEmail({
-      to: data.email,
-      name: data.name,
-      date,
-      time: data.time,
-    });
     onSubmit(data);
   }
 
