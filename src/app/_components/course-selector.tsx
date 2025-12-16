@@ -1,13 +1,13 @@
 "use client";
 
-import type React from "react";
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { getIconByName } from "../_helpers/getIconByName";
 import { Period } from "@prisma/client";
+
+import { getIconByName } from "../_helpers/getIconByName";
 import { getUser } from "../_actions/user/getUser";
 import { getTeacherByUserId } from "../_actions/teacher/get-teacher-by-user-id";
 import { getTeacherCourses } from "../_actions/teacher/get-teacher-courses";
@@ -31,49 +31,46 @@ export function CourseSelector({
   filterByUser = false,
 }: CourseSelectorProps) {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
     async function fetchCourses() {
-      setIsLoading(true);
-      try {
-        if (!teacherId && !filterByUser) {
-          setCourses([]);
-          return;
-        }
+      if (!teacherId && !filterByUser) {
+        setHasFetched(false);
+        return;
+      }
 
+      setIsLoading(true);
+      setHasFetched(false);
+
+      try {
         let coursesData: Course[] = [];
 
         if (teacherId) {
-          const data = await getTeacherCourses(teacherId);
-          coursesData = data || [];
-        } else if (filterByUser) {
-          const userData = await getUser();
-
-          if (!userData) {
+          coursesData = (await getTeacherCourses(teacherId)) ?? [];
+        } else {
+          const user = await getUser();
+          if (!user) {
             setCourses([]);
             return;
           }
 
-          const teacherData = await getTeacherByUserId(userData.id);
-
-          if (!teacherData) {
+          const teacher = await getTeacherByUserId(user.id);
+          if (!teacher) {
             setCourses([]);
             return;
           }
 
-          const data = await getTeacherCourses(teacherData.id);
-          coursesData = data || [];
+          coursesData = (await getTeacherCourses(teacher.id)) ?? [];
         }
 
         setCourses(coursesData);
-      } catch (error) {
-        if (error instanceof Error) {
-          throw new Error(error.message);
-        }
+      } catch {
         setCourses([]);
       } finally {
         setIsLoading(false);
+        setHasFetched(true);
       }
     }
 
@@ -81,102 +78,62 @@ export function CourseSelector({
   }, [teacherId, filterByUser]);
 
   if (isLoading) {
-    const loadingMessage =
-      teacherId || filterByUser
-        ? "Carregando seus cursos..."
-        : "Aguardando seleção...";
-
     return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin" />
-        <span className="ml-2">{loadingMessage}</span>
+      <div className="flex items-center justify-center gap-2 py-10">
+        <Loader2 className="h-5 w-5 animate-spin" />
+        <span>Carregando cursos...</span>
       </div>
     );
   }
-
-  if (courses.length === 0) {
-    const noCoursesMessage =
-      teacherId || filterByUser
-        ? "Nenhum curso encontrado"
-        : "Nenhum curso disponível";
-
-    const noCoursesDescription =
-      teacherId || filterByUser
-        ? "Você não está associado a nenhum curso no momento."
-        : "Não há cursos cadastrados no sistema.";
-
+  if (hasFetched && courses.length === 0) {
     return (
-      <div className="text-center py-8">
-        <div className="bg-muted/50 p-6 rounded-lg max-w-md mx-auto">
-          <p className="font-medium mb-2">{noCoursesMessage}</p>
+      <div className="flex justify-center py-10">
+        <div className="rounded-lg border bg-muted/40 px-6 py-4 text-center">
+          <p className="font-medium">Cursos indisponíveis</p>
           <p className="text-sm text-muted-foreground">
-            {noCoursesDescription}
+            Nenhum curso foi encontrado.
           </p>
         </div>
       </div>
     );
   }
 
-  const coursesCountMessage =
-    teacherId || filterByUser
-      ? `${courses.length} curso(s) disponível(eis) para você`
-      : `${courses.length} curso(s) disponível(eis)`;
+  if (courses.length > 0) {
+    return (
+      <div>
+        <p className="mb-4 text-sm text-muted-foreground">
+          {courses.length} curso(s) encontrado(s)
+        </p>
 
-  return (
-    <div>
-      <div className="mb-4">
-        <p className="text-sm text-muted-foreground">{coursesCountMessage}</p>
-      </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {courses.map((course) => {
+            const icon = getIconByName(course.name);
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {courses.map((course) => {
-          const icon = getIconByName(course.name);
+            return (
+              <Card
+                key={course.id}
+                onClick={() => onSelectCourse(course)}
+                className="cursor-pointer border-2 transition hover:border-primary/50 hover:shadow-md"
+              >
+                <CardContent className="flex flex-col items-center gap-4 p-6 text-center">
+                  <div className="rounded-full bg-primary/10 p-3">{icon}</div>
 
-          return (
-            <Card
-              key={course.id}
-              className="cursor-pointer transition-all hover:shadow-md hover:border-primary/50 border-2"
-              onClick={() => onSelectCourse(course)}
-            >
-              <CardContent className="p-6 h-full">
-                <div className="flex flex-col items-center text-center space-y-3 h-full justify-between">
-                  <div className="bg-primary/10 p-3 rounded-full hover:bg-primary/15 transition-colors">
-                    {icon}
-                  </div>
-
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg mb-2">
-                      {course.name}
-                    </h3>
+                  <div>
+                    <h3 className="text-lg font-semibold">{course.name}</h3>
                     <p className="text-sm text-muted-foreground line-clamp-2">
                       {course.description}
                     </p>
                   </div>
 
-                  <div className="w-full">
-                    <div className="flex flex-wrap gap-1 justify-center mb-3">
-                      {course.periods.map((period) => (
-                        <span
-                          key={period}
-                          className="inline-block px-2 py-1 text-xs bg-secondary text-secondary-foreground rounded-full"
-                        >
-                          {period === Period.MORNING && "Matutino"}
-                          {period === Period.AFTERNOON && "Vespertino"}
-                          {period === Period.EVENING && "Noturno"}
-                        </span>
-                      ))}
-                    </div>
-
-                    <Button className="w-full cursor-pointer">
-                      Selecionar Curso
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                  <Button className="w-full">Selecionar curso</Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 }
