@@ -55,9 +55,6 @@ export function SchedulingTemplateEmail({
               🕒 <strong>{time}</strong>
             </Text>
           </Section>
-          <Text>
-            Obrigado por agendar conosco! Nos vemos no dia e hora marcados.
-          </Text>
         </Container>
       </Body>
     </Html>

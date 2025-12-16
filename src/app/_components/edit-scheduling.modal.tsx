@@ -11,7 +11,13 @@ import { Scheduling, Period } from "@prisma/client";
 import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Shield, ClipboardList, Settings } from "lucide-react";
+import {
+  AlertTriangle,
+  Shield,
+  ClipboardList,
+  Settings,
+  CheckCircle,
+} from "lucide-react";
 import { getTranslatedPeriods } from "../_helpers/getOrderedPeriods";
 import {
   Dialog,
@@ -21,6 +27,8 @@ import {
 } from "@/components/ui/dialog";
 import { updateScheduling } from "../_actions/scheduling/update-scheduling";
 import { getScheduling } from "../_actions/scheduling/get-scheduling";
+import { getUser } from "../_actions/user/getUser";
+import { sendEditSchedulingEmail } from "../_actions/send-edit-scheduling-email";
 
 interface EditSchedulingModalProps {
   appointment: any;
@@ -209,12 +217,19 @@ export const EditSchedulingModal = ({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date(appointment.date)
   );
+
+  console.log({ appointment });
   const [scheduledTimes, setScheduledTimes] = useState<Scheduling[]>([]);
   const [existingAppointmentsCount, setExistingAppointmentsCount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeSlots, setTimeSlots] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoadedScheduledTimes, setHasLoadedScheduledTimes] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [emailStatus, setEmailStatus] = useState<{
+    sent: boolean;
+    error?: string;
+  }>({ sent: false });
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentTimeSlots = useMemo(
@@ -292,12 +307,26 @@ export const EditSchedulingModal = ({
         }
       }
     }
+
+    async function fetchUserData() {
+      if (isOpen && !user) {
+        try {
+          const userData = await getUser();
+          setUser(userData);
+        } catch (error) {
+          console.error("Erro ao buscar usuário:", error);
+        }
+      }
+    }
+
     fetchScheduledTimes();
-  }, [isOpen, hasLoadedScheduledTimes]);
+    fetchUserData();
+  }, [isOpen, hasLoadedScheduledTimes, user]);
 
   useEffect(() => {
     if (!isOpen) {
       setHasLoadedScheduledTimes(false);
+      setEmailStatus({ sent: false });
     }
   }, [isOpen]);
 
@@ -369,6 +398,16 @@ export const EditSchedulingModal = ({
       setValue("date", date);
       setValue("time", []);
     }
+  };
+
+  const getUserEmail = (): string | null => {
+    if (user?.email) return user.email;
+
+    if (appointment.user?.email) return appointment.user.email;
+
+    if (appointment.teacher?.email) return appointment.teacher.email;
+
+    return null;
   };
 
   const handleFormSubmit = async (data: EditSchema) => {
@@ -478,6 +517,13 @@ export const EditSchedulingModal = ({
         );
       }
 
+      const isDateChanged = !isSameDay(originalAppointmentDate, data.date);
+      const areTimesChanged =
+        JSON.stringify(sortedTimes.sort()) !==
+        JSON.stringify(currentTimeSlots.sort());
+
+      const hasChanges = isDateChanged || areTimesChanged;
+
       const updatedAppointment = {
         id: appointment.id,
         startTime: earliestStartTime,
@@ -509,6 +555,55 @@ export const EditSchedulingModal = ({
       });
 
       if (result.success) {
+        let emailResult = null;
+        if (hasChanges) {
+          const userEmail = getUserEmail();
+
+          if (userEmail) {
+            try {
+              emailResult = await sendEditSchedulingEmail({
+                to: userEmail,
+                name: user?.name || appointment.name || "Professor",
+                date: data.date,
+                time: sortedTimes.join(", "),
+                originalDate: originalAppointmentDate,
+                originalTime: currentTimeSlots.join(", "),
+                courseName: appointment.course?.name,
+                disciplineName: appointment.discipline?.name,
+                className: appointment.class?.name,
+              });
+
+              if (emailResult?.success) {
+                setEmailStatus({ sent: true });
+                console.log("Email de edição enviado para:", userEmail);
+              } else {
+                setEmailStatus({
+                  sent: false,
+                  error: emailResult?.error || "Erro desconhecido",
+                });
+                console.warn(
+                  "Erro ao enviar email de edição:",
+                  emailResult?.error
+                );
+              }
+            } catch (emailError) {
+              console.warn("Erro ao enviar email de edição:", emailError);
+              setEmailStatus({
+                sent: false,
+                error: "Exceção ao enviar email",
+              });
+            }
+          } else {
+            console.warn(
+              "Usuário não tem email cadastrado para envio de confirmação"
+            );
+            setEmailStatus({
+              sent: false,
+              error: "Usuário não tem email cadastrado",
+            });
+          }
+        }
+
         if (result.updated && result.updated.length > 0) {
           onSave(result.updated);
         } else if (result.created && result.created.length > 0) {
@@ -516,7 +611,19 @@ export const EditSchedulingModal = ({
         } else {
           onSave([updatedAppointment]);
         }
-        onClose();
+
+        setTimeout(() => {
+          onClose();
+          if (emailStatus.sent) {
+            alert("Agendamento atualizado e email de confirmação enviado!");
+          } else if (emailStatus.error) {
+            alert(
+              `Agendamento atualizado, mas email não foi enviado: ${emailStatus.error}`
+            );
+          } else {
+            alert("Agendamento atualizado com sucesso!");
+          }
+        }, 500);
       } else {
         alert(`Erro ao atualizar agendamento: ${result.error}`);
       }
@@ -553,6 +660,25 @@ export const EditSchedulingModal = ({
         </DialogHeader>
 
         <div className="space-y-6">
+          {emailStatus.sent && (
+            <Alert className="mb-4 border-green-200 bg-green-50">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-700">
+                Email de confirmação enviado com sucesso!
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {emailStatus.error && (
+            <Alert className="mb-4 border-yellow-200 bg-yellow-50">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-700">
+                Agendamento atualizado, mas email não foi enviado:{" "}
+                {emailStatus.error}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex flex-col space-y-4">
             <Label className="flex items-center gap-2">
               Selecione uma nova data

@@ -29,6 +29,7 @@ import {
   UserWithoutEmailVerified,
 } from "../calendar/page";
 import { EditSchedulingModal } from "./edit-scheduling.modal";
+import { sendDeleteSchedulingEmail } from "../_actions/send-delete-scheduling-email";
 
 const extractSemesterNumber = (semesterName: string): string => {
   const numberMatch = semesterName.match(/^(\d+)/);
@@ -204,6 +205,58 @@ export const AppointmentItem = ({
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
     try {
+      const userEmail = appointment.user?.email;
+
+      if (userEmail) {
+        try {
+          let deletedByRole:
+            | "admin"
+            | "secretary"
+            | "director"
+            | "professor"
+            | "owner";
+          let deletedByName = userSession?.name || "Sistema";
+
+          if (isAdmin) {
+            deletedByRole = "admin";
+          } else if (isSecretary) {
+            deletedByRole = "secretary";
+          } else if (isDirectorOfCourse) {
+            deletedByRole = "director";
+          } else if (isProfessorOfCourse) {
+            deletedByRole = "professor";
+          } else {
+            deletedByRole = "owner";
+          }
+
+          const timeSlots = extractTimeSlots(appointment);
+          const timeString = timeSlots.join(", ");
+
+          await sendDeleteSchedulingEmail({
+            to: userEmail,
+            name: appointment.name,
+            date: new Date(appointment.date),
+            time: timeString,
+            courseName: appointment.course.name,
+            disciplineName: appointment.discipline.name,
+            className: appointment.class?.name || "Turma não especificada",
+            deletedBy: deletedByName,
+            deletedByRole: deletedByRole,
+          });
+
+          console.log("Email de exclusão enviado para:", userEmail);
+        } catch (emailError) {
+          console.warn(
+            "Erro ao enviar email de exclusão, mas continuando com a exclusão:",
+            emailError
+          );
+        }
+      } else {
+        console.warn(
+          "Usuário não tem email cadastrado, não será enviado email de exclusão"
+        );
+      }
+
       await onDelete(appointment.id);
 
       if (onAppointmentDeleted) {
@@ -214,6 +267,7 @@ export const AppointmentItem = ({
       setIsAlertOpen(false);
     } catch (error) {
       console.error("Erro ao excluir agendamento:", error);
+      alert("Erro ao excluir agendamento. Tente novamente.");
     } finally {
       setIsDeleting(false);
     }

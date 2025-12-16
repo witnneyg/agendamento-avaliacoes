@@ -229,6 +229,9 @@ export function Scheduling() {
               classId={selectedClass.id}
               disciplineId={selectedDiscipline.id}
               onBack={() => setStep("discipline")}
+              courseName={selectedCourse.name}
+              disciplineName={selectedDiscipline.name}
+              className={selectedClass.name}
             />
           )}
         {step === "confirmation" &&

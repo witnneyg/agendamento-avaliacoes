@@ -17,6 +17,7 @@ import { getDisciplineById } from "../_actions/discipline/get-discipline-by-id";
 import { getTranslatedPeriods } from "../_helpers/getOrderedPeriods";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getUser } from "../_actions/user/getUser";
+import { sendConfirmationSchedulingEmail } from "../_actions/send-confirmed-scheduling-email";
 
 interface BookingFormProps {
   onSubmit: (details: {
@@ -30,6 +31,10 @@ interface BookingFormProps {
   semesterId: string;
   disciplineId: string;
   classId: string;
+  // Adicione estas props:
+  courseName: string;
+  disciplineName: string;
+  className: string;
 }
 
 const bookingSchema = z.object({
@@ -190,6 +195,9 @@ export function BookingForm({
   semesterId,
   disciplineId,
   classId,
+  courseName,
+  disciplineName,
+  className,
 }: BookingFormProps) {
   const [schedulingTimes, setSchedulingTimes] = useState<Scheduling[]>([]);
   const [user, setUser] = useState<any>(null);
@@ -296,6 +304,16 @@ export function BookingForm({
         return hour * 60 + minute;
       };
       return getStartHour(a) - getStartHour(b);
+    });
+
+    await sendConfirmationSchedulingEmail({
+      to: user.email,
+      name: user.name,
+      date: data.date,
+      time: sortedTimes.join(", "),
+      courseName: courseName,
+      disciplineName: disciplineName,
+      className: className,
     });
 
     onSubmit({
