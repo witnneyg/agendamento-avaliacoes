@@ -1,5 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-
 "use server";
 
 import { Resend } from "resend";
@@ -20,7 +18,6 @@ interface SendEditSchedulingEmailProps {
 }
 
 export async function sendEditSchedulingEmail({
-  to,
   name,
   date,
   time,
