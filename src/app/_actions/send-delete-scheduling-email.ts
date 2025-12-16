@@ -18,6 +18,7 @@ interface SendDeleteSchedulingEmailProps {
 }
 
 export async function sendDeleteSchedulingEmail({
+  to,
   name,
   date,
   time,
@@ -29,6 +30,8 @@ export async function sendDeleteSchedulingEmail({
 }: SendDeleteSchedulingEmailProps) {
   try {
     const formattedDate = format(date, "dd/MM/yyyy");
+
+    console.log(to);
 
     const roleNames = {
       admin: "Administrador",

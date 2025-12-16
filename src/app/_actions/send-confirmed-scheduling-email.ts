@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 "use server";
 
 import { Resend } from "resend";
@@ -16,6 +18,7 @@ interface SendConfirmationSchedulingEmailProps {
 }
 
 export async function sendConfirmationSchedulingEmail({
+  to,
   name,
   date,
   time,
@@ -24,6 +27,7 @@ export async function sendConfirmationSchedulingEmail({
   className,
 }: SendConfirmationSchedulingEmailProps) {
   try {
+    console.log(to);
     const formattedDate = format(date, "dd/MM/yyyy");
 
     const emailHtml = `

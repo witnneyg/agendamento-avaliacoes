@@ -18,6 +18,7 @@ interface SendEditSchedulingEmailProps {
 }
 
 export async function sendEditSchedulingEmail({
+  to,
   name,
   date,
   time,
@@ -30,6 +31,7 @@ export async function sendEditSchedulingEmail({
   try {
     const formattedDate = format(date, "dd/MM/yyyy");
     const formattedOriginalDate = format(originalDate, "dd/MM/yyyy");
+    console.log(to);
 
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
