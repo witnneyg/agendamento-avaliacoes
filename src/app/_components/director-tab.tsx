@@ -50,6 +50,7 @@ import { getDirectorCourses } from "../_actions/director/get-director-courses";
 import { getOrCreateDirector } from "../_actions/director/get-or-create-director";
 import { assignDirectorToCourses } from "../_actions/director/assignment-diretor-to-coursers";
 import { removeDirectorFromCourses } from "../_actions/director/remove-director-from-coursers";
+import { updateUserRole } from "../_actions/permissions/update-user-role";
 
 type UserWithRoles = Prisma.UserGetPayload<{
   include: { roles: true };
@@ -225,6 +226,15 @@ export function DirectorTab() {
   const isCourseMarkedForRemoval = (courseId: string) => {
     return selectedCoursesToRemove.includes(courseId);
   };
+
+  const hasDirecaoRole = (user: UserWithRolesAndDirector) => {
+    return user.roles?.some((role) => role.name === "DIRECAO") || false;
+  };
+
+  const getDirecaoRole = (user: UserWithRolesAndDirector) => {
+    return user.roles?.find((role) => role.name === "DIRECAO");
+  };
+
   const onSubmit = async (data: DirectorForm) => {
     if (isSubmitting) return;
 
@@ -270,6 +280,41 @@ export function DirectorTab() {
 
         if (!removeResult.success) {
           return;
+        }
+
+        const remainingCoursesCount =
+          currentLinkedCourseIds.length - coursesToRemove.length;
+        if (remainingCoursesCount === 0 && coursesToRemove.length > 0) {
+          const direcaoRole = getDirecaoRole(selectedUser);
+
+          if (direcaoRole) {
+            const otherRoles =
+              selectedUser.roles?.filter(
+                (role) => role.id !== direcaoRole.id
+              ) || [];
+            const otherRoleIds = otherRoles.map((role) => role.id);
+
+            try {
+              await updateUserRole(selectedUser.id, otherRoleIds);
+
+              setUsers((prev) =>
+                prev.map((user) => {
+                  if (user.id === selectedUser.id) {
+                    return {
+                      ...user,
+                      roles: otherRoles,
+                      director: null,
+                    };
+                  }
+                  return user;
+                })
+              );
+
+              setUsers((prev) => prev.filter((u) => u.id !== selectedUser.id));
+            } catch (error) {
+              console.error("Erro ao remover role de DIRECAO:", error);
+            }
+          }
         }
       }
 
@@ -331,15 +376,50 @@ export function DirectorTab() {
       });
 
       if (result.success) {
+        const remainingCourses = (userCourses[userId] || []).filter(
+          (c) => c.id !== courseId
+        );
+
+        if (remainingCourses.length === 0) {
+          const direcaoRole = getDirecaoRole(user);
+
+          if (direcaoRole) {
+            const otherRoles =
+              user.roles?.filter((role) => role.id !== direcaoRole.id) || [];
+            const otherRoleIds = otherRoles.map((role) => role.id);
+
+            try {
+              await updateUserRole(userId, otherRoleIds);
+
+              setUsers((prev) =>
+                prev.map((u) => {
+                  if (u.id === userId) {
+                    return {
+                      ...u,
+                      roles: otherRoles,
+                      director: null,
+                    };
+                  }
+                  return u;
+                })
+              );
+
+              setUsers((prev) => prev.filter((u) => u.id !== userId));
+            } catch (error) {
+              console.error("Erro ao remover role de DIRECAO:", error);
+            }
+          }
+        }
+
         setUserCourses((prev) => ({
           ...prev,
-          [userId]: (prev[userId] || []).filter((c) => c.id !== courseId),
+          [userId]: remainingCourses,
         }));
       } else {
+        console.error("Erro ao remover curso:", result.message);
       }
     } catch (error) {
       console.error("Erro ao remover curso:", error);
-      alert("Erro ao remover curso. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -370,11 +450,47 @@ export function DirectorTab() {
       });
 
       if (result.success) {
+        if (currentCourses.length > 0) {
+          const direcaoRole = getDirecaoRole(user);
+
+          if (direcaoRole) {
+            const otherRoles =
+              user.roles?.filter((role) => role.id !== direcaoRole.id) || [];
+            const otherRoleIds = otherRoles.map((role) => role.id);
+
+            try {
+              await updateUserRole(userId, otherRoleIds);
+
+              setUsers((prev) =>
+                prev.map((u) => {
+                  if (u.id === userId) {
+                    return {
+                      ...u,
+                      roles: otherRoles,
+                      director: null,
+                    };
+                  }
+                  return u;
+                })
+              );
+
+              setUsers((prev) => prev.filter((u) => u.id !== userId));
+            } catch (error) {
+              console.error("Erro ao remover role de DIRECAO:", error);
+            }
+          }
+        }
+
         setUserCourses((prev) => ({
           ...prev,
           [userId]: [],
         }));
+
+        if (editingUser?.id === userId) {
+          clearForm();
+        }
       } else {
+        console.error("Erro ao remover cursos:", result.message);
       }
     } catch (error) {
       console.error("Erro ao remover cursos:", error);

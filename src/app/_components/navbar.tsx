@@ -107,22 +107,8 @@ export function NavBar() {
   return (
     <nav className="border-b bg-background">
       <div className="max-w-[1800px] mx-auto flex h-16 items-center px-3 sm:px-4 justify-between ">
-        <Link
-          href="/"
-          className="flex items-center flex-shrink-0 space-x-2 sm:space-x-3"
-        >
+        <div className="flex items-center flex-shrink-0 space-x-2 sm:space-x-3">
           <div className="relative h-9 w-20 sm:h-10 sm:w-24">
-            <Image
-              src="/fesg.jpg"
-              alt="FESG"
-              fill
-              className="object-contain"
-              priority
-              sizes="(max-width: 768px) 80px, 96px"
-            />
-          </div>
-          <div className="h-6 w-px bg-gray-300 hidden xs:block"></div>
-          <div className="relative h-9 w-28 sm:h-10 sm:w-32">
             <Image
               src="/logo-unicerrado-destaque.svg"
               alt="UniCerrado"
@@ -132,7 +118,18 @@ export function NavBar() {
               sizes="(max-width: 768px) 112px, 128px"
             />
           </div>
-        </Link>
+          <div className="h-6 w-px bg-gray-300 hidden xs:block"></div>
+          <div className="relative h-9 w-28 sm:h-10 sm:w-32">
+            <Image
+              src="/fesg.jpg"
+              alt="FESG"
+              fill
+              className="object-contain"
+              priority
+              sizes="(max-width: 768px) 80px, 96px"
+            />
+          </div>
+        </div>
 
         <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 space-x-1 lg:space-x-2">
           {isLoading ? (
