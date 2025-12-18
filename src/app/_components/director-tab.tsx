@@ -41,11 +41,9 @@ import {
   Shield,
   School,
   Trash2,
-  AlertCircle,
 } from "lucide-react";
 
 import type { Course, Director, Prisma } from "@prisma/client";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getCourses } from "../_actions/coursers/get-coursers";
 import { getUsersWithDirectorRole } from "../_actions/director/get-users-with-director-role";
 import { getDirectorCourses } from "../_actions/director/get-director-courses";
