@@ -3,13 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -43,7 +37,6 @@ import {
 import {
   Search,
   Plus,
-  Trash2,
   Users,
   Check,
   X,
@@ -57,7 +50,6 @@ import { NavBar } from "@/app/_components/navbar";
 import { getUsers } from "@/app/_actions/user/get-users";
 import { getRoles } from "@/app/_actions/permissions/get-roles";
 import { createRole } from "@/app/_actions/permissions/create-role";
-import { PermissionsSection } from "./permissions";
 import { updateUserRole } from "@/app/_actions/permissions/update-user-role";
 import { deleteRole } from "@/app/_actions/permissions/delete-role";
 import { getUser } from "@/app/_actions/user/getUser";
@@ -107,7 +99,6 @@ export default function AdminDashboard() {
     roleName: string;
   } | null>(null);
   const [updatingUser, setUpdatingUser] = useState<string | null>(null);
-  const [creatingRole, setCreatingRole] = useState(false);
   const [newRoleName, setNewRoleName] = useState("");
   const [deleteRoleConfirmOpen, setDeleteRoleConfirmOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
@@ -181,26 +172,6 @@ export default function AdminDashboard() {
     return variantMap[roleName.toUpperCase()] || "outline";
   };
 
-  const handleCreateRole = async () => {
-    if (!newRoleName.trim()) return;
-
-    try {
-      setCreatingRole(true);
-      const roleNameInCaps = newRoleName.trim().toUpperCase();
-      const newRole = await createRole({
-        name: roleNameInCaps,
-        permissions: [],
-      });
-
-      setRoles((prev) => [...prev, newRole]);
-      setNewRoleName("");
-    } catch (error) {
-      console.error("Erro ao criar role:", error);
-    } finally {
-      setCreatingRole(false);
-    }
-  };
-
   const handleRoleToggle = async (userId: string, roleId: string) => {
     if (!isAdmin) {
       alert("Apenas administradores podem gerenciar acessos de usuários.");
@@ -268,11 +239,6 @@ export default function AdminDashboard() {
   };
 
   const handleRemoveAllRoles = (userId: string) => {
-    if (!isAdmin) {
-      alert("Apenas administradores podem remover acessos de usuários.");
-      return;
-    }
-
     const user = users.find((u) => u.id === userId);
     if (!user) return;
 
@@ -317,16 +283,6 @@ export default function AdminDashboard() {
       setRemoveAllRolesConfirmOpen(false);
       setUserToRemoveAllRoles(null);
     }
-  };
-
-  const handleDeleteRoleClick = (role: Role) => {
-    if (!isAdmin) {
-      alert("Apenas administradores podem excluir acessos do sistema.");
-      return;
-    }
-
-    setRoleToDelete(role);
-    setDeleteRoleConfirmOpen(true);
   };
 
   const handleRemoveRole = (userId: string, roleId: string) => {
@@ -423,14 +379,6 @@ export default function AdminDashboard() {
   const cancelDeleteRole = () => {
     setRoleToDelete(null);
     setDeleteRoleConfirmOpen(false);
-  };
-
-  const canDeleteRole = (role: Role) => {
-    const usersWithRole = users.filter((user) =>
-      user.roles.some((userRole) => userRole.id === role.id)
-    );
-
-    return usersWithRole.length === 0;
   };
 
   if (loading) {
