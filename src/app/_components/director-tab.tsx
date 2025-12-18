@@ -386,8 +386,7 @@ export function DirectorTab() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* CABEÇALHO */}
+    <div className="space-y-4 mt-2">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Diretores</h2>
@@ -547,21 +546,8 @@ export function DirectorTab() {
                 )}
               </div>
 
-              {/* SELEÇÃO DE CURSOS */}
               <div className="space-y-3">
                 <Label>Cursos Administrados</Label>
-
-                {editingUser && selectedCoursesToRemove.length > 0 && (
-                  <Alert className="bg-amber-50 border-amber-200">
-                    <AlertCircle className="h-4 w-4 text-amber-600" />
-                    <AlertDescription className="text-amber-800">
-                      {selectedCoursesToRemove.length} curso(s) serão removidos
-                      ao salvar. Cursos desmarcados em{" "}
-                      <span className="font-semibold">vermelho</span> serão
-                      desvinculados.
-                    </AlertDescription>
-                  </Alert>
-                )}
 
                 <div className="space-y-2">
                   <div className="relative">
@@ -709,7 +695,6 @@ export function DirectorTab() {
         </Dialog>
       </div>
 
-      {/* BARRA DE BUSCA */}
       <div className="flex gap-4">
         <div className="flex-1">
           <div className="relative max-w-sm">
@@ -730,7 +715,6 @@ export function DirectorTab() {
         </div>
       </div>
 
-      {/* TABELA DE DIRETORES */}
       <Card>
         <CardHeader>
           <CardTitle>Todos os Diretores</CardTitle>

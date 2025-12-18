@@ -7,7 +7,6 @@ import { CoursesTab } from "../_components/coursers-tab";
 import DisciplinesTab from "../_components/disciplines-tab";
 import { ClassesTab } from "../_components/classes-tab";
 import { NavBar } from "../_components/navbar";
-import { DirectorTab } from "../_components/director-tab";
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("courses");
@@ -33,7 +32,7 @@ export default function AdminPage() {
             onValueChange={setActiveTab}
             className="space-y-4"
           >
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="courses" className="cursor-pointer">
                 Cursos
               </TabsTrigger>
@@ -46,9 +45,7 @@ export default function AdminPage() {
               <TabsTrigger value="teachers" className="cursor-pointer">
                 Professores
               </TabsTrigger>
-              <TabsTrigger value="directors" className="cursor-pointer">
-                Diretores
-              </TabsTrigger>
+
               {/* <TabsTrigger value="settings" className="cursor-pointer">
                 Configurações
               </TabsTrigger> */}
@@ -69,9 +66,6 @@ export default function AdminPage() {
             </TabsContent>
             <TabsContent value="teachers">
               <TeachersTab />
-            </TabsContent>
-            <TabsContent value="directors">
-              <DirectorTab />
             </TabsContent>
             {/* <TabsContent value="settings">
               <SettingsTab />

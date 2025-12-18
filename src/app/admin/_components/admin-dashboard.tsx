@@ -61,6 +61,7 @@ import { PermissionsSection } from "./permissions";
 import { updateUserRole } from "@/app/_actions/permissions/update-user-role";
 import { deleteRole } from "@/app/_actions/permissions/delete-role";
 import { getUser } from "@/app/_actions/user/getUser";
+import { DirectorTab } from "@/app/_components/director-tab";
 
 type Role = {
   id: string;
@@ -462,7 +463,7 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <h1 className="text-xl sm:text-3xl font-bold text-foreground">
-                  Gerenciamento de Usuários
+                  Painel Admin
                 </h1>
               </div>
             </div>
@@ -478,52 +479,24 @@ export default function AdminDashboard() {
                 Gerenciar Usuários
               </TabsTrigger>
               <TabsTrigger
-                value="permissions"
+                value="director"
                 className="flex items-center gap-2 cursor-pointer"
               >
                 <Settings className="h-4" />
-                Gerenciar Permissões
+                Gerenciar Diretores
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="users" className="space-y-6">
-              <Card>
+              <Card className="mt-2">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Shield className="h-5 w-5" />
                     Gerenciar Acessos do Sistema
                   </CardTitle>
-                  <CardDescription>
-                    Crie novos acessos ou exclua acessos existentes do sistema
-                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Nome do Acesso
-                    </label>
-                    <Input
-                      placeholder="Ex: COORDENADOR"
-                      value={newRoleName}
-                      onChange={(e) => setNewRoleName(e.target.value)}
-                    />
-                  </div>
-                  <div className="cursor-pointer w-fit">
-                    <Button
-                      onClick={handleCreateRole}
-                      disabled={!newRoleName.trim() || creatingRole}
-                      className="w-full md:w-auto "
-                    >
-                      {creatingRole ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <Plus className="h-4 w-4 mr-2" />
-                      )}
-                      {creatingRole ? "Criando..." : "Criar Acesso"}
-                    </Button>
-                  </div>
-
-                  <div className="mt-6">
+                  <div className="mt-1">
                     <h4 className="text-sm font-medium mb-3">
                       Acessos do Sistema
                     </h4>
@@ -538,20 +511,6 @@ export default function AdminDashboard() {
                               {role.name}
                             </Badge>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteRoleClick(role)}
-                            disabled={!canDeleteRole(role)}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive cursor-pointer"
-                            title={
-                              canDeleteRole(role)
-                                ? `Excluir role ${role.name}`
-                                : "Esta role não pode ser excluída"
-                            }
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       ))}
                     </div>
@@ -565,7 +524,7 @@ export default function AdminDashboard() {
                     Lista de Usuários
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-3 sm:p-6">
+                <CardContent className="p-3 sm:p-6 -mt-10">
                   <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -1023,8 +982,11 @@ export default function AdminDashboard() {
               </Dialog>
             </TabsContent>
 
-            <TabsContent value="permissions" className="space-y-6">
+            {/* <TabsContent value="permissions" className="space-y-6">
               <PermissionsSection />
+            </TabsContent> */}
+            <TabsContent value="director" className="space-y-6">
+              <DirectorTab />
             </TabsContent>
           </Tabs>
         </div>
