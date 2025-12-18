@@ -227,10 +227,6 @@ export function DirectorTab() {
     return selectedCoursesToRemove.includes(courseId);
   };
 
-  const hasDirecaoRole = (user: UserWithRolesAndDirector) => {
-    return user.roles?.some((role) => role.name === "DIRECAO") || false;
-  };
-
   const getDirecaoRole = (user: UserWithRolesAndDirector) => {
     return user.roles?.find((role) => role.name === "DIRECAO");
   };
