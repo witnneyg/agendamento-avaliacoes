@@ -49,7 +49,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NavBar } from "@/app/_components/navbar";
 import { getUsers } from "@/app/_actions/user/get-users";
 import { getRoles } from "@/app/_actions/permissions/get-roles";
-import { createRole } from "@/app/_actions/permissions/create-role";
 import { updateUserRole } from "@/app/_actions/permissions/update-user-role";
 import { deleteRole } from "@/app/_actions/permissions/delete-role";
 import { getUser } from "@/app/_actions/user/getUser";
@@ -99,7 +98,6 @@ export default function AdminDashboard() {
     roleName: string;
   } | null>(null);
   const [updatingUser, setUpdatingUser] = useState<string | null>(null);
-  const [newRoleName, setNewRoleName] = useState("");
   const [deleteRoleConfirmOpen, setDeleteRoleConfirmOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
   const [deletingRole, setDeletingRole] = useState(false);
