@@ -36,12 +36,12 @@ export async function sendEditSchedulingEmail({
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
         <h1 style="color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">
-          ✏️ Agendamento Atualizado
+          ✏️ Agendamento Editado
         </h1>
         
         <p>Olá <strong>${name}</strong>,</p>
         
-        <p>Seu agendamento foi <strong>atualizado com sucesso</strong>. Seguem os detalhes:</p>
+        <p>Seu agendamento foi <strong>editado com sucesso</strong>. Seguem os detalhes:</p>
         
         <div style="margin: 20px 0;">
           <h3 style="color: #374151; margin-top: 0;">📋 Detalhes Gerais:</h3>
