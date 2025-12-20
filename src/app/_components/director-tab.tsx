@@ -86,6 +86,7 @@ export function DirectorTab() {
   const [selectedCoursesToRemove, setSelectedCoursesToRemove] = useState<
     string[]
   >([]);
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
 
   const {
     handleSubmit,
@@ -119,30 +120,33 @@ export function DirectorTab() {
   const clearCourseSearch = () => setCourseSearchTerm("");
   const clearUserSearch = () => setUserSearchTerm("");
 
-  useEffect(() => {
-    async function fetchData() {
-      setIsLoading(true);
-      try {
-        const usersData = await getUsersWithDirectorRole();
-        setUsers(usersData as UserWithRolesAndDirector[]);
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const usersData = await getUsersWithDirectorRole();
+      const allUsers = usersData as UserWithRolesAndDirector[];
 
-        const coursesData = await getCourses();
-        setCourses(coursesData.sort((a, b) => a.name.localeCompare(b.name)));
+      const coursesData = await getCourses();
+      setCourses(coursesData.sort((a, b) => a.name.localeCompare(b.name)));
 
-        const coursesByUser: Record<string, Course[]> = {};
-        for (const user of usersData) {
-          const directorCoursesData = await getDirectorCourses(user.id);
-          coursesByUser[user.id] = directorCoursesData;
-        }
-        setUserCourses(coursesByUser);
-      } catch (error) {
-        console.error("Erro ao buscar dados:", error);
-      } finally {
-        setIsLoading(false);
+      const coursesByUser: Record<string, Course[]> = {};
+      for (const user of allUsers) {
+        const directorCoursesData = await getDirectorCourses(user.id);
+        coursesByUser[user.id] = directorCoursesData;
       }
+
+      setUsers(allUsers);
+      setUserCourses(coursesByUser);
+    } catch (error) {
+      console.error("Erro ao buscar dados:", error);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
     fetchData();
-  }, []);
+  }, [refetchTrigger]);
 
   useEffect(() => {
     if (selectedUserId && userCourses[selectedUserId]) {
@@ -152,12 +156,20 @@ export function DirectorTab() {
     }
   }, [selectedUserId, userCourses, setValue]);
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.name?.toLowerCase().includes(directorSearchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(directorSearchTerm.toLowerCase());
-    return matchesSearch;
-  });
+  const filteredUsers = users
+    .filter((user) => {
+      const matchesSearch =
+        user.name?.toLowerCase().includes(directorSearchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(directorSearchTerm.toLowerCase());
+      return matchesSearch;
+    })
+    .filter((user) => {
+      const hasDirecaoRole = user.roles?.some(
+        (role) => role.name === "DIRECAO"
+      );
+      const hasCourses = (userCourses[user.id]?.length || 0) > 0;
+      return hasDirecaoRole && hasCourses;
+    });
 
   const filteredCourses = courses
     .filter((course) =>
@@ -169,7 +181,8 @@ export function DirectorTab() {
     const matchesSearch =
       user.name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(userSearchTerm.toLowerCase());
-    return matchesSearch;
+    const hasDirecaoRole = user.roles?.some((role) => role.name === "DIRECAO");
+    return matchesSearch && hasDirecaoRole;
   });
 
   const handleEdit = (user: UserWithRolesAndDirector) => {
@@ -234,6 +247,11 @@ export function DirectorTab() {
   const onSubmit = async (data: DirectorForm) => {
     if (isSubmitting) return;
 
+    if (data.courseIds.length === 0) {
+      alert("Selecione pelo menos um curso para vincular ao diretor.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const selectedUser = users.find((user) => user.id === data.userId);
@@ -280,7 +298,8 @@ export function DirectorTab() {
 
         const remainingCoursesCount =
           currentLinkedCourseIds.length - coursesToRemove.length;
-        if (remainingCoursesCount === 0 && coursesToRemove.length > 0) {
+
+        if (remainingCoursesCount === 0) {
           const direcaoRole = getDirecaoRole(selectedUser);
 
           if (direcaoRole) {
@@ -293,20 +312,11 @@ export function DirectorTab() {
             try {
               await updateUserRole(selectedUser.id, otherRoleIds);
 
-              setUsers((prev) =>
-                prev.map((user) => {
-                  if (user.id === selectedUser.id) {
-                    return {
-                      ...user,
-                      roles: otherRoles,
-                      director: null,
-                    };
-                  }
-                  return user;
+              window.dispatchEvent(
+                new CustomEvent("userRoleUpdated", {
+                  detail: { userId: selectedUser.id },
                 })
               );
-
-              setUsers((prev) => prev.filter((u) => u.id !== selectedUser.id));
             } catch (error) {
               console.error("Erro ao remover role de DIRECAO:", error);
             }
@@ -323,20 +333,7 @@ export function DirectorTab() {
         [selectedUser.id]: updatedCourses,
       }));
 
-      setUsers((prev) =>
-        prev.map((user) => {
-          if (user.id === selectedUser.id) {
-            return {
-              ...user,
-              director: {
-                ...director,
-                courses: updatedCourses,
-              },
-            };
-          }
-          return user;
-        })
-      );
+      setRefetchTrigger((prev) => prev + 1);
 
       clearForm();
       setIsDialogOpen(false);
@@ -387,20 +384,11 @@ export function DirectorTab() {
             try {
               await updateUserRole(userId, otherRoleIds);
 
-              setUsers((prev) =>
-                prev.map((u) => {
-                  if (u.id === userId) {
-                    return {
-                      ...u,
-                      roles: otherRoles,
-                      director: null,
-                    };
-                  }
-                  return u;
+              window.dispatchEvent(
+                new CustomEvent("userRoleUpdated", {
+                  detail: { userId: userId },
                 })
               );
-
-              setUsers((prev) => prev.filter((u) => u.id !== userId));
             } catch (error) {
               console.error("Erro ao remover role de DIRECAO:", error);
             }
@@ -411,6 +399,8 @@ export function DirectorTab() {
           ...prev,
           [userId]: remainingCourses,
         }));
+
+        setRefetchTrigger((prev) => prev + 1);
       } else {
         console.error("Erro ao remover curso:", result.message);
       }
@@ -446,34 +436,23 @@ export function DirectorTab() {
       });
 
       if (result.success) {
-        if (currentCourses.length > 0) {
-          const direcaoRole = getDirecaoRole(user);
+        const direcaoRole = getDirecaoRole(user);
 
-          if (direcaoRole) {
-            const otherRoles =
-              user.roles?.filter((role) => role.id !== direcaoRole.id) || [];
-            const otherRoleIds = otherRoles.map((role) => role.id);
+        if (direcaoRole) {
+          const otherRoles =
+            user.roles?.filter((role) => role.id !== direcaoRole.id) || [];
+          const otherRoleIds = otherRoles.map((role) => role.id);
 
-            try {
-              await updateUserRole(userId, otherRoleIds);
+          try {
+            await updateUserRole(userId, otherRoleIds);
 
-              setUsers((prev) =>
-                prev.map((u) => {
-                  if (u.id === userId) {
-                    return {
-                      ...u,
-                      roles: otherRoles,
-                      director: null,
-                    };
-                  }
-                  return u;
-                })
-              );
-
-              setUsers((prev) => prev.filter((u) => u.id !== userId));
-            } catch (error) {
-              console.error("Erro ao remover role de DIRECAO:", error);
-            }
+            window.dispatchEvent(
+              new CustomEvent("userRoleUpdated", {
+                detail: { userId: userId },
+              })
+            );
+          } catch (error) {
+            console.error("Erro ao remover role de DIRECAO:", error);
           }
         }
 
@@ -485,6 +464,8 @@ export function DirectorTab() {
         if (editingUser?.id === userId) {
           clearForm();
         }
+
+        setRefetchTrigger((prev) => prev + 1);
       } else {
         console.error("Erro ao remover cursos:", result.message);
       }
@@ -787,7 +768,14 @@ export function DirectorTab() {
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={isSubmitting}>
+                <Button
+                  type="submit"
+                  disabled={
+                    isSubmitting ||
+                    !selectedUserId ||
+                    selectedCourseIds.length === 0
+                  }
+                >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -827,9 +815,12 @@ export function DirectorTab() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Todos os Diretores</CardTitle>
+          <CardTitle>Diretores</CardTitle>
           <CardDescription>
-            {filteredUsers.length} diretores encontrados
+            {filteredUsers.length}{" "}
+            {filteredUsers.length === 1
+              ? "diretor encontrado"
+              : "diretores encontrados"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -841,10 +832,11 @@ export function DirectorTab() {
           ) : filteredUsers.length === 0 ? (
             <div className="text-center py-8">
               <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium">Nenhum diretor encontrado</h3>
-              <p className="text-muted-foreground mt-1">
-                Adicione o perfil diretor a um usuário para que ele apareça
-                aqui.
+              <h3 className="text-lg font-medium">
+                Nenhum diretor com cursos vinculados
+              </h3>
+              <p className="text-muted-foreground mt-1 mb-3">
+                Vincule um diretor a um curso para que ele apareça aqui.
               </p>
             </div>
           ) : (
@@ -933,7 +925,7 @@ export function DirectorTab() {
                             disabled={isSubmitting}
                           >
                             <Edit className="h-4 w-4 mr-1" />
-                            {userCourseList.length > 0 ? "Editar" : "Vincular"}
+                            Editar
                           </Button>
                         </div>
                       </TableCell>
