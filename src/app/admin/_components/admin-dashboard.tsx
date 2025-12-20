@@ -97,7 +97,10 @@ export default function AdminDashboard() {
     userName: string;
     roleName: string;
   } | null>(null);
-  const [updatingUser, setUpdatingUser] = useState<string | null>(null);
+  const [updatingRole, setUpdatingRole] = useState<{
+    userId: string;
+    roleId: string;
+  } | null>(null);
   const [deleteRoleConfirmOpen, setDeleteRoleConfirmOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
   const [deletingRole, setDeletingRole] = useState(false);
@@ -108,6 +111,7 @@ export default function AdminDashboard() {
     userId: string;
     userName: string;
   } | null>(null);
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
 
   useEffect(() => {
     async function fetchData() {
@@ -151,6 +155,28 @@ export default function AdminDashboard() {
     }
 
     fetchData();
+  }, [refetchTrigger]);
+
+  useEffect(() => {
+    const handleUserRoleUpdated = (event: CustomEvent) => {
+      const { userId } = event.detail;
+
+      if (userId) {
+        setRefetchTrigger((prev) => prev + 1);
+      }
+    };
+
+    window.addEventListener(
+      "userRoleUpdated",
+      handleUserRoleUpdated as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "userRoleUpdated",
+        handleUserRoleUpdated as EventListener
+      );
+    };
   }, []);
 
   const isAdmin = currentUser?.roles?.some(
@@ -205,7 +231,8 @@ export default function AdminDashboard() {
     }
 
     try {
-      setUpdatingUser(userId);
+      setUpdatingRole({ userId, roleId });
+
       const updatedUser = await updateUserRole(userId, newRoleIds);
 
       setUsers((prevUsers) =>
@@ -218,21 +245,20 @@ export default function AdminDashboard() {
             : u
         )
       );
+
+      const role = roles.find((r) => r.id === roleId);
+      if (role?.name === "DIRECAO") {
+        window.dispatchEvent(
+          new CustomEvent("userRoleUpdated", {
+            detail: { userId },
+          })
+        );
+      }
     } catch (error) {
       console.error("Erro ao atualizar roles do usuário:", error);
-      const [usersData] = await Promise.all([getUsers()]);
-      const refreshedUsers: User[] = usersData!.map((user: any) => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        roles: Array.isArray(user.roles) ? user.roles : [],
-        image: user.image,
-        emailVerified: user.emailVerified,
-        teacher: user.teacher || null,
-      }));
-      setUsers(refreshedUsers);
+      setRefetchTrigger((prev) => prev + 1);
     } finally {
-      setUpdatingUser(null);
+      setUpdatingRole(null);
     }
   };
 
@@ -261,7 +287,8 @@ export default function AdminDashboard() {
     }
 
     try {
-      setUpdatingUser(userId);
+      setUpdatingRole({ userId, roleId: "all" });
+
       const updatedUser = await updateUserRole(userId, []);
 
       setUsers((prevUsers) =>
@@ -274,10 +301,21 @@ export default function AdminDashboard() {
             : u
         )
       );
+
+      const hadDirecaoRole = user!.roles.some(
+        (role) => role.name === "DIRECAO"
+      );
+      if (hadDirecaoRole) {
+        window.dispatchEvent(
+          new CustomEvent("userRoleUpdated", {
+            detail: { userId },
+          })
+        );
+      }
     } catch (error) {
       console.error("Erro ao remover todos os acessos do usuário:", error);
     } finally {
-      setUpdatingUser(null);
+      setUpdatingRole(null);
       setRemoveAllRolesConfirmOpen(false);
       setUserToRemoveAllRoles(null);
     }
@@ -378,24 +416,6 @@ export default function AdminDashboard() {
     setRoleToDelete(null);
     setDeleteRoleConfirmOpen(false);
   };
-
-  if (loading) {
-    return (
-      <>
-        <NavBar />
-        <div className="min-h-screen bg-background p-3 sm:p-6">
-          <div className="container mx-auto space-y-6">
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">Carregando dados...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
 
   return (
     <>
@@ -558,7 +578,8 @@ export default function AdminDashboard() {
                                             : undefined
                                         }
                                       >
-                                        {updatingUser === user.id ? (
+                                        {updatingRole?.userId === user.id &&
+                                        updatingRole?.roleId === role.id ? (
                                           <Loader2 className="h-3 w-3 animate-spin" />
                                         ) : (
                                           <>
@@ -577,6 +598,12 @@ export default function AdminDashboard() {
                                                 }}
                                                 className="ml-1 hover:bg-black/20 rounded-full p-0.5 transition-colors"
                                                 title={`Remover role ${role.name}`}
+                                                disabled={
+                                                  updatingRole?.userId ===
+                                                    user.id &&
+                                                  updatingRole?.roleId ===
+                                                    role.id
+                                                }
                                               >
                                                 <X className="h-2.5 w-2.5" />
                                               </button>
@@ -594,9 +621,11 @@ export default function AdminDashboard() {
                                       size="sm"
                                       className="h-6 w-6 p-0 ml-1 cursor-pointer"
                                       title="Adicionar acesso"
-                                      disabled={updatingUser === user.id}
+                                      disabled={
+                                        updatingRole?.userId === user.id
+                                      }
                                     >
-                                      {updatingUser === user.id ? (
+                                      {updatingRole?.userId === user.id ? (
                                         <Loader2 className="h-3 w-3 animate-spin" />
                                       ) : (
                                         <Plus className="h-3 w-3" />
@@ -611,7 +640,10 @@ export default function AdminDashboard() {
                                           handleRoleToggle(user.id, role.id)
                                         }
                                         className="flex items-center justify-between"
-                                        disabled={updatingUser === user.id}
+                                        disabled={
+                                          updatingRole?.userId === user.id &&
+                                          updatingRole?.roleId === role.id
+                                        }
                                       >
                                         <span>{role.name}</span>
                                         {user.roles.some(
@@ -632,7 +664,7 @@ export default function AdminDashboard() {
                                   size="sm"
                                   onClick={() => handleRemoveAllRoles(user.id)}
                                   disabled={
-                                    updatingUser === user.id ||
+                                    updatingRole?.userId === user.id ||
                                     user.teacher?.status === "ACTIVE"
                                   }
                                   className="h-8 w-8 p-0 text-destructive hover:text-destructive cursor-pointer"
@@ -642,7 +674,12 @@ export default function AdminDashboard() {
                                       : "Remover todas os acessos"
                                   }
                                 >
-                                  <UserX className="h-4 w-4" />
+                                  {updatingRole?.userId === user.id &&
+                                  updatingRole?.roleId === "all" ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <UserX className="h-4 w-4" />
+                                  )}
                                 </Button>
                               )}
                             </TableCell>
@@ -686,7 +723,7 @@ export default function AdminDashboard() {
                                   size="sm"
                                   onClick={() => handleRemoveAllRoles(user.id)}
                                   disabled={
-                                    updatingUser === user.id ||
+                                    updatingRole?.userId === user.id ||
                                     user.teacher?.status === "ACTIVE"
                                   }
                                   className="h-8 w-8 p-0 text-destructive hover:text-destructive cursor-pointer"
@@ -696,7 +733,12 @@ export default function AdminDashboard() {
                                       : "Remover todos os acessos"
                                   }
                                 >
-                                  <UserX className="h-4 w-4" />
+                                  {updatingRole?.userId === user.id &&
+                                  updatingRole?.roleId === "all" ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <UserX className="h-4 w-4" />
+                                  )}
                                 </Button>
                               )}
                             </div>
@@ -729,7 +771,8 @@ export default function AdminDashboard() {
                                             : undefined
                                         }
                                       >
-                                        {updatingUser === user.id ? (
+                                        {updatingRole?.userId === user.id &&
+                                        updatingRole?.roleId === role.id ? (
                                           <Loader2 className="h-3 w-3 animate-spin" />
                                         ) : (
                                           <>
@@ -748,6 +791,12 @@ export default function AdminDashboard() {
                                                 }}
                                                 className="ml-1 hover:bg-black/20 rounded-full p-0.5 transition-colors"
                                                 title={`Remover role ${role.name}`}
+                                                disabled={
+                                                  updatingRole?.userId ===
+                                                    user.id &&
+                                                  updatingRole?.roleId ===
+                                                    role.id
+                                                }
                                               >
                                                 <X className="h-2.5 w-2.5" />
                                               </button>
@@ -765,9 +814,11 @@ export default function AdminDashboard() {
                                       size="sm"
                                       className="h-6 px-2 text-xs bg-transparent"
                                       title="Adicionar acesso"
-                                      disabled={updatingUser === user.id}
+                                      disabled={
+                                        updatingRole?.userId === user.id
+                                      }
                                     >
-                                      {updatingUser === user.id ? (
+                                      {updatingRole?.userId === user.id ? (
                                         <Loader2 className="h-3 w-3 animate-spin mr-1" />
                                       ) : (
                                         <Plus className="h-3 w-3 mr-1 " />
@@ -783,7 +834,10 @@ export default function AdminDashboard() {
                                           handleRoleToggle(user.id, role.id)
                                         }
                                         className="flex items-center justify-between"
-                                        disabled={updatingUser === user.id}
+                                        disabled={
+                                          updatingRole?.userId === user.id &&
+                                          updatingRole?.roleId === role.id
+                                        }
                                       >
                                         <span>{role.name}</span>
                                         {user.roles.some(
@@ -835,9 +889,13 @@ export default function AdminDashboard() {
                     <Button
                       variant="destructive"
                       onClick={confirmRemoveRole}
-                      disabled={updatingUser === roleToRemove?.userId}
+                      disabled={
+                        updatingRole?.userId === roleToRemove?.userId &&
+                        updatingRole?.roleId === roleToRemove?.roleId
+                      }
                     >
-                      {updatingUser === roleToRemove?.userId ? (
+                      {updatingRole?.userId === roleToRemove?.userId &&
+                      updatingRole?.roleId === roleToRemove?.roleId ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         "Sim, Remover"
@@ -876,9 +934,13 @@ export default function AdminDashboard() {
                     <Button
                       variant="destructive"
                       onClick={confirmRemoveAllRoles}
-                      disabled={updatingUser === userToRemoveAllRoles?.userId}
+                      disabled={
+                        updatingRole?.userId === userToRemoveAllRoles?.userId &&
+                        updatingRole?.roleId === "all"
+                      }
                     >
-                      {updatingUser === userToRemoveAllRoles?.userId ? (
+                      {updatingRole?.userId === userToRemoveAllRoles?.userId &&
+                      updatingRole?.roleId === "all" ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         "Sim, Remover Todas"
@@ -928,9 +990,6 @@ export default function AdminDashboard() {
               </Dialog>
             </TabsContent>
 
-            {/* <TabsContent value="permissions" className="space-y-6">
-              <PermissionsSection />
-            </TabsContent> */}
             <TabsContent value="director" className="space-y-6">
               <DirectorTab />
             </TabsContent>
