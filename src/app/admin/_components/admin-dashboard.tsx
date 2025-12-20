@@ -89,7 +89,6 @@ export default function AdminDashboard() {
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
-  const [loading, setLoading] = useState(true);
   const [removeRoleConfirmOpen, setRemoveRoleConfirmOpen] = useState(false);
   const [roleToRemove, setRoleToRemove] = useState<{
     userId: string;
@@ -116,8 +115,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function fetchData() {
       try {
-        setLoading(true);
-
         const currentUserData = await getUser();
         setCurrentUser({
           id: currentUserData.id,
@@ -149,8 +146,6 @@ export default function AdminDashboard() {
         if (error instanceof Error) {
           throw new Error(error.message);
         }
-      } finally {
-        setLoading(false);
       }
     }
 
