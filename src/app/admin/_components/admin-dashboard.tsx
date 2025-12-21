@@ -53,6 +53,8 @@ import { updateUserRole } from "@/app/_actions/permissions/update-user-role";
 import { deleteRole } from "@/app/_actions/permissions/delete-role";
 import { getUser } from "@/app/_actions/user/getUser";
 import { DirectorTab } from "@/app/_components/director-tab";
+import { getDirectorByUserId } from "@/app/_actions/get-director-by-user-id";
+import { removeAllDirectorCourses } from "@/app/_actions/director/remove-all-director-courses";
 
 type Role = {
   id: string;
@@ -226,6 +228,7 @@ export default function AdminDashboard() {
     }
 
     try {
+      // Setar apenas a role específica como carregando
       setUpdatingRole({ userId, roleId });
 
       const updatedUser = await updateUserRole(userId, newRoleIds);
@@ -241,8 +244,35 @@ export default function AdminDashboard() {
         )
       );
 
+      // Se está removendo a role DIRECAO, também remover todos os cursos vinculados
       const role = roles.find((r) => r.id === roleId);
-      if (role?.name === "DIRECAO") {
+      if (role?.name === "DIRECAO" && hasRole) {
+        try {
+          // Buscar o diretor associado ao usuário
+          const director = await getDirectorByUserId(userId);
+
+          if (director) {
+            // Remover todas as associações de cursos
+            await removeAllDirectorCourses(director.id);
+
+            console.log(
+              `Todos os cursos foram removidos do diretor ${user.name}`
+            );
+          }
+        } catch (error) {
+          console.error("Erro ao remover cursos do diretor:", error);
+        }
+
+        // Disparar evento para atualizar o director-tab
+        window.dispatchEvent(
+          new CustomEvent("userRoleUpdated", {
+            detail: { userId },
+          })
+        );
+      }
+
+      // Se está adicionando a role DIRECAO, também disparar evento
+      if (role?.name === "DIRECAO" && !hasRole) {
         window.dispatchEvent(
           new CustomEvent("userRoleUpdated", {
             detail: { userId },
@@ -251,6 +281,7 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error("Erro ao atualizar roles do usuário:", error);
+      // Forçar refetch em caso de erro
       setRefetchTrigger((prev) => prev + 1);
     } finally {
       setUpdatingRole(null);
