@@ -1,7 +1,7 @@
 "use server";
 
 import { Resend } from "resend";
-import { format } from "date-fns";
+import { format } from "date-fns-tz";
 
 const resend = new Resend(`${process.env.RESEND_API_KEY}`);
 
@@ -40,6 +40,9 @@ export async function sendDeleteSchedulingEmail({
       professor: "Professor",
       owner: "Próprio usuário",
     };
+    const formattedDeletionDate = format(new Date(), "dd/MM/yyyy HH:mm", {
+      timeZone: "America/Sao_Paulo",
+    });
 
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
@@ -68,7 +71,7 @@ export async function sendDeleteSchedulingEmail({
           <h3 style="color: #92400e; margin-top: 0;">👤 Quem Excluiu:</h3>
           <p><strong>Nome:</strong> ${deletedBy}</p>
           <p><strong>Cargo:</strong> ${roleNames[deletedByRole]}</p>
-          <p><strong>Data da exclusão:</strong> ${format(new Date(), "dd/MM/yyyy HH:mm")}</p>
+          <p><strong>Data da exclusão:</strong> ${formattedDeletionDate}</p>
         </div>
         
         <div style="background: #f3f4f6; padding: 15px; margin: 20px 0; border-radius: 6px;">
