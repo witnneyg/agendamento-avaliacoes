@@ -1,8 +1,7 @@
 "use server";
 
 import { Resend } from "resend";
-import { format as formatDateFns } from "date-fns";
-import { format } from "date-fns-tz";
+import { format } from "date-fns";
 
 const resend = new Resend(`${process.env.RESEND_API_KEY}`);
 
@@ -30,7 +29,7 @@ export async function sendDeleteSchedulingEmail({
   deletedByRole,
 }: SendDeleteSchedulingEmailProps) {
   try {
-    const formattedDate = formatDateFns(date, "dd/MM/yyyy");
+    const formattedDate = format(date, "dd/MM/yyyy");
 
     console.log(to);
 
@@ -42,9 +41,12 @@ export async function sendDeleteSchedulingEmail({
       owner: "Próprio usuário",
     };
 
-    const formattedDeletionDate = format(new Date(), "dd/MM/yyyy HH:mm", {
-      timeZone: "America/Sao_Paulo",
-    });
+    const now = new Date();
+
+    const horaAjuste = -3; // Ajuste de -3 horas
+    const dataAjustada = new Date(now.getTime() + horaAjuste * 60 * 60 * 1000);
+
+    const formattedDeletionDate = format(dataAjustada, "dd/MM/yyyy HH:mm");
 
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
@@ -99,7 +101,7 @@ export async function sendDeleteSchedulingEmail({
 
     const { data, error } = await resend.emails.send({
       from: `${process.env.EMAIL_FROM_NAME || "Agendamentos"} <onboarding@resend.dev>`,
-      //   to: to,
+      // to: to,
       to: "agendamento146@gmail.com",
       subject: `🗑️ Agendamento Excluído - ${courseName}`,
       html: emailHtml,
