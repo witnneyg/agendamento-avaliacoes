@@ -40,6 +40,7 @@ interface EditSchedulingModalProps {
   isSecretary?: boolean;
   isAdmin?: boolean;
   canEdit?: boolean;
+  currentUser?: any;
 }
 
 const editSchema = z.object({
@@ -213,6 +214,7 @@ export const EditSchedulingModal = ({
   isSecretary = false,
   isAdmin = false,
   canEdit = true,
+  currentUser,
 }: EditSchedulingModalProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date(appointment.date)
@@ -400,14 +402,37 @@ export const EditSchedulingModal = ({
     }
   };
 
-  const getUserEmail = (): string | null => {
-    if (user?.email) return user.email;
-
+  const getTeacherEmail = (): string | null => {
     if (appointment.user?.email) return appointment.user.email;
-
     if (appointment.teacher?.email) return appointment.teacher.email;
 
+    if (user?.email) return user.email;
+
     return null;
+  };
+
+  const getTeacherName = (): string => {
+    if (appointment.user?.name) return appointment.user.name;
+    if (appointment.teacher?.name) return appointment.teacher.name;
+    if (appointment.name) return appointment.name;
+
+    return "Professor";
+  };
+
+  const getEditorName = (): string => {
+    if (currentUser?.name) return currentUser.name;
+    if (user?.name) return user.name;
+
+    return "Administrador";
+  };
+
+  const getEditorRole = (): string => {
+    if (isAdmin) return "Administrador";
+    if (isSecretary) return "Secretaria";
+    if (isDirector) return "Diretor";
+    if (user?.role) return user.role;
+
+    return "Usuário";
   };
 
   const handleFormSubmit = async (data: EditSchema) => {
@@ -557,13 +582,16 @@ export const EditSchedulingModal = ({
       if (result.success) {
         let emailResult = null;
         if (hasChanges) {
-          const userEmail = getUserEmail();
+          const teacherEmail = getTeacherEmail();
+          const teacherName = getTeacherName();
+          const editorName = getEditorName();
+          const editorRole = getEditorRole();
 
-          if (userEmail) {
+          if (teacherEmail) {
             try {
               emailResult = await sendEditSchedulingEmail({
-                to: userEmail,
-                name: user?.name || appointment.name || "Professor",
+                to: teacherEmail,
+                name: teacherName,
                 date: data.date,
                 time: sortedTimes.join(", "),
                 originalDate: originalAppointmentDate,
@@ -571,11 +599,14 @@ export const EditSchedulingModal = ({
                 courseName: appointment.course?.name,
                 disciplineName: appointment.discipline?.name,
                 className: appointment.class?.name,
+                teacherName: teacherName,
+                editedBy: editorName,
+                editedByRole: editorRole,
               });
 
               if (emailResult?.success) {
                 setEmailStatus({ sent: true });
-                console.log("Email de edição enviado para:", userEmail);
+                console.log("Email de edição enviado para:", teacherEmail);
               } else {
                 setEmailStatus({
                   sent: false,
@@ -595,11 +626,11 @@ export const EditSchedulingModal = ({
             }
           } else {
             console.warn(
-              "Usuário não tem email cadastrado para envio de confirmação"
+              "Professor não tem email cadastrado para envio de confirmação"
             );
             setEmailStatus({
               sent: false,
-              error: "Usuário não tem email cadastrado",
+              error: "Professor não tem email cadastrado",
             });
           }
         }
@@ -678,6 +709,23 @@ export const EditSchedulingModal = ({
               </AlertDescription>
             </Alert>
           )}
+
+          <div className="p-4 bg-gray-50 rounded-lg mb-4">
+            <h3 className="font-semibold mb-2">Informações do Agendamento</h3>
+            <p>
+              <strong>Professor:</strong> {getTeacherName()}
+            </p>
+            <p>
+              <strong>Editado por:</strong> {getEditorName()} ({getEditorRole()}
+              )
+            </p>
+            <p>
+              <strong>Disciplina:</strong> {appointment.discipline?.name}
+            </p>
+            <p>
+              <strong>Turma:</strong> {appointment.class?.name}
+            </p>
+          </div>
 
           <div className="flex flex-col space-y-4">
             <Label className="flex items-center gap-2">

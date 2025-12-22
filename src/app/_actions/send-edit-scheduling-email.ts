@@ -15,6 +15,9 @@ interface SendEditSchedulingEmailProps {
   courseName?: string;
   disciplineName?: string;
   className?: string;
+  teacherName?: string; // Nome do professor do agendamento
+  editedBy?: string; // Nome de quem editou o agendamento
+  editedByRole?: string; // Cargo/função de quem editou
 }
 
 export async function sendEditSchedulingEmail({
@@ -27,11 +30,18 @@ export async function sendEditSchedulingEmail({
   courseName,
   disciplineName,
   className,
+  teacherName,
+  editedBy,
+  editedByRole,
 }: SendEditSchedulingEmailProps) {
   try {
     const formattedDate = format(date, "dd/MM/yyyy");
     const formattedOriginalDate = format(originalDate, "dd/MM/yyyy");
     console.log(to);
+
+    const editorInfo = editedBy
+      ? `<p><strong>Editado por:</strong> ${editedBy}${editedByRole ? ` (${editedByRole})` : ""}</p>`
+      : "";
 
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
@@ -39,12 +49,14 @@ export async function sendEditSchedulingEmail({
           ✏️ Agendamento Editado
         </h1>
         
-        <p>Olá <strong>${name}</strong>,</p>
+        <p>Olá <strong>${teacherName || name}</strong>,</p>
         
         <p>Seu agendamento foi <strong>editado com sucesso</strong>. Seguem os detalhes:</p>
         
         <div style="margin: 20px 0;">
-          <h3 style="color: #374151; margin-top: 0;">📋 Detalhes Gerais:</h3>
+          <h3 style="color: #374151; margin-top: 0;">📋 Informações do Agendamento:</h3>
+          <p><strong>Professor:</strong> ${teacherName || name}</p>
+          ${editorInfo}
           <p><strong>Curso:</strong> ${courseName}</p>
           <p><strong>Disciplina:</strong> ${disciplineName}</p>
           <p><strong>Turma:</strong> ${className}</p>
@@ -76,8 +88,8 @@ export async function sendEditSchedulingEmail({
 
     const { data, error } = await resend.emails.send({
       from: `${process.env.EMAIL_FROM_NAME || "Agendamentos"} <onboarding@resend.dev>`,
-      //   to: to,
       to: "agendamento146@gmail.com",
+      // to: to,
       subject: `✏️ Agendamento atualizado - ${courseName}`,
       html: emailHtml,
     });
