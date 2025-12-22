@@ -1,6 +1,7 @@
 "use server";
 
 import { Resend } from "resend";
+import { format as formatDateFns } from "date-fns";
 import { format } from "date-fns-tz";
 
 const resend = new Resend(`${process.env.RESEND_API_KEY}`);
@@ -29,7 +30,7 @@ export async function sendDeleteSchedulingEmail({
   deletedByRole,
 }: SendDeleteSchedulingEmailProps) {
   try {
-    const formattedDate = format(date, "dd/MM/yyyy");
+    const formattedDate = formatDateFns(date, "dd/MM/yyyy");
 
     console.log(to);
 
@@ -40,6 +41,7 @@ export async function sendDeleteSchedulingEmail({
       professor: "Professor",
       owner: "Próprio usuário",
     };
+
     const formattedDeletionDate = format(new Date(), "dd/MM/yyyy HH:mm", {
       timeZone: "America/Sao_Paulo",
     });
