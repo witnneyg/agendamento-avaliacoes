@@ -125,7 +125,9 @@ export function CourseSelector({
                     </p>
                   </div>
 
-                  <Button className="w-full">Selecionar curso</Button>
+                  <Button className="w-full cursor-pointer">
+                    Selecionar curso
+                  </Button>
                 </CardContent>
               </Card>
             );
