@@ -100,7 +100,7 @@ const teacherSchema = z
       message:
         "Selecione pelo menos um curso e uma disciplina para professores ativos",
       path: ["courseIds"],
-    }
+    },
   );
 
 type TeacherForm = z.infer<typeof teacherSchema>;
@@ -122,7 +122,7 @@ export function TeachersTab() {
   const [courseSearchTerm, setCourseSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
 
   const {
@@ -174,14 +174,14 @@ export function TeachersTab() {
 
   const filteredCourses = courses
     .filter((course) =>
-      course.name.toLowerCase().includes(courseSearchTerm.toLowerCase())
+      course.name.toLowerCase().includes(courseSearchTerm.toLowerCase()),
     )
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const filteredUsers = users
     .filter((user) => {
       const hasProfessorRole = user.roles.some(
-        (role) => role.name === "PROFESSOR" || role.name === "professor"
+        (role) => role.name === "PROFESSOR" || role.name === "professor",
       );
 
       const matchesSearch =
@@ -200,18 +200,18 @@ export function TeachersTab() {
       acc[discipline.courseName].push(discipline);
       return acc;
     },
-    {} as Record<string, DisciplineWithCourse[]>
+    {} as Record<string, DisciplineWithCourse[]>,
   );
 
   const sortedDisciplinesByCourse = Object.fromEntries(
     Object.entries(disciplinesByCourse).sort(([courseNameA], [courseNameB]) =>
-      courseNameA.localeCompare(courseNameB)
-    )
+      courseNameA.localeCompare(courseNameB),
+    ),
   );
 
   const getDisciplineAssignmentInfo = (disciplineId: string) => {
     const teacherWithDiscipline = teachers.find((teacher) =>
-      teacher.disciplines.some((d) => d.id === disciplineId)
+      teacher.disciplines.some((d) => d.id === disciplineId),
     );
 
     if (teacherWithDiscipline) {
@@ -264,14 +264,14 @@ export function TeachersTab() {
     }
 
     const validCourseIds = selectedCourseIds.filter((courseId) =>
-      courses.some((course) => course.id === courseId)
+      courses.some((course) => course.id === courseId),
     );
     if (validCourseIds.length !== selectedCourseIds.length) {
       setValue("courseIds", validCourseIds);
     }
 
     const validDisciplineIds = selectedDisciplineIds.filter((disciplineId) =>
-      availableDisciplines.some((discipline) => discipline.id === disciplineId)
+      availableDisciplines.some((discipline) => discipline.id === disciplineId),
     );
     if (validDisciplineIds.length !== selectedDisciplineIds.length) {
       setValue("disciplineIds", validDisciplineIds);
@@ -309,7 +309,7 @@ export function TeachersTab() {
               assignedTo: assignmentInfo.assignedTo,
             };
           });
-        })
+        }),
       );
 
       const allDisciplines = disciplinesData.flat();
@@ -371,24 +371,24 @@ export function TeachersTab() {
       if (!data.isEditing && data.status === "ACTIVE") {
         if (data.courseIds.length === 0 || data.disciplineIds.length === 0) {
           alert(
-            "Selecione pelo menos um curso e uma disciplina para novos professores ativos"
+            "Selecione pelo menos um curso e uma disciplina para novos professores ativos",
           );
           return;
         }
       }
 
       const existingTeacher = teachers.find(
-        (teacher) => teacher.name === selectedUser.name
+        (teacher) => teacher.name === selectedUser.name,
       );
 
       const validCourseIds = data.courseIds.filter((courseId) =>
-        courses.some((course) => course.id === courseId)
+        courses.some((course) => course.id === courseId),
       );
 
       const validDisciplineIds = data.disciplineIds.filter((disciplineId) =>
         availableDisciplines.some(
-          (discipline) => discipline.id === disciplineId
-        )
+          (discipline) => discipline.id === disciplineId,
+        ),
       );
 
       const conflictedDisciplines = validDisciplineIds.filter(
@@ -402,7 +402,7 @@ export function TeachersTab() {
             (!teacherToUpdate ||
               assignmentInfo.assignedTo !== teacherToUpdate.name)
           );
-        }
+        },
       );
 
       if (conflictedDisciplines.length > 0) {
@@ -414,7 +414,7 @@ export function TeachersTab() {
           .join(", ");
 
         alert(
-          `As seguintes disciplinas já estão atribuídas a outros professores: ${conflictedNames}`
+          `As seguintes disciplinas já estão atribuídas a outros professores: ${conflictedNames}`,
         );
         return;
       }
@@ -490,7 +490,7 @@ export function TeachersTab() {
     if (currentCourseIds.includes(course.id)) {
       setValue(
         "courseIds",
-        currentCourseIds.filter((id) => id !== course.id)
+        currentCourseIds.filter((id) => id !== course.id),
       );
     } else {
       setValue("courseIds", [...currentCourseIds, course.id]);
@@ -518,7 +518,7 @@ export function TeachersTab() {
       (!editingTeacher || discipline.assignedTo !== editingTeacher.name)
     ) {
       alert(
-        `Esta disciplina já está atribuída ao professor: ${discipline.assignedTo}`
+        `Esta disciplina já está atribuída ao professor: ${discipline.assignedTo}`,
       );
       return;
     }
@@ -528,7 +528,7 @@ export function TeachersTab() {
     } else {
       setValue(
         "disciplineIds",
-        currentDisciplineIds.filter((id) => id !== disciplineId)
+        currentDisciplineIds.filter((id) => id !== disciplineId),
       );
     }
   };
@@ -552,16 +552,16 @@ export function TeachersTab() {
     const availableDisciplines = courseDisciplines.filter(
       (discipline) =>
         !discipline.isAssigned ||
-        (editingTeacher && discipline.assignedTo === editingTeacher.name)
+        (editingTeacher && discipline.assignedTo === editingTeacher.name),
     );
 
     const allSelected = availableDisciplines.every((d) =>
-      currentDisciplineIds.includes(d.id)
+      currentDisciplineIds.includes(d.id),
     );
 
     if (allSelected) {
       const newDisciplineIds = currentDisciplineIds.filter(
-        (id) => !availableDisciplines.some((d) => d.id === id)
+        (id) => !availableDisciplines.some((d) => d.id === id),
       );
       setValue("disciplineIds", newDisciplineIds);
     } else {
@@ -587,7 +587,7 @@ export function TeachersTab() {
 
   const hasProfessorRole = (user: UserWithRoles) => {
     return user.roles.some(
-      (role) => role.name === "PROFESSOR" || role.name === "professor"
+      (role) => role.name === "PROFESSOR" || role.name === "professor",
     );
   };
 
@@ -762,7 +762,6 @@ export function TeachersTab() {
                 )}
               </div>
 
-              {/* SEÇÃO DE CURSOS - MODIFICADA PARA STATUS INACTIVE */}
               <div className="space-y-3">
                 <Label>Cursos</Label>
 
@@ -818,7 +817,7 @@ export function TeachersTab() {
                         ) : (
                           filteredCourses.map((course) => {
                             const isSelected = selectedCourseIds.includes(
-                              course.id
+                              course.id,
                             );
                             return (
                               <div
@@ -847,7 +846,6 @@ export function TeachersTab() {
                   </div>
                 )}
 
-                {/* Exibe erro apenas quando não está editando e está ativo */}
                 {errors.courseIds &&
                   !isEditing &&
                   selectedStatus === "ACTIVE" && (
@@ -857,7 +855,6 @@ export function TeachersTab() {
                   )}
               </div>
 
-              {/* SEÇÃO DE DISCIPLINAS - MODIFICADA PARA STATUS INACTIVE */}
               <div className="space-y-3">
                 <Label>Disciplinas</Label>
 
@@ -892,12 +889,13 @@ export function TeachersTab() {
                               (discipline) =>
                                 !discipline.isAssigned ||
                                 (editingTeacher &&
-                                  discipline.assignedTo === editingTeacher.name)
+                                  discipline.assignedTo ===
+                                    editingTeacher.name),
                             );
                             const courseDisciplineIds =
                               availableDisciplines.map((d) => d.id);
                             const allSelected = courseDisciplineIds.every(
-                              (id) => selectedDisciplineIds.includes(id)
+                              (id) => selectedDisciplineIds.includes(id),
                             );
 
                             return (
@@ -954,12 +952,12 @@ export function TeachersTab() {
                                         <Checkbox
                                           id={`discipline-${discipline.id}`}
                                           checked={selectedDisciplineIds.includes(
-                                            discipline.id
+                                            discipline.id,
                                           )}
                                           onCheckedChange={(checked) =>
                                             handleDisciplineToggle(
                                               discipline.id,
-                                              checked as boolean
+                                              checked as boolean,
                                             )
                                           }
                                           disabled={
@@ -994,7 +992,7 @@ export function TeachersTab() {
                                 )}
                               </div>
                             );
-                          }
+                          },
                         )
                       )}
                     </div>

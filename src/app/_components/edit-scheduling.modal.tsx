@@ -18,7 +18,7 @@ import {
   Settings,
   CheckCircle,
 } from "lucide-react";
-import { getTranslatedPeriods } from "../_helpers/getOrderedPeriods";
+import { getTranslatedPeriods } from "../_helpers/periodUtils";
 import {
   Dialog,
   DialogContent,
@@ -79,7 +79,7 @@ const generateTimeSlotsAndCheckAvailability = (
   dayPeriods: Period[],
   currentAppointmentId?: string,
   currentTimeSlots?: string[],
-  originalAppointmentDate?: Date
+  originalAppointmentDate?: Date,
 ) => {
   const morningSlots = [
     "07:30 - 08:20",
@@ -146,11 +146,11 @@ const generateTimeSlotsAndCheckAvailability = (
 
           const schedulingStartTime = format(
             new Date(scheduling.startTime),
-            "HH:mm"
+            "HH:mm",
           );
           const schedulingEndTime = format(
             new Date(scheduling.endTime),
-            "HH:mm"
+            "HH:mm",
           );
           const existingTimeSlot = `${schedulingStartTime} - ${schedulingEndTime}`;
           return existingTimeSlot === slot;
@@ -178,7 +178,7 @@ const hasEnoughAvailableSlots = (
   requiredSlotsCount: number,
   currentAppointmentId?: string,
   currentTimeSlots?: string[],
-  originalAppointmentDate?: Date
+  originalAppointmentDate?: Date,
 ): boolean => {
   if (!date) return false;
 
@@ -192,7 +192,7 @@ const hasEnoughAvailableSlots = (
     dayPeriods,
     currentAppointmentId,
     currentTimeSlots,
-    originalAppointmentDate
+    originalAppointmentDate,
   );
 
   const availableSlotsCount = timeSlots.reduce((count, periodGroup) => {
@@ -217,7 +217,7 @@ export const EditSchedulingModal = ({
   currentUser,
 }: EditSchedulingModalProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    new Date(appointment.date)
+    new Date(appointment.date),
   );
 
   console.log({ appointment });
@@ -236,11 +236,11 @@ export const EditSchedulingModal = ({
 
   const currentTimeSlots = useMemo(
     () => extractCurrentTimeSlots(appointment),
-    [appointment]
+    [appointment],
   );
   const originalAppointmentDate = useMemo(
     () => new Date(appointment.date),
-    [appointment.date]
+    [appointment.date],
   );
   const requiredSlotsCount = currentTimeSlots.length;
 
@@ -273,7 +273,7 @@ export const EditSchedulingModal = ({
         disciplineDayPeriods,
         appointment.id,
         currentTimeSlots,
-        originalAppointmentDate
+        originalAppointmentDate,
       );
       setTimeSlots(slots);
     }, 50);
@@ -390,7 +390,7 @@ export const EditSchedulingModal = ({
       requiredSlotsCount,
       appointment.id,
       currentTimeSlots,
-      originalAppointmentDate
+      originalAppointmentDate,
     );
   };
 
@@ -464,11 +464,11 @@ export const EditSchedulingModal = ({
         requiredSlotsCount,
         appointment.id,
         currentTimeSlots,
-        originalAppointmentDate
+        originalAppointmentDate,
       )
     ) {
       return alert(
-        `A data selecionada não possui pelo menos ${requiredSlotsCount} horário(s) disponível(eis) para o agendamento.`
+        `A data selecionada não possui pelo menos ${requiredSlotsCount} horário(s) disponível(eis) para o agendamento.`,
       );
     }
 
@@ -488,14 +488,14 @@ export const EditSchedulingModal = ({
           (slot: any) =>
             slot.time === selectedSlot &&
             !slot.available &&
-            !slot.isCurrentTimeSlot
-        )
-      )
+            !slot.isCurrentTimeSlot,
+        ),
+      ),
     );
 
     if (hasUnavailableSlot)
       return alert(
-        "Um ou mais horários selecionados não estão mais disponíveis. Estes horários podem estar ocupados por outros professores."
+        "Um ou mais horários selecionados não estão mais disponíveis. Estes horários podem estar ocupados por outros professores.",
       );
 
     if (
@@ -504,7 +504,7 @@ export const EditSchedulingModal = ({
     ) {
       if (
         !confirm(
-          `Já existe uma avaliação para esta turma no mesmo dia. A PROGRAD recomenda apenas uma avaliação por dia por turma.`
+          `Já existe uma avaliação para esta turma no mesmo dia. A PROGRAD recomenda apenas uma avaliação por dia por turma.`,
         )
       )
         return;
@@ -533,12 +533,12 @@ export const EditSchedulingModal = ({
         earliestStartTime = parse(
           sortedTimes[0].split(" - ")[0],
           "HH:mm",
-          new Date(data.date)
+          new Date(data.date),
         );
         latestEndTime = parse(
           sortedTimes[sortedTimes.length - 1].split(" - ")[1],
           "HH:mm",
-          new Date(data.date)
+          new Date(data.date),
         );
       }
 
@@ -614,7 +614,7 @@ export const EditSchedulingModal = ({
                 });
                 console.warn(
                   "Erro ao enviar email de edição:",
-                  emailResult?.error
+                  emailResult?.error,
                 );
               }
             } catch (emailError) {
@@ -626,7 +626,7 @@ export const EditSchedulingModal = ({
             }
           } else {
             console.warn(
-              "Professor não tem email cadastrado para envio de confirmação"
+              "Professor não tem email cadastrado para envio de confirmação",
             );
             setEmailStatus({
               sent: false,
@@ -649,7 +649,7 @@ export const EditSchedulingModal = ({
             alert("Agendamento atualizado e email de confirmação enviado!");
           } else if (emailStatus.error) {
             alert(
-              `Agendamento atualizado, mas email não foi enviado: ${emailStatus.error}`
+              `Agendamento atualizado, mas email não foi enviado: ${emailStatus.error}`,
             );
           } else {
             alert("Agendamento atualizado com sucesso!");
@@ -767,7 +767,7 @@ export const EditSchedulingModal = ({
                 {existingAppointmentsCount > 0 &&
                   !isSameDay(
                     originalAppointmentDate,
-                    selectedDate || new Date()
+                    selectedDate || new Date(),
                   ) && (
                     <Alert className="mb-4 border-yellow-200 bg-yellow-50">
                       <AlertTriangle className="h-4 w-4 text-yellow-600" />
@@ -788,7 +788,7 @@ export const EditSchedulingModal = ({
                     requiredSlotsCount,
                     appointment.id,
                     currentTimeSlots,
-                    originalAppointmentDate
+                    originalAppointmentDate,
                   ) && (
                     <Alert className="mb-4 border-red-200 bg-red-50">
                       <AlertTriangle className="h-4 w-4 text-red-600" />
@@ -821,7 +821,7 @@ export const EditSchedulingModal = ({
                       const toggleTime = (slotTime: string) => {
                         if (selectedTimes.includes(slotTime)) {
                           field.onChange(
-                            selectedTimes.filter((t) => t !== slotTime)
+                            selectedTimes.filter((t) => t !== slotTime),
                           );
                         } else {
                           field.onChange([...selectedTimes, slotTime]);
@@ -883,7 +883,7 @@ export const EditSchedulingModal = ({
                                         </span>
                                         {slot.isCurrentTimeSlot &&
                                           !selectedTimes.includes(
-                                            slot.time
+                                            slot.time,
                                           ) && (
                                             <span className="text-xs ml-2 text-blue-600">
                                               (Não selecionado)
@@ -903,7 +903,7 @@ export const EditSchedulingModal = ({
                                           )}
                                       </div>
                                     </Button>
-                                  )
+                                  ),
                                 )}
                               </div>
                             </div>
@@ -945,7 +945,7 @@ export const EditSchedulingModal = ({
                             requiredSlotsCount,
                             appointment.id,
                             currentTimeSlots,
-                            originalAppointmentDate
+                            originalAppointmentDate,
                           ))
                       }
                     >

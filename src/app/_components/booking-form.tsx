@@ -14,7 +14,7 @@ import { getSchedulingBySemester } from "../_actions/scheduling/get-scheduling-b
 import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { getDisciplineById } from "../_actions/discipline/get-discipline-by-id";
-import { getTranslatedPeriods } from "../_helpers/getOrderedPeriods";
+import { getTranslatedPeriods } from "../_helpers/periodUtils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getUser } from "../_actions/user/getUser";
 import { sendConfirmationSchedulingEmail } from "../_actions/send-confirmed-scheduling-email";
@@ -31,7 +31,6 @@ interface BookingFormProps {
   semesterId: string;
   disciplineId: string;
   classId: string;
-  // Adicione estas props:
   courseName: string;
   disciplineName: string;
   className: string;
@@ -55,7 +54,7 @@ const canUserSchedule = (userRoles: any[] | undefined): boolean => {
 export const generateTimeSlotsAndCheckAvailability = (
   date: Date | undefined,
   scheduledTimes: Scheduling[] = [],
-  dayPeriods: Period[]
+  dayPeriods: Period[],
 ) => {
   const morningSlots = [
     "07:30 - 08:20",
@@ -125,11 +124,11 @@ export const generateTimeSlotsAndCheckAvailability = (
 
             const schedulingStartTime = format(
               new Date(scheduling.startTime),
-              "HH:mm"
+              "HH:mm",
             );
             const schedulingEndTime = format(
               new Date(scheduling.endTime),
-              "HH:mm"
+              "HH:mm",
             );
 
             const existingTimeSlot = `${schedulingStartTime} - ${schedulingEndTime}`;
@@ -161,7 +160,7 @@ const checkExistingAppointments = (
   scheduledTimes: Scheduling[],
   courseId: string,
   classId: string,
-  disciplineId: string
+  disciplineId: string,
 ): { hasConflict: boolean; existingCount: number } => {
   if (!date) return { hasConflict: false, existingCount: 0 };
 
@@ -221,8 +220,6 @@ export function BookingForm({
     fetchData();
   }, []);
 
-  const userCanSchedule = user?.roles ? canUserSchedule(user.roles) : false;
-
   const {
     handleSubmit,
     control,
@@ -266,7 +263,7 @@ export function BookingForm({
       schedulingTimes,
       courseId,
       classId,
-      disciplineId
+      disciplineId,
     );
     setAppointmentConflict(conflict);
   }, [selectedDate, schedulingTimes, courseId, classId, disciplineId]);
@@ -282,7 +279,7 @@ export function BookingForm({
       schedulingTimes,
       courseId,
       classId,
-      disciplineId
+      disciplineId,
     );
 
     if (finalConflict.hasConflict) {
@@ -356,7 +353,7 @@ export function BookingForm({
   const timeSlots = generateTimeSlotsAndCheckAvailability(
     selectedDate,
     schedulingTimes,
-    disciplineData?.dayPeriods || []
+    disciplineData?.dayPeriods || [],
   );
 
   if (isCheckingUser) {
@@ -479,7 +476,7 @@ export function BookingForm({
                   const toggleTime = (slotTime: string) => {
                     if (selectedTimes.includes(slotTime)) {
                       field.onChange(
-                        selectedTimes.filter((t: string) => t !== slotTime)
+                        selectedTimes.filter((t: string) => t !== slotTime),
                       );
                     } else {
                       field.onChange([...selectedTimes, slotTime]);
@@ -550,9 +547,7 @@ export function BookingForm({
                 className="w-full cursor-pointer mt-2"
                 disabled={!selectedDate}
               >
-                {userCanSchedule
-                  ? "Confirmar Agendamento"
-                  : "Testar Agendamento (Bloqueado para SECRETARIA)"}
+                Confirmar Agendamento
               </Button>
             </form>
           </>

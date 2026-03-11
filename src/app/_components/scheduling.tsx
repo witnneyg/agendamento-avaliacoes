@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { parse } from "date-fns";
 import {
   Card,
   CardContent,
@@ -18,6 +17,7 @@ import { getUser } from "../_actions/user/getUser";
 import { Class, Discipline, User } from "@prisma/client";
 import { ClassSelector } from "./classes-selector";
 import { getTeacherByUserId } from "../_actions/teacher/get-teacher-by-user-id";
+import { GetTimeRange } from "@/utils/getTimeRange";
 
 type Step =
   | "course"
@@ -27,7 +27,7 @@ type Step =
   | "details"
   | "confirmation";
 
-type BookingDetails = {
+export type BookingDetails = {
   name: string;
   time: string;
   date: Date;
@@ -36,10 +36,10 @@ type BookingDetails = {
 export function Scheduling() {
   const [step, setStep] = useState<Step>("course");
   const [selectedCourse, setSelectedCourse] = useState<Course | undefined>(
-    undefined
+    undefined,
   );
   const [selectedClass, setSelectedClass] = useState<Class | undefined>(
-    undefined
+    undefined,
   );
   const [selectedSemester, setSelectedSemester] = useState<
     Semester | undefined
@@ -48,12 +48,12 @@ export function Scheduling() {
     Discipline | undefined
   >(undefined);
   const [user, setUser] = useState<Omit<User, "emailVerified"> | undefined>(
-    undefined
+    undefined,
   );
   const [teacherId, setTeacherId] = useState<string | undefined>(undefined);
 
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(
-    null
+    null,
   );
 
   const handleCourseSelect = (course: Course) => {
@@ -93,25 +93,8 @@ export function Scheduling() {
 
   const handleCreateScheduling = async (details: BookingDetails) => {
     setBookingDetails(details);
-    const slots = details.time.split(",").map((slot) => slot.trim());
 
-    let earliestStartTime: Date | null = null;
-    let latestEndTime: Date | null = null;
-
-    for (const slot of slots) {
-      const [startStr, endStr] = slot.split(" - ");
-
-      const startTime = parse(startStr, "HH:mm", new Date(details.date));
-      const endTime = parse(endStr, "HH:mm", new Date(details.date));
-
-      if (!earliestStartTime || startTime < earliestStartTime) {
-        earliestStartTime = startTime;
-      }
-
-      if (!latestEndTime || endTime > latestEndTime) {
-        latestEndTime = endTime;
-      }
-    }
+    const { earliestStartTime, latestEndTime, slots } = GetTimeRange(details);
 
     if (
       selectedCourse &&
@@ -158,7 +141,7 @@ export function Scheduling() {
       <CardHeader>
         <CardTitle>
           {step === "course" && "Selecione um curso"}
-          {step === "period" && "Selecione seu periodo"}
+          {step === "period" && "Selecione seu período"}
           {step === "class" && "Selecione sua turma"}
           {step === "discipline" && "Selecione uma disciplina"}
           {step === "details" && "Selecione data e horário"}

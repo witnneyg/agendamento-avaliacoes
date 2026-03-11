@@ -81,7 +81,7 @@ export function ClassesTab() {
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<ClassesWithRelations | null>(
-    null
+    null,
   );
   const [classToDelete, setClassToDelete] =
     useState<ClassesWithRelations | null>(null);
@@ -131,19 +131,19 @@ export function ClassesTab() {
 
     if (searchTerm) {
       filtered = filtered.filter((cls) =>
-        cls.name.toLowerCase().includes(searchTerm.toLowerCase())
+        cls.name.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
     if (selectedCourseFilter) {
       filtered = filtered.filter(
-        (cls) => cls.course.id === selectedCourseFilter
+        (cls) => cls.course.id === selectedCourseFilter,
       );
     }
 
     if (selectedSemesterFilter) {
       filtered = filtered.filter(
-        (cls) => cls.semester.id === selectedSemesterFilter
+        (cls) => cls.semester.id === selectedSemesterFilter,
       );
     }
 
@@ -181,7 +181,7 @@ export function ClassesTab() {
         });
 
         setClasses((prev) =>
-          prev.map((cls) => (cls.id === updated.id ? updated : cls))
+          prev.map((cls) => (cls.id === updated.id ? updated : cls)),
         );
       } else {
         const newClass = await createClasses(classData);
@@ -234,7 +234,7 @@ export function ClassesTab() {
   };
 
   const uniqueSemesters = Array.from(
-    new Set(classes.map((cls) => cls.semester.id))
+    new Set(classes.map((cls) => cls.semester.id)),
   )
     .map((id) => {
       const cls = classes.find((cls) => cls.semester.id === id);
@@ -437,7 +437,6 @@ export function ClassesTab() {
               </Select>
             </div>
 
-            {/* Botão limpar filtros */}
             <div className="space-y-2">
               <Label className="opacity-0">Limpar</Label>
               <Button
