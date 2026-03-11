@@ -30,32 +30,7 @@ import {
 } from "../calendar/page";
 import { EditSchedulingModal } from "./edit-scheduling.modal";
 import { sendDeleteSchedulingEmail } from "../_actions/send-delete-scheduling-email";
-
-const extractSemesterNumber = (semesterName: string): string => {
-  const numberMatch = semesterName.match(/^(\d+)/);
-  if (numberMatch) {
-    return `${numberMatch[1]}° período`;
-  }
-
-  if (semesterName.match(/Primeiro|primeiro|1/i)) {
-    return "1° período";
-  } else if (semesterName.match(/Segundo|segundo|2/i)) {
-    return "2° período";
-  } else if (semesterName.match(/Terceiro|terceiro|3/i)) {
-    return "3° período";
-  } else if (semesterName.match(/Quarto|quarto|4/i)) {
-    return "4° período";
-  } else if (semesterName.match(/Quinto|quinto|5/i)) {
-    return "5° período";
-  } else if (semesterName.match(/Sexto|sexto|6/i)) {
-    return "6° período";
-  } else if (semesterName.match(/Sétimo|sétimo|7/i)) {
-    return "7° período";
-  } else if (semesterName.match(/Oitavo|oitavo|8/i)) {
-    return "8° período";
-  }
-  return semesterName;
-};
+import { formatSemesterNumber } from "../_helpers/formatSemesterNumber";
 
 const extractTimeSlots = (appointment: SchedulingWithRelations) => {
   try {
@@ -98,7 +73,7 @@ interface AppointmentItemProps {
   onDelete: (id: string) => void;
   userSession: UserWithoutEmailVerified | null;
   onAppointmentUpdated?: (
-    updatedAppointments: Partial<SchedulingWithRelations>[]
+    updatedAppointments: Partial<SchedulingWithRelations>[],
   ) => void;
   onAppointmentDeleted?: (deletedId: string) => void;
   directorCourses?: { id: string }[];
@@ -128,7 +103,7 @@ export const AppointmentItem = ({
     directorCourses.some((course) => course.id === appointment.courseId);
 
   const isProfessorOfCourse = academicCourses.some(
-    (course) => course.id === appointment.courseId
+    (course) => course.id === appointment.courseId,
   );
 
   const isProfessorAndOwner = isProfessorOfCourse && isOwner;
@@ -147,7 +122,7 @@ export const AppointmentItem = ({
     if (!canEdit) {
       if (isProfessor && !isOwner) {
         alert(
-          "Você não tem permissão para editar agendamentos de outros professores"
+          "Você não tem permissão para editar agendamentos de outros professores",
         );
       } else {
         alert("Você não tem permissão para editar este agendamento");
@@ -164,7 +139,7 @@ export const AppointmentItem = ({
     if (!canDeleteItem) {
       if (isProfessor && !isOwner) {
         alert(
-          "Você não tem permissão para excluir agendamentos de outros professores"
+          "Você não tem permissão para excluir agendamentos de outros professores",
         );
       } else {
         alert("Você não tem permissão para excluir este agendamento");
@@ -180,7 +155,7 @@ export const AppointmentItem = ({
   };
 
   const handleSave = async (
-    updatedAppointments: Partial<SchedulingWithRelations>[]
+    updatedAppointments: Partial<SchedulingWithRelations>[],
   ) => {
     if (updatedAppointments.length > 0 && updatedAppointments[0].id) {
       const updatedAppointment = {
@@ -248,12 +223,12 @@ export const AppointmentItem = ({
         } catch (emailError) {
           console.warn(
             "Erro ao enviar email de exclusão, mas continuando com a exclusão:",
-            emailError
+            emailError,
           );
         }
       } else {
         console.warn(
-          "Usuário não tem email cadastrado, não será enviado email de exclusão"
+          "Usuário não tem email cadastrado, não será enviado email de exclusão",
         );
       }
 
@@ -280,7 +255,7 @@ export const AppointmentItem = ({
           <div
             className={cn(
               "w-full p-2 rounded border-l-4 overflow-hidden cursor-pointer mb-1 relative",
-              getDepartmentColor(appointment.course.name)
+              getDepartmentColor(appointment.course.name),
             )}
           >
             <div className="absolute top-1 right-1 flex gap-1">
@@ -341,7 +316,7 @@ export const AppointmentItem = ({
               <div
                 className={cn(
                   "flex gap-2 w-3 h-3 rounded-xs flex-shrink-0",
-                  getDepartmentColor(appointment.course.name)
+                  getDepartmentColor(appointment.course.name),
                 )}
               />
               <p className="font-medium">Disciplina:</p>
@@ -386,7 +361,7 @@ export const AppointmentItem = ({
 
             <div className="flex gap-2 items-center">
               <p className="font-medium">Período:</p>
-              {extractSemesterNumber(appointment.semester.name)}
+              {formatSemesterNumber(appointment.semester.name)}
             </div>
 
             <div className="flex gap-2 items-center">

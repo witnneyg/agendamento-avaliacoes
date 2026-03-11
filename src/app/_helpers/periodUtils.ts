@@ -22,7 +22,7 @@ export function getTranslatedPeriods(periods: Period[]): string {
 }
 
 export function getOrderedPeriods(
-  periods: Period[]
+  periods: Period[],
 ): { value: Period; label: string }[] {
   const sortedPeriods = sortPeriods(periods);
   return sortedPeriods.map((period) => ({

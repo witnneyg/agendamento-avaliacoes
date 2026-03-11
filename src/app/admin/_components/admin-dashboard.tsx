@@ -165,19 +165,19 @@ export default function AdminDashboard() {
 
     window.addEventListener(
       "userRoleUpdated",
-      handleUserRoleUpdated as EventListener
+      handleUserRoleUpdated as EventListener,
     );
 
     return () => {
       window.removeEventListener(
         "userRoleUpdated",
-        handleUserRoleUpdated as EventListener
+        handleUserRoleUpdated as EventListener,
       );
     };
   }, []);
 
   const isAdmin = currentUser?.roles?.some(
-    (role) => role.name === "ADMIN" || role.name === "DIRECAO"
+    (role) => role.name === "ADMIN" || role.name === "DIRECAO",
   );
 
   const getRoleBadgeVariant = (roleName: string) => {
@@ -213,7 +213,7 @@ export default function AdminDashboard() {
         user.teacher?.status === "ACTIVE"
       ) {
         alert(
-          "Não é possível remover o acesso de professor enquanto o professor estiver com status ATIVO"
+          "Não é possível remover o acesso de professor enquanto o professor estiver com status ATIVO",
         );
         return;
       }
@@ -228,7 +228,6 @@ export default function AdminDashboard() {
     }
 
     try {
-      // Setar apenas a role específica como carregando
       setUpdatingRole({ userId, roleId });
 
       const updatedUser = await updateUserRole(userId, newRoleIds);
@@ -240,48 +239,42 @@ export default function AdminDashboard() {
                 ...u,
                 roles: updatedUser.roles,
               }
-            : u
-        )
+            : u,
+        ),
       );
 
-      // Se está removendo a role DIRECAO, também remover todos os cursos vinculados
       const role = roles.find((r) => r.id === roleId);
       if (role?.name === "DIRECAO" && hasRole) {
         try {
-          // Buscar o diretor associado ao usuário
           const director = await getDirectorByUserId(userId);
 
           if (director) {
-            // Remover todas as associações de cursos
             await removeAllDirectorCourses(director.id);
 
             console.log(
-              `Todos os cursos foram removidos do diretor ${user.name}`
+              `Todos os cursos foram removidos do diretor ${user.name}`,
             );
           }
         } catch (error) {
           console.error("Erro ao remover cursos do diretor:", error);
         }
 
-        // Disparar evento para atualizar o director-tab
         window.dispatchEvent(
           new CustomEvent("userRoleUpdated", {
             detail: { userId },
-          })
+          }),
         );
       }
 
-      // Se está adicionando a role DIRECAO, também disparar evento
       if (role?.name === "DIRECAO" && !hasRole) {
         window.dispatchEvent(
           new CustomEvent("userRoleUpdated", {
             detail: { userId },
-          })
+          }),
         );
       }
     } catch (error) {
       console.error("Erro ao atualizar roles do usuário:", error);
-      // Forçar refetch em caso de erro
       setRefetchTrigger((prev) => prev + 1);
     } finally {
       setUpdatingRole(null);
@@ -324,18 +317,18 @@ export default function AdminDashboard() {
                 ...u,
                 roles: updatedUser.roles,
               }
-            : u
-        )
+            : u,
+        ),
       );
 
       const hadDirecaoRole = user!.roles.some(
-        (role) => role.name === "DIRECAO"
+        (role) => role.name === "DIRECAO",
       );
       if (hadDirecaoRole) {
         window.dispatchEvent(
           new CustomEvent("userRoleUpdated", {
             detail: { userId },
-          })
+          }),
         );
       }
     } catch (error) {
@@ -361,7 +354,7 @@ export default function AdminDashboard() {
     if (!canRemoveRole(userId, roleId)) {
       if (role.name === "PROFESSOR" && user.teacher?.status === "ACTIVE") {
         alert(
-          "Não é possível remover o acesso de professor enquanto o professor estiver com status ATIVO"
+          "Não é possível remover o acesso de professor enquanto o professor estiver com status ATIVO",
         );
       }
       return;
@@ -612,14 +605,14 @@ export default function AdminDashboard() {
                                             {role.name}
                                             {canRemoveRole(
                                               user.id,
-                                              role.id
+                                              role.id,
                                             ) && (
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   handleRemoveRole(
                                                     user.id,
-                                                    role.id
+                                                    role.id,
                                                   );
                                                 }}
                                                 className="ml-1 hover:bg-black/20 rounded-full p-0.5 transition-colors"
@@ -673,7 +666,7 @@ export default function AdminDashboard() {
                                       >
                                         <span>{role.name}</span>
                                         {user.roles.some(
-                                          (r) => r.id === role.id
+                                          (r) => r.id === role.id,
                                         ) && (
                                           <Check className="h-4 w-4 text-green-600" />
                                         )}
@@ -805,14 +798,14 @@ export default function AdminDashboard() {
                                             {role.name}
                                             {canRemoveRole(
                                               user.id,
-                                              role.id
+                                              role.id,
                                             ) && (
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   handleRemoveRole(
                                                     user.id,
-                                                    role.id
+                                                    role.id,
                                                   );
                                                 }}
                                                 className="ml-1 hover:bg-black/20 rounded-full p-0.5 transition-colors"
@@ -867,7 +860,7 @@ export default function AdminDashboard() {
                                       >
                                         <span>{role.name}</span>
                                         {user.roles.some(
-                                          (r) => r.id === role.id
+                                          (r) => r.id === role.id,
                                         ) && (
                                           <Check className="h-4 w-4 text-green-600" />
                                         )}

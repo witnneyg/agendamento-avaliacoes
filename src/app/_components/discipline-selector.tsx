@@ -6,7 +6,7 @@ import { ChevronLeft, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getDisciplinesByClass } from "../_actions/discipline/get-disciplines-by-class";
 import { Discipline } from "@prisma/client";
-import { getOrderedPeriods } from "../_helpers/getOrderedPeriods";
+import { getOrderedPeriods } from "../_helpers/periodUtils";
 
 interface DisciplineSelectorProps {
   classId: string;
@@ -73,7 +73,7 @@ export function DisciplineSelector({
                           >
                             {period.label}
                           </span>
-                        )
+                        ),
                       )}
                     </div>
                     <Button className="mt-2 w-full cursor-pointer">

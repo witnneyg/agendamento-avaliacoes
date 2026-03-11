@@ -34,13 +34,15 @@ export function SemesterSelector({
       try {
         const data = await getSemestersByCourseForTeacher(courseId, teacherId);
         setSemesterByCourse(data);
+      } catch (error) {
+        console.error(error);
       } finally {
         setIsLoading(false);
       }
     }
 
     fetch();
-  }, [courseId]);
+  }, [courseId, teacherId]);
 
   return (
     <div className="space-y-4">
