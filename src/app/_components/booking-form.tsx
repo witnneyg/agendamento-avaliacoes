@@ -220,8 +220,6 @@ export function BookingForm({
     fetchData();
   }, []);
 
-  const userCanSchedule = user?.roles ? canUserSchedule(user.roles) : false;
-
   const {
     handleSubmit,
     control,

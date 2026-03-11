@@ -3,7 +3,7 @@ import { getUser } from "../../_actions/user/getUser";
 import { useRouter } from "next/navigation";
 import { formatSemesterNumber } from "../../_helpers/formatSemesterNumber";
 import { BookingConfirmation } from "../booking-confirmation";
-import { Period, Status } from "@prisma/client";
+import { Status } from "@prisma/client";
 
 jest.mock("../../_actions/user/getUser", () => ({
   getUser: jest.fn(),

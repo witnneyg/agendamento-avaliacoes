@@ -1,12 +1,6 @@
 import { getTeacherCourses } from "@/app/_actions/teacher/get-teacher-courses";
 import { CourseSelector } from "../course-selector";
-import {
-  render,
-  screen,
-  fireEvent,
-  getByText,
-  findByText,
-} from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 jest.mock("../../_actions/teacher/get-teacher-courses", () => ({
   getTeacherCourses: jest.fn(),
